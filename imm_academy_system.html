@@ -134,6 +134,14 @@
 
   .btn.ghost.active{background:var(--brand-soft); border-color:var(--brand); color:var(--brand-dark);}
 
+  .group-header-row td{
+    background:var(--cream-alt); font-weight:800; font-size:13px; padding:10px 14px;
+    color:var(--ink); font-family:'Noto Sans KR',sans-serif; border-top:2px solid var(--line);
+  }
+  .group-header-row.elem td{background:var(--brand-soft); color:var(--brand-dark);}
+  .group-header-row.middle td{background:var(--gold-soft); color:var(--gold);}
+  .group-count{font-weight:500; font-size:12px; margin-left:6px; opacity:.8;}
+
   .tap-grid{display:flex; flex-wrap:wrap; gap:6px;}
   .tap-num-btn{
     width:38px; height:38px; border-radius:8px; border:1px solid var(--line); background:#fff;
@@ -1180,6 +1188,37 @@ const gradeOptionsHTML = `
     <option>중1</option><option>중2</option><option>중3</option>
   </optgroup>`;
 
+function renderStudentRow(s){
+  if(editingStudentId === s.id){
+    return `
+      <tr>
+        <td><input type="text" id="e-name-${s.id}" value="${escapeHtml(s.name)}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;"></td>
+        <td><select id="e-grade-${s.id}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">${gradeOptionsHTML}</select></td>
+        <td><input type="text" id="e-school-${s.id}" value="${escapeHtml(s.school)}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;"></td>
+        <td>
+          <label style="display:flex; align-items:center; gap:5px; font-size:12px; margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;">
+            <input type="checkbox" id="e-tops-${s.id}" ${s.topS ? 'checked' : ''} style="width:15px; height:15px;"> 최상위S
+          </label>
+          <button class="btn small" onclick="saveEditStudent(${s.id})">저장</button>
+          <button class="btn small ghost" onclick="cancelEditStudent()">취소</button>
+        </td>
+      </tr>`;
+  }
+  return `
+    <tr>
+      <td>
+        <strong>${escapeHtml(s.name)}</strong>${s.topS ? '<span class="badge top-s">⭐ 최상위S</span>' : ''}
+        ${s.topS && s.topSProgress ? `<div style="font-size:11.5px; color:var(--gold); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">최상위S ${escapeHtml(s.topSProgress)}</div>` : ''}
+      </td>
+      <td><span class="badge gray">${escapeHtml(s.grade)}</span></td>
+      <td>${s.school ? `${escapeHtml(s.school)} <button type="button" class="btn small ghost" data-school="${escapeHtml(s.school)}" onclick="openSchoolInfo(this.dataset.school)" style="margin-left:6px; padding:2px 9px; font-size:11px;">🔍 학교알리미</button>` : '<span style="color:var(--ink-soft)">-</span>'}</td>
+      <td>
+        <button class="btn small ghost" onclick="startEditStudent(${s.id})">수정</button>
+        <button class="btn small danger-text" onclick="deleteStudent(${s.id})">삭제</button>
+      </td>
+    </tr>`;
+}
+
 function renderStudents(){
   const tbody = document.getElementById('studentsTableBody');
   const filter = document.getElementById('gradeFilter').value;
@@ -1195,36 +1234,29 @@ function renderStudents(){
     return;
   }
 
-  tbody.innerHTML = list.map(s => {
-    if(editingStudentId === s.id){
-      return `
-        <tr>
-          <td><input type="text" id="e-name-${s.id}" value="${escapeHtml(s.name)}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;"></td>
-          <td><select id="e-grade-${s.id}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">${gradeOptionsHTML}</select></td>
-          <td><input type="text" id="e-school-${s.id}" value="${escapeHtml(s.school)}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;"></td>
-          <td>
-            <label style="display:flex; align-items:center; gap:5px; font-size:12px; margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;">
-              <input type="checkbox" id="e-tops-${s.id}" ${s.topS ? 'checked' : ''} style="width:15px; height:15px;"> 최상위S
-            </label>
-            <button class="btn small" onclick="saveEditStudent(${s.id})">저장</button>
-            <button class="btn small ghost" onclick="cancelEditStudent()">취소</button>
-          </td>
-        </tr>`;
+  let html = '';
+  if(filter === 'all'){
+    const elem = list.filter(s => levelOf(s.grade) === '초등부');
+    const middle = list.filter(s => levelOf(s.grade) === '중등부');
+    const etc = list.filter(s => !elem.includes(s) && !middle.includes(s));
+
+    if(elem.length){
+      html += `<tr class="group-header-row elem"><td colspan="4">🎈 초등부 <span class="group-count">${elem.length}명</span></td></tr>`;
+      html += elem.map(renderStudentRow).join('');
     }
-    return `
-      <tr>
-        <td>
-          <strong>${escapeHtml(s.name)}</strong>${s.topS ? '<span class="badge top-s">⭐ 최상위S</span>' : ''}
-          ${s.topS && s.topSProgress ? `<div style="font-size:11.5px; color:var(--gold); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">최상위S ${escapeHtml(s.topSProgress)}</div>` : ''}
-        </td>
-        <td><span class="badge gray">${escapeHtml(s.grade)}</span></td>
-        <td>${s.school ? `${escapeHtml(s.school)} <button type="button" class="btn small ghost" data-school="${escapeHtml(s.school)}" onclick="openSchoolInfo(this.dataset.school)" style="margin-left:6px; padding:2px 9px; font-size:11px;">🔍 학교알리미</button>` : '<span style="color:var(--ink-soft)">-</span>'}</td>
-        <td>
-          <button class="btn small ghost" onclick="startEditStudent(${s.id})">수정</button>
-          <button class="btn small danger-text" onclick="deleteStudent(${s.id})">삭제</button>
-        </td>
-      </tr>`;
-  }).join('');
+    if(middle.length){
+      html += `<tr class="group-header-row middle"><td colspan="4">📚 중등부 <span class="group-count">${middle.length}명</span></td></tr>`;
+      html += middle.map(renderStudentRow).join('');
+    }
+    if(etc.length){
+      html += `<tr class="group-header-row"><td colspan="4">기타 <span class="group-count">${etc.length}명</span></td></tr>`;
+      html += etc.map(renderStudentRow).join('');
+    }
+  } else {
+    html = list.map(renderStudentRow).join('');
+  }
+
+  tbody.innerHTML = html;
 
   if(editingStudentId){
     const s = students.find(x => x.id === editingStudentId);
