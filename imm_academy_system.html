@@ -1,0 +1,2785 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>아임수학학원 관리 시스템</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#F2701C;
+    --brand-dark:#C85812;
+    --brand-soft:rgba(242,113,28,0.12);
+    --gold:#8A5A00;
+    --gold-soft:rgba(184,134,11,0.16);
+    --cream:#F6F1E7;
+    --cream-alt:#ECE3D0;
+    --ink:#2E2013;
+    --ink-soft:#6B5A47;
+    --line:#E3D9C7;
+    --card-bg:#FFFFFF;
+    --shadow:0 2px 10px rgba(46,32,19,0.08);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--cream); color:var(--ink); min-height:100vh;
+    font-family:'Gowun Dodum','Noto Sans KR',sans-serif; font-weight:700;
+  }
+  .mono{font-family:'Space Mono','Gowun Dodum',monospace; font-weight:700;}
+  h1,h2,h3{font-family:'Gowun Dodum','Noto Sans KR',sans-serif; margin:0; font-weight:700;}
+  button{font-family:inherit; cursor:pointer; font-weight:700;}
+  input,select{font-size:15px; font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+  :focus-visible{outline:3px solid var(--brand); outline-offset:2px;}
+
+  .app{display:flex; flex-direction:column; min-height:100vh;}
+
+  .main{flex:1; min-width:0; padding:26px 34px 100px;}
+  .topbar{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:26px; flex-wrap:wrap; gap:8px;}
+  .topbar h2{font-size:24px;}
+  .topbar .today{font-size:13px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+
+  /* 홈 화면 (모바일 앱 스타일) */
+  .home-hero{
+    background:linear-gradient(160deg,var(--brand),var(--brand-dark));
+    color:#FFF3E8; padding:38px 24px 44px; text-align:center; position:relative; overflow:hidden;
+    border-radius:0 0 28px 28px; margin:-26px -34px 28px;
+  }
+  .home-hero::after{content:''; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(circle at 82% -10%, rgba(255,255,255,0.20), transparent 55%);}
+  .home-hero-eyebrow{font-size:11px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,243,232,0.82); font-family:'Noto Sans KR',sans-serif; position:relative;}
+  .home-hero .brand-title{
+    font-size:28px; color:#fff; margin-top:8px; outline:none; display:inline-block; position:relative;
+    border-bottom:1px dashed transparent; padding-bottom:3px;
+  }
+  .home-hero .brand-title:hover, .home-hero .brand-title:focus{border-bottom-color:rgba(255,255,255,0.5);}
+  .home-hero .brand-title:empty:before{content:attr(data-placeholder); color:rgba(255,255,255,0.65);}
+  .home-hero-tagline{margin-top:10px; font-size:13.5px; color:rgba(255,243,232,0.94); font-family:'Noto Sans KR',sans-serif; font-weight:500; position:relative;}
+  .home-hero-date{
+    margin-top:16px; display:inline-block; background:rgba(255,255,255,0.18); padding:6px 18px;
+    border-radius:20px; font-size:12px; font-family:'Space Mono',monospace; position:relative;
+  }
+
+  .home-section{margin-bottom:28px;}
+  .home-section-label{font-size:13px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:6px;}
+  .home-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  .home-card{
+    background:#fff; border:1px solid var(--line); border-radius:16px; padding:22px 14px; text-align:center;
+    box-shadow:var(--shadow); cursor:pointer; transition:transform .15s, box-shadow .15s;
+  }
+  .home-card:hover{transform:translateY(-3px); box-shadow:0 10px 22px rgba(194,105,34,0.15);}
+  .home-card .home-card-icon{font-size:30px; display:block; margin-bottom:10px;}
+  .home-card .home-card-title{font-size:14px; font-weight:700; color:var(--ink); font-family:'Noto Sans KR',sans-serif;}
+  .home-card .home-card-sub{font-size:11px; color:var(--ink-soft); margin-top:4px; font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+
+  /* 하단 탭바 */
+  .bottom-tabbar{
+    position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line);
+    display:flex; justify-content:space-around; padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+    box-shadow:0 -4px 14px rgba(0,0,0,0.05); z-index:20;
+  }
+  .tab-item{
+    display:flex; flex-direction:column; align-items:center; gap:3px; background:transparent; border:none;
+    color:var(--ink-soft); font-size:11px; font-family:'Noto Sans KR',sans-serif; font-weight:700; padding:6px 12px;
+    border-radius:10px; transition:color .15s, background .15s;
+  }
+  .tab-item .tab-icon{font-size:20px;}
+  .tab-item:hover{color:var(--brand-dark);}
+  .tab-item.active{color:var(--brand-dark); background:var(--brand-soft);}
+
+  .panel{display:none;}
+  .panel.active{display:block; animation:fadein .25s ease;}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .card{background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px; margin-bottom:22px;}
+  .card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;}
+  .card-head h3{font-size:17px;}
+  .card-head .sub{font-size:12.5px; color:var(--ink-soft); margin-top:2px; font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+
+  form.inline-form{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:12.5px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+  .field input, .field select{
+    border:1px solid var(--line); border-radius:7px; padding:9px 11px; background:var(--cream); color:var(--ink); min-width:110px;
+  }
+  .field input:focus, .field select:focus{background:#fff;}
+  .field.checkbox{flex-direction:row; align-items:center; gap:8px; padding-bottom:9px;}
+  .field.checkbox input{width:17px; height:17px; min-width:0;}
+
+  .btn{border:none; border-radius:7px; padding:10px 18px; font-size:14px; background:var(--brand); color:#fff; transition:transform .1s, background .15s;}
+  .btn:hover{background:var(--brand-dark);}
+  .btn:active{transform:scale(.97);}
+  .btn.ghost{background:transparent; border:1px solid var(--line); color:var(--ink-soft);}
+  .btn.ghost:hover{border-color:var(--ink-soft); color:var(--ink);}
+  .btn.small{padding:6px 12px; font-size:12.5px; border-radius:6px;}
+  .btn.danger-text{background:transparent; color:#B8391F; border:1px solid transparent;}
+  .btn.danger-text:hover{background:rgba(184,57,31,0.1);}
+
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  thead th{text-align:left; font-size:11.5px; letter-spacing:.4px; color:var(--ink-soft); border-bottom:2px solid var(--line); padding:8px 10px; font-family:'Noto Sans KR',sans-serif; font-weight:700;}
+  tbody td{padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  tbody tr:hover{background:var(--cream-alt);}
+  .empty-row td{text-align:center; padding:36px 10px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+  .empty-row .empty-icon{font-size:28px; display:block; margin-bottom:8px;}
+
+  .badge{display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-family:'Noto Sans KR',sans-serif; font-weight:700;}
+  .badge.gray{background:rgba(107,90,71,0.12); color:var(--ink-soft);}
+  .badge.top-s{background:var(--gold-soft); color:var(--gold); border:1px solid rgba(138,90,0,0.35); margin-left:6px;}
+  .badge.score-high{background:var(--brand-soft); color:var(--brand-dark);}
+  .badge.score-mid{background:var(--gold-soft); color:var(--gold);}
+  .badge.score-low{background:rgba(184,57,31,0.14); color:#B8391F;}
+
+  .btn.ghost.active{background:var(--brand-soft); border-color:var(--brand); color:var(--brand-dark);}
+
+  .tap-grid{display:flex; flex-wrap:wrap; gap:6px;}
+  .tap-num-btn{
+    width:38px; height:38px; border-radius:8px; border:1px solid var(--line); background:#fff;
+    color:var(--ink-soft); font-family:'Space Mono',monospace; font-size:13px; font-weight:700;
+    transition:background .15s, border-color .15s, color .15s;
+  }
+  .tap-num-btn:hover{border-color:var(--brand);}
+  .tap-num-btn.wrong{background:#B8391F; border-color:#B8391F; color:#fff;}
+
+  .progress-pill{font-family:'Space Mono',monospace; font-size:12.5px; background:var(--cream-alt); border-radius:6px; padding:3px 9px; display:inline-block;}
+
+  .recent-list{list-style:none; margin:0; padding:0;}
+  .recent-list li{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:11px 14px; background:var(--cream-alt); border-radius:8px; font-size:13.5px;
+    font-family:'Noto Sans KR',sans-serif; font-weight:500;
+  }
+  .recent-list li .left{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .recent-list li .date{font-family:'Space Mono',monospace; font-size:12px; color:var(--ink-soft); min-width:74px;}
+  .recent-list li .book-badge{
+    font-size:11.5px; font-weight:700; padding:2px 9px; border-radius:14px;
+    background:var(--brand-soft); color:var(--brand-dark);
+  }
+  .recent-list li .book-badge.top-s{background:var(--gold-soft); color:var(--gold);}
+
+  .placeholder-box{
+    text-align:center; padding:70px 20px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;
+  }
+  .placeholder-box .icon{font-size:34px; display:block; margin-bottom:14px;}
+  .placeholder-box .tag{
+    display:inline-block; margin-top:14px; background:var(--brand-soft); color:var(--brand-dark);
+    padding:5px 14px; border-radius:20px; font-size:12.5px; font-weight:700;
+  }
+
+  /* 출결 관리 */
+  .att-btn-group{display:flex; gap:6px; flex-wrap:wrap;}
+  .att-btn{
+    border:1px solid var(--line); background:#fff; color:var(--ink-soft);
+    padding:6px 13px; border-radius:20px; font-size:12.5px;
+    font-family:'Noto Sans KR',sans-serif; font-weight:700; transition:all .15s;
+  }
+  .att-btn:hover{border-color:var(--ink-soft);}
+  .att-btn.present.active{background:var(--brand); border-color:var(--brand); color:#fff;}
+  .att-btn.late.active{background:var(--gold-soft); border-color:var(--gold); color:var(--gold);}
+  .att-btn.absent.active{background:rgba(184,57,31,0.14); border-color:#B8391F; color:#B8391F;}
+  .att-btn.early.active{background:var(--cream-alt); border-color:var(--ink-soft); color:var(--ink-soft);}
+
+  .cal-header{font-size:14px; margin-bottom:14px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+  .cal-header strong{color:var(--ink); font-family:'Gowun Dodum',sans-serif; font-size:16px;}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .cal-grid-head{margin-bottom:6px; font-size:12px; color:var(--ink-soft); text-align:center; font-family:'Noto Sans KR',sans-serif; font-weight:700;}
+  .cal-cell{
+    min-height:64px; border:1px solid var(--line); border-radius:8px; padding:6px 8px; background:var(--cream);
+    cursor:pointer; transition:background .15s; display:flex; flex-direction:column; gap:4px;
+  }
+  .cal-cell:hover{background:var(--cream-alt);}
+  .cal-cell.empty{border:none; background:transparent; cursor:default;}
+  .cal-day{font-family:'Space Mono',monospace; font-size:12.5px; color:var(--ink-soft);}
+  .cal-status{font-size:11px; font-weight:700; padding:2px 7px; border-radius:10px; align-self:flex-start; font-family:'Noto Sans KR',sans-serif;}
+  .cal-cell.present .cal-status{background:var(--brand-soft); color:var(--brand-dark);}
+  .cal-cell.late .cal-status{background:var(--gold-soft); color:var(--gold);}
+  .cal-cell.absent .cal-status{background:rgba(184,57,31,0.14); color:#B8391F;}
+  .cal-cell.early .cal-status{background:var(--cream-alt); color:var(--ink-soft); border:1px solid var(--line);}
+  .cal-legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:14px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+  .cal-legend span{display:inline-flex; align-items:center; gap:5px;}
+  .cal-legend .dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+
+  .cal-makeup-tag{font-size:10px; font-weight:700; padding:1px 6px; border-radius:8px; align-self:flex-start; font-family:'Noto Sans KR',sans-serif;}
+  .cal-makeup-tag.need{background:rgba(184,57,31,0.12); color:#B8391F;}
+  .cal-makeup-tag.scheduled{background:var(--gold-soft); color:var(--gold);}
+  .cal-makeup-tag.done{background:var(--brand-soft); color:var(--brand-dark);}
+
+  /* 학생 리포트 */
+  .report-sheet{background:#fff; border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:34px 38px; max-width:760px; margin:0 auto;}
+  .report-head{text-align:center; margin-bottom:26px; padding-bottom:18px; border-bottom:2px solid var(--brand-soft);}
+  .report-head .academy{font-size:11px; letter-spacing:2px; color:var(--ink-soft); text-transform:uppercase; font-family:'Noto Sans KR',sans-serif;}
+  .report-head h2{font-size:21px; margin-top:6px;}
+  .report-head .meta{font-size:12.5px; color:var(--ink-soft); margin-top:8px; font-family:'Space Mono',monospace;}
+  .report-section{margin-bottom:24px;}
+  .report-section h4{font-size:14.5px; color:var(--brand-dark); margin-bottom:10px;}
+  .report-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px 20px; font-size:13.5px; font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+  .report-grid .label{color:var(--ink-soft); font-size:11.5px; display:block; margin-bottom:2px;}
+  .report-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px;}
+  .report-list li{background:var(--cream-alt); border-radius:8px; padding:9px 13px; font-size:13px; font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+  .report-list li.strong-item{background:var(--brand-soft); color:var(--brand-dark);}
+  .report-list li.grow-item{background:var(--gold-soft); color:var(--gold);}
+  .report-empty{color:var(--ink-soft); font-size:13px; font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+  .report-comment{
+    border:1px dashed var(--line); border-radius:8px; padding:12px 14px; min-height:76px;
+    font-family:'Gowun Dodum','Noto Sans KR',sans-serif; font-size:14px; width:100%; background:var(--cream);
+    resize:vertical; color:var(--ink);
+  }
+
+  /* 대시보드 */
+  .dash-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:22px;}
+  .dash-stat{padding:20px 22px;}
+  .dash-stat-label{font-size:11.5px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:700; letter-spacing:.3px;}
+  .dash-stat-value{font-size:27px; margin-top:8px; color:var(--brand-dark);}
+  .dash-stat-sub{font-size:12px; color:var(--ink-soft); margin-top:6px; font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+
+  @media print{
+    body *{ visibility:hidden; }
+    #reportContent, #reportContent *{ visibility:visible; }
+    #reportContent{ position:absolute; left:0; top:0; width:100%; padding:0; margin:0; }
+    .no-print{ display:none !important; }
+    .report-sheet{ box-shadow:none; border:none; max-width:100%; }
+  }
+
+  @media (max-width:760px){
+    .main{padding:20px 16px 96px;}
+    .home-hero{margin:-20px -16px 24px; padding:32px 20px 38px;}
+    .home-grid{grid-template-columns:repeat(2,1fr);}
+    form.inline-form{flex-direction:column; align-items:stretch;}
+    .field input, .field select{min-width:0; width:100%;}
+    table{font-size:12.5px;}
+    .dash-grid{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <main class="main">
+    <div class="topbar" id="topbarSlim" style="display:none;">
+      <h2 id="pageTitle">학생 명단</h2>
+      <div class="today mono" id="todayLabel"></div>
+    </div>
+
+    <!-- ---------- 홈 (완성) ---------- -->
+    <section class="panel active" id="panel-home">
+      <div class="home-hero">
+        <div class="home-hero-eyebrow">학원 통합 관리 시스템</div>
+        <h1 class="brand-title" contenteditable="true" data-placeholder="학원명을 입력하세요">아임수학학원</h1>
+        <div class="home-hero-tagline">오늘의 목표: 틀리기, 웃기, 그리고 다시 풀기 😄</div>
+        <div class="home-hero-date mono" id="heroDateLabel"></div>
+      </div>
+
+      <div class="home-section">
+        <div class="home-section-label">🏫 학원 관리</div>
+        <div class="home-grid">
+          <div class="home-card" onclick="switchTab('dashboard')"><span class="home-card-icon">🏠</span><div class="home-card-title">대시보드</div><div class="home-card-sub">전체 현황 한눈에</div></div>
+          <div class="home-card" onclick="switchTab('students')"><span class="home-card-icon">👥</span><div class="home-card-title">학생 명단</div><div class="home-card-sub">학생 등록·관리</div></div>
+          <div class="home-card" onclick="switchTab('progress')"><span class="home-card-icon">📘</span><div class="home-card-title">진도 관리</div><div class="home-card-sub">교재별 진도 기록</div></div>
+          <div class="home-card" onclick="switchTab('attendance')"><span class="home-card-icon">🗓️</span><div class="home-card-title">출결 관리</div><div class="home-card-sub">출결·보강 관리</div></div>
+          <div class="home-card" onclick="switchTab('daily')"><span class="home-card-icon">✏️</span><div class="home-card-title">데일리 테스트</div></div>
+          <div class="home-card" onclick="switchTab('homework')"><span class="home-card-icon">📔</span><div class="home-card-title">숙제 채점</div><div class="home-card-sub">틀린 번호만 탭!</div></div>
+        </div>
+      </div>
+
+      <div class="home-section">
+        <div class="home-section-label">📊 학습 분석 · 관리 도구</div>
+        <div class="home-grid">
+          <div class="home-card" onclick="switchTab('mistakes')"><span class="home-card-icon">📌</span><div class="home-card-title">오답노트</div><div class="home-card-sub">취약 단원 분석</div></div>
+          <div class="home-card" onclick="switchTab('report')"><span class="home-card-icon">📄</span><div class="home-card-title">학생 리포트</div><div class="home-card-sub">학부모 전달용</div></div>
+          <div class="home-card" onclick="switchTab('middle')"><span class="home-card-icon">🏫</span><div class="home-card-title">중등부 정보</div><div class="home-card-sub">학교·시험 분석</div></div>
+          <div class="home-card" onclick="switchTab('backup')"><span class="home-card-icon">💾</span><div class="home-card-title">데이터 관리</div><div class="home-card-sub">백업·복원</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 대시보드 (완성) ---------- -->
+    <section class="panel" id="panel-dashboard">
+      <div class="dash-grid">
+        <div class="card dash-stat">
+          <div class="dash-stat-label">전체 학생</div>
+          <div class="dash-stat-value" id="dashTotalStudents">0명</div>
+          <div class="dash-stat-sub" id="dashStudentsBreakdown">초등부 0명 · 중등부 0명</div>
+        </div>
+        <div class="card dash-stat">
+          <div class="dash-stat-label">오늘 출석</div>
+          <div class="dash-stat-value" id="dashTodayAttendance">-</div>
+          <div class="dash-stat-sub" id="dashTodayAttendanceSub">기록 없음</div>
+        </div>
+        <div class="card dash-stat">
+          <div class="dash-stat-label">이번 달 평균 점수</div>
+          <div class="dash-stat-value" id="dashAvgScore">-</div>
+          <div class="dash-stat-sub" id="dashAvgScoreSub">데일리 테스트 기준</div>
+        </div>
+        <div class="card dash-stat">
+          <div class="dash-stat-label">보강 필요</div>
+          <div class="dash-stat-value" id="dashMakeupNeeded">0건</div>
+          <div class="dash-stat-sub">아직 완료되지 않은 보강</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>보강이 필요한 학생</h3>
+            <div class="sub" id="dashMakeupSub">보강 예정/필요 0건</div>
+          </div>
+        </div>
+        <ul class="recent-list" id="dashMakeupList" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>최근 오답 알림</h3>
+            <div class="sub">최근 7일간 기록된 오답이에요.</div>
+          </div>
+        </div>
+        <ul class="recent-list" id="dashRecentMistakeList" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>전체 학생 취약 단원 TOP 5</h3>
+            <div class="sub">모든 학생을 합쳐서 가장 많이 틀리는 단원이에요.</div>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th style="width:60px">순위</th><th>단원</th><th style="width:120px">오답 횟수</th></tr></thead>
+          <tbody id="dashTopUnitsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---------- 학생 명단 (완성) ---------- -->
+    <section class="panel" id="panel-students">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>학생 등록</h3>
+            <div class="sub">이름·학년·학교와 등록 시점의 시작 진도를 입력하세요. 이후 진도 변경은 <strong>진도 관리</strong> 탭에서 기록하면 자동으로 반영돼요.</div>
+          </div>
+        </div>
+        <form class="inline-form" id="studentForm" onsubmit="addStudent(event)">
+          <div class="field">
+            <label for="s-name">이름</label>
+            <input type="text" id="s-name" placeholder="예: 김민준" required>
+          </div>
+          <div class="field">
+            <label for="s-grade">학년</label>
+            <select id="s-grade" required>
+              <option value="">선택</option>
+              <optgroup label="초등부">
+                <option>초1</option><option>초2</option><option>초3</option>
+                <option>초4</option><option>초5</option><option>초6</option>
+              </optgroup>
+              <optgroup label="중등부">
+                <option>중1</option><option>중2</option><option>중3</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="field">
+            <label for="s-school">학교</label>
+            <input type="text" id="s-school" placeholder="예: 대구중앙초등학교">
+          </div>
+          <div class="field checkbox">
+            <input type="checkbox" id="s-tops">
+            <label for="s-tops" style="padding-bottom:0;">최상위S 진행</label>
+          </div>
+          <button type="submit" class="btn">학생 등록</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>전체 학생 명단</h3>
+            <div class="sub" id="studentCountSub">등록된 학생 0명</div>
+          </div>
+          <div class="field">
+            <label for="gradeFilter">학년 필터</label>
+            <select id="gradeFilter" onchange="renderStudents()">
+              <option value="all">전체</option>
+              <option value="초등부">초등부</option>
+              <option value="중등부">중등부</option>
+            </select>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:22%">이름</th>
+              <th style="width:12%">학년</th>
+              <th>학교</th>
+              <th style="width:150px">관리</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---------- 진도 관리 (완성) ---------- -->
+    <section class="panel" id="panel-progress">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>진도 기록 추가</h3>
+            <div class="sub">학생과 교재를 선택하고 오늘까지의 진도를 남기면 이력이 쌓이고, 학생 명단의 최신 진도도 자동으로 갱신돼요.</div>
+          </div>
+        </div>
+        <form class="inline-form" id="progressForm" onsubmit="addProgressLog(event)">
+          <div class="field">
+            <label for="p-student">학생</label>
+            <select id="p-student" onchange="refreshProgressBookOptions()" required><option value="">선택</option></select>
+          </div>
+          <div class="field">
+            <label for="p-book">교재</label>
+            <select id="p-book" required><option value="">학생을 먼저 선택하세요</option></select>
+          </div>
+          <div class="field">
+            <label for="p-page">진도</label>
+            <input type="text" id="p-page" placeholder="예: 55p까지" required>
+          </div>
+          <div class="field">
+            <label for="p-date">날짜</label>
+            <input type="date" id="p-date" required>
+          </div>
+          <button type="submit" class="btn">진도 기록 추가</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>진도 이력</h3>
+            <div class="sub" id="progressCountSub">기록된 진도 0건</div>
+          </div>
+          <div class="field">
+            <label for="progressFilterStudent">학생 필터</label>
+            <select id="progressFilterStudent" onchange="renderProgressList()"><option value="all">전체 학생</option></select>
+          </div>
+        </div>
+        <ul class="recent-list" id="progressListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
+    </section>
+
+    <!-- ---------- 출결 관리 (완성) ---------- -->
+    <section class="panel" id="panel-attendance">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>출결 입력</h3>
+            <div class="sub">날짜를 고르고 학생 이름 옆의 버튼을 누르면 바로 저장돼요. 같은 버튼을 다시 누르면 취소돼요.</div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+            <div class="field">
+              <label for="att-date">날짜</label>
+              <input type="date" id="att-date" onchange="renderAttendanceRoster()">
+            </div>
+            <div class="field">
+              <label for="attGradeFilter">학년 필터</label>
+              <select id="attGradeFilter" onchange="renderAttendanceRoster()">
+                <option value="all">전체</option>
+                <option value="초등부">초등부</option>
+                <option value="중등부">중등부</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:24%">이름</th>
+              <th style="width:12%">학년</th>
+              <th>출결 상태</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceRosterBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>월별 출결 캘린더</h3>
+            <div class="sub" id="attCalendarSub">학생을 선택하면 한 달 출결 현황을 볼 수 있어요.</div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+            <div class="field">
+              <label for="att-cal-student">학생</label>
+              <select id="att-cal-student" onchange="renderAttendanceCalendar()"><option value="">선택</option></select>
+            </div>
+            <div class="field">
+              <label>월 이동</label>
+              <div style="display:flex; gap:6px;">
+                <button type="button" class="btn small ghost" onclick="changeAttMonth(-1)">‹ 이전달</button>
+                <button type="button" class="btn small ghost" onclick="changeAttMonth(1)">다음달 ›</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="attCalendarWrap"></div>
+        <div class="cal-legend">
+          <span><span class="dot" style="background:var(--brand)"></span>출석</span>
+          <span><span class="dot" style="background:var(--gold)"></span>지각</span>
+          <span><span class="dot" style="background:#B8391F"></span>결석</span>
+          <span><span class="dot" style="background:var(--ink-soft)"></span>조퇴</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>보강 관리</h3>
+            <div class="sub" id="makeupCountSub">결석 0건</div>
+          </div>
+          <label style="display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;">
+            <input type="checkbox" id="makeupHideDone" onchange="renderMakeupList()" style="width:15px; height:15px;">
+            완료된 보강 숨기기
+          </label>
+        </div>
+        <ul class="recent-list" id="makeupListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
+    </section>
+    <section class="panel" id="panel-daily">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>데일리 테스트 기록 추가</h3>
+            <div class="sub">매쓰프로에서 채점된 결과를 입력하세요. 문제 수와 맞힌 개수를 넣으면 점수가 자동 계산되고, 점수를 직접 입력할 수도 있어요.</div>
+          </div>
+        </div>
+        <form class="inline-form" id="dailyTestForm" onsubmit="addDailyTest(event)">
+          <div class="field">
+            <label for="dt-student">학생</label>
+            <select id="dt-student" required><option value="">선택</option></select>
+          </div>
+          <div class="field">
+            <label for="dt-date">날짜</label>
+            <input type="date" id="dt-date" required>
+          </div>
+          <div class="field">
+            <label for="dt-unit">단원</label>
+            <input type="text" id="dt-unit" placeholder="예: 3단원 분수의 덧셈" required>
+          </div>
+          <div class="field">
+            <label>채점 방식</label>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button type="button" class="btn small ghost active" id="dt-mode-count" onclick="setDailyMode('count')">문제수 입력</button>
+              <button type="button" class="btn small ghost" id="dt-mode-score" onclick="setDailyMode('score')">점수 직접입력</button>
+              <button type="button" class="btn small ghost" id="dt-mode-tap" onclick="setDailyMode('tap')">틀린 번호 탭하기</button>
+            </div>
+          </div>
+          <div id="dt-count-wrap" style="display:flex; gap:10px;">
+            <div class="field">
+              <label for="dt-total">전체 문제 수</label>
+              <input type="number" id="dt-total" min="1" style="width:90px;" oninput="updateDailyPreview()">
+            </div>
+            <div class="field">
+              <label for="dt-correct">맞힌 개수</label>
+              <input type="number" id="dt-correct" min="0" style="width:90px;" oninput="updateDailyPreview()">
+            </div>
+            <div class="field">
+              <label>예상 점수</label>
+              <div class="progress-pill" id="dt-preview">-</div>
+            </div>
+          </div>
+          <div id="dt-score-wrap" style="display:none;">
+            <div class="field">
+              <label for="dt-score-direct">점수(점)</label>
+              <input type="number" id="dt-score-direct" min="0" max="100" style="width:90px;">
+            </div>
+          </div>
+          <div id="dt-tap-wrap" style="display:none; width:100%;">
+            <div class="field" style="max-width:160px;">
+              <label for="dt-tap-total">전체 문항 수</label>
+              <input type="number" id="dt-tap-total" min="1" style="width:100px;" oninput="renderDtTapGrid()">
+            </div>
+            <div class="sub" style="margin:10px 0 8px;">틀린 문항 번호를 탭하세요 (학생이 직접 탭해도 좋아요)</div>
+            <div class="tap-grid" id="dt-tap-grid"></div>
+            <div class="progress-pill" id="dt-tap-preview" style="margin-top:12px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
+          </div>
+          <button type="submit" class="btn">기록 추가</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>테스트 기록 이력</h3>
+            <div class="sub" id="dailyCountSub">기록된 테스트 0건</div>
+          </div>
+          <div class="field">
+            <label for="dailyFilterStudent">학생 필터</label>
+            <select id="dailyFilterStudent" onchange="renderDailyList()"><option value="all">전체 학생</option></select>
+          </div>
+        </div>
+        <ul class="recent-list" id="dailyListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>학생별 점수 추이</h3>
+            <div class="sub" id="scoreChartSub">학생을 선택하면 데일리 테스트 점수 변화를 그래프로 볼 수 있어요.</div>
+          </div>
+          <div class="field">
+            <label for="score-chart-student">학생</label>
+            <select id="score-chart-student" onchange="renderScoreChart()"><option value="">선택</option></select>
+          </div>
+        </div>
+        <div id="scoreChartWrap"></div>
+      </div>
+    </section>
+    <section class="panel" id="panel-homework">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>숙제 자기 채점</h3>
+            <div class="sub">전체 문항 수를 입력하고, 틀린 문제 번호만 탭하면 점수가 자동 계산돼요. 학생이 직접 채점해도 좋아요!</div>
+          </div>
+        </div>
+        <form id="homeworkForm" onsubmit="addHomework(event)">
+          <div class="inline-form">
+            <div class="field">
+              <label for="hw-student">학생</label>
+              <select id="hw-student" required><option value="">선택</option></select>
+            </div>
+            <div class="field">
+              <label for="hw-date">날짜</label>
+              <input type="date" id="hw-date" required>
+            </div>
+            <div class="field">
+              <label for="hw-range">숙제 범위</label>
+              <input type="text" id="hw-range" placeholder="예: 쎈 62p~68p" required>
+            </div>
+            <div class="field">
+              <label for="hw-total">전체 문항 수</label>
+              <input type="number" id="hw-total" min="1" style="width:100px;" oninput="renderHwTapGrid()">
+            </div>
+          </div>
+          <div class="sub" style="margin:14px 0 8px;">틀린 문항 번호를 탭하세요 (탭하면 빨갛게 표시)</div>
+          <div class="tap-grid" id="hw-tap-grid"></div>
+          <div class="progress-pill" id="hw-preview" style="margin-top:14px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
+          <div style="margin-top:16px;"><button type="submit" class="btn">숙제 기록 추가</button></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>숙제 기록 이력</h3>
+            <div class="sub" id="homeworkCountSub">기록된 숙제 0건</div>
+          </div>
+          <div class="field">
+            <label for="homeworkFilterStudent">학생 필터</label>
+            <select id="homeworkFilterStudent" onchange="renderHomeworkList()"><option value="all">전체 학생</option></select>
+          </div>
+        </div>
+        <ul class="recent-list" id="homeworkListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-mistakes">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>오답 기록 추가</h3>
+            <div class="sub">학생이 틀린 문제의 단원과 원인을 기록하세요. 같은 단원에서 오답이 3회 이상 쌓이면 취약 단원 경고가 자동으로 표시돼요.</div>
+          </div>
+        </div>
+        <form class="inline-form" id="mistakeForm" onsubmit="addMistake(event)">
+          <div class="field">
+            <label for="m-student">학생</label>
+            <select id="m-student" required><option value="">선택</option></select>
+          </div>
+          <div class="field">
+            <label for="m-date">날짜</label>
+            <input type="date" id="m-date" required>
+          </div>
+          <div class="field">
+            <label for="m-unit">단원</label>
+            <input type="text" id="m-unit" placeholder="예: 3단원 분수의 나눗셈" required>
+          </div>
+          <div class="field">
+            <label for="m-cause">원인</label>
+            <input type="text" id="m-cause" placeholder="예: 통분 실수, 개념 이해 부족 등" required>
+          </div>
+          <div class="field">
+            <label for="m-note">메모 (선택)</label>
+            <input type="text" id="m-note" placeholder="예: 12번 문제">
+          </div>
+          <button type="submit" class="btn">오답 기록 추가</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>오답 이력</h3>
+            <div class="sub" id="mistakeCountSub">기록된 오답 0건</div>
+          </div>
+          <div class="field">
+            <label for="mistakeFilterStudent">학생 필터</label>
+            <select id="mistakeFilterStudent" onchange="renderMistakeList()"><option value="all">전체 학생</option></select>
+          </div>
+        </div>
+        <ul class="recent-list" id="mistakeListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>학생별 단원 강점·취약 분석 (학기 전체)</h3>
+            <div class="sub" id="mistakeStatSub">학생을 선택하면 단원별 평균 점수와 오답 횟수를 함께 볼 수 있어요. 점수가 높고 오답이 적으면 강점, 점수가 낮거나 오답이 많으면 취약 단원으로 표시돼요.</div>
+          </div>
+          <div class="field">
+            <label for="mistakeStatStudent">학생</label>
+            <select id="mistakeStatStudent" onchange="renderMistakeChart()"><option value="">선택</option></select>
+          </div>
+        </div>
+        <div id="mistakeChartWrap"></div>
+        <div class="cal-legend">
+          <span><span class="dot" style="background:var(--brand)"></span>평균 점수</span>
+          <span><span class="dot" style="background:#B8391F"></span>오답 횟수</span>
+        </div>
+      </div>
+    </section>
+    <section class="panel" id="panel-report">
+      <div class="card no-print">
+        <div class="card-head">
+          <div>
+            <h3>학생 리포트</h3>
+            <div class="sub">학생을 선택하면 학부모님께 전달할 통합 리포트가 만들어져요. 인쇄 버튼을 누르면 리포트 부분만 깔끔하게 인쇄하거나 PDF로 저장할 수 있어요.</div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+            <div class="field">
+              <label for="report-student">학생</label>
+              <select id="report-student" onchange="renderReport()"><option value="">선택</option></select>
+            </div>
+            <button type="button" class="btn" onclick="window.print()">🖨️ 인쇄 / PDF로 저장</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="reportContent"></div>
+    </section>
+    <section class="panel" id="panel-middle">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>학교별 시험 정보</h3>
+            <div class="sub">중등부 학생들이 다니는 학교의 시험 일정과 범위를 기록해두세요.</div>
+          </div>
+        </div>
+        <form class="inline-form" id="schoolInfoForm" onsubmit="addSchoolInfo(event)">
+          <div class="field">
+            <label for="si-school">학교명</label>
+            <input type="text" id="si-school" placeholder="예: 대구중학교" required>
+          </div>
+          <div class="field">
+            <label for="si-exam-name">시험명</label>
+            <input type="text" id="si-exam-name" placeholder="예: 1학기 기말고사" required>
+          </div>
+          <div class="field">
+            <label for="si-exam-date">시험일정</label>
+            <input type="date" id="si-exam-date">
+          </div>
+          <div class="field">
+            <label for="si-exam-range">시험범위</label>
+            <input type="text" id="si-exam-range" placeholder="예: 2단원~4단원">
+          </div>
+          <div class="field">
+            <label for="si-note">특이사항 (선택)</label>
+            <input type="text" id="si-note" placeholder="예: 서술형 비중 높음">
+          </div>
+          <button type="submit" class="btn">학교 정보 추가</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>학교 정보 이력</h3>
+            <div class="sub" id="schoolInfoCountSub">등록된 정보 0건</div>
+          </div>
+        </div>
+        <ul class="recent-list" id="schoolInfoListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>시험지 분석 기록 추가</h3>
+            <div class="sub">단원별 전체 문항 수와 정답 개수를 입력하면 점수가 자동 계산되고 취약 단원이 표시돼요.</div>
+          </div>
+        </div>
+        <form class="inline-form" id="examForm" onsubmit="addExamAnalysis(event)">
+          <div class="field">
+            <label for="ea-student">학생</label>
+            <select id="ea-student" required><option value="">선택</option></select>
+          </div>
+          <div class="field">
+            <label for="ea-exam-name">시험명</label>
+            <input type="text" id="ea-exam-name" placeholder="예: 1학기 기말고사" required>
+          </div>
+          <div class="field">
+            <label for="ea-date">시험일</label>
+            <input type="date" id="ea-date">
+          </div>
+          <div class="field">
+            <label for="ea-unit">단원</label>
+            <input type="text" id="ea-unit" placeholder="예: 방정식" required>
+          </div>
+          <div class="field">
+            <label for="ea-total">전체 문항 수</label>
+            <input type="number" id="ea-total" min="1" style="width:90px;" oninput="updateExamPreview()">
+          </div>
+          <div class="field">
+            <label for="ea-correct">정답 개수</label>
+            <input type="number" id="ea-correct" min="0" style="width:90px;" oninput="updateExamPreview()">
+          </div>
+          <div class="field">
+            <label>예상 점수</label>
+            <div class="progress-pill" id="ea-preview">-</div>
+          </div>
+          <button type="submit" class="btn">분석 기록 추가</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>시험지 분석 이력</h3>
+            <div class="sub" id="examCountSub">기록된 분석 0건</div>
+          </div>
+          <div class="field">
+            <label for="examFilterStudent">학생 필터</label>
+            <select id="examFilterStudent" onchange="renderExamList()"><option value="all">전체 학생</option></select>
+          </div>
+        </div>
+        <ul class="recent-list" id="examListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>취약 단원 요약</h3>
+            <div class="sub" id="examWeakSub">학생을 선택하면 점수가 낮은 단원을 모아서 보여드려요.</div>
+          </div>
+          <div class="field">
+            <label for="examWeakStudent">학생</label>
+            <select id="examWeakStudent" onchange="renderExamWeakSummary()"><option value="">선택</option></select>
+          </div>
+        </div>
+        <ul class="recent-list" id="examWeakList" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
+    </section>
+    <section class="panel" id="panel-backup">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>☁️ 구글시트 연동</h3>
+            <div class="sub">연동해두면 데이터가 바뀔 때마다 자동으로 구글시트에 저장되고, 앱을 열 때마다 자동으로 불러와요. 새로고침해도 데이터가 사라지지 않아요!</div>
+          </div>
+        </div>
+
+        <details style="margin-bottom:16px;">
+          <summary style="cursor:pointer; font-size:13.5px; font-weight:700; color:var(--brand-dark); font-family:'Noto Sans KR',sans-serif;">📋 처음 설정하는 방법 (한 번만 하면 돼요)</summary>
+          <div style="margin-top:14px; font-size:13px; line-height:2; color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-weight:500;">
+            <strong>1단계.</strong> <a href="https://sheets.google.com" target="_blank" rel="noopener">sheets.google.com</a>에서 새 스프레드시트를 만들어요. (이름은 자유롭게, 예: "아임수학학원 데이터")<br>
+            <strong>2단계.</strong> 상단 메뉴에서 <strong>확장 프로그램 → Apps Script</strong>를 클릭해요.<br>
+            <strong>3단계.</strong> 원래 있던 코드를 전부 지우고, 아래 코드를 복사해서 붙여넣어요.
+          </div>
+          <pre style="background:var(--cream-alt); border:1px solid var(--line); border-radius:10px; padding:14px 16px; font-size:11.5px; line-height:1.6; overflow-x:auto; margin:12px 0; font-family:'Space Mono',monospace; color:var(--ink);">function doGet(e) {
+  const sheet = getDataSheet();
+  const json = sheet.getRange('A1').getValue() || '{}';
+  return ContentService.createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const sheet = getDataSheet();
+  sheet.getRange('A1').setValue(e.postData.contents);
+  return ContentService.createTextOutput(JSON.stringify({ok:true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getDataSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('Data');
+  if (!sheet) sheet = ss.insertSheet('Data');
+  return sheet;
+}</pre>
+          <div style="font-size:13px; line-height:2; color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-weight:500;">
+            <strong>4단계.</strong> 키보드 <strong>Ctrl+S</strong> (맥은 Cmd+S)로 저장해요. 프로젝트 이름은 아무거나 괜찮아요.<br>
+            <strong>5단계.</strong> 오른쪽 위 <strong>배포 → 새 배포</strong>를 클릭하고, 유형에서 ⚙️ 톱니바퀴를 눌러 <strong>웹 앱</strong>을 선택해요.<br>
+            <strong>6단계.</strong> "실행할 사용자"는 <strong>나</strong>, "액세스 권한이 있는 사용자"는 <strong>전체</strong>로 두고 <strong>배포</strong>를 눌러요.<br>
+            <strong>7단계.</strong> 처음엔 구글이 권한을 물어봐요. 본인 계정으로 만든 것이니 <strong>고급 → (프로젝트명)(안전하지 않음)으로 이동</strong>을 눌러 진행해도 괜찮아요.<br>
+            <strong>8단계.</strong> 배포가 끝나면 나오는 <strong>웹 앱 URL</strong>을 복사해서, 아래 입력칸에 붙여넣고 저장해주세요.
+          </div>
+        </details>
+
+        <div class="inline-form">
+          <div class="field" style="flex:1; min-width:280px;">
+            <label for="sheetSyncUrlInput">구글 Apps Script 웹 앱 URL</label>
+            <input type="text" id="sheetSyncUrlInput" placeholder="https://script.google.com/macros/s/....../exec" style="width:100%;">
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+          <button type="button" class="btn" onclick="saveSheetSyncUrl()">🔗 연결 저장</button>
+          <button type="button" class="btn small ghost" onclick="syncFromSheet()">⬇️ 지금 불러오기</button>
+          <button type="button" class="btn small ghost" onclick="syncToSheet()">⬆️ 지금 저장하기</button>
+          <button type="button" class="btn small danger-text" onclick="disconnectSheetSync()">연동 끊기</button>
+        </div>
+        <div id="sheetSyncStatus" style="margin-top:12px; font-size:13px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;">구글시트 연동이 꺼져 있어요.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>데이터 백업</h3>
+            <div class="sub">버튼을 누르면 지금까지 입력한 모든 데이터(학생·진도·출결·보강·데일리테스트·숙제·오답·리포트 코멘트·중등부 정보)가 파일 하나로 저장돼요. 이 파일을 컴퓨터에 잘 보관해주세요.</div>
+          </div>
+        </div>
+        <button type="button" class="btn" onclick="exportBackup()">💾 전체 데이터 백업하기</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>데이터 복원</h3>
+            <div class="sub">저장해둔 백업 파일(.json)을 선택하면 지금 화면의 데이터가 그 파일 내용으로 교체돼요.</div>
+          </div>
+        </div>
+        <input type="file" id="restoreFileInput" accept="application/json,.json" onchange="handleRestoreFile(event)">
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>전체 데이터 초기화</h3>
+            <div class="sub">모든 데이터를 지우고 처음 상태로 되돌려요. 되돌릴 수 없으니 꼭 먼저 백업해주세요.</div>
+          </div>
+        </div>
+        <button type="button" class="btn danger-text" style="border:1px solid #B8391F;" onclick="resetAllData()">🗑️ 전체 데이터 초기화</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>상태</h3></div></div>
+        <div id="backupStatus" style="font-size:13px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;">아직 백업하거나 복원한 기록이 없어요.</div>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bottom-tabbar" id="bottomTabbar">
+    <button class="tab-item active" data-tab="home" onclick="switchTab('home')"><span class="tab-icon">🏠</span><span class="tab-label">홈</span></button>
+    <button class="tab-item" data-tab="students" onclick="switchTab('students')"><span class="tab-icon">👥</span><span class="tab-label">학생</span></button>
+    <button class="tab-item" data-tab="attendance" onclick="switchTab('attendance')"><span class="tab-icon">🗓️</span><span class="tab-label">출결</span></button>
+    <button class="tab-item" data-tab="dashboard" onclick="switchTab('dashboard')"><span class="tab-icon">📊</span><span class="tab-label">대시보드</span></button>
+    <button class="tab-item" data-tab="report" onclick="switchTab('report')"><span class="tab-icon">📄</span><span class="tab-label">리포트</span></button>
+  </nav>
+</div>
+
+<script>
+/* =========================================================
+   상태 (데이터는 메모리에만 저장되며 새로고침 시 초기화됩니다.
+   추후 STEP 7에서 CSV 백업/복원 기능이 추가될 예정입니다.)
+========================================================= */
+let students = [
+  { id: 1, name: '김민준', grade: '초4', school: '대구중앙초등학교', concept: '62p까지', sen: '48p까지', topS: true, topSProgress: '20p까지' },
+  { id: 2, name: '이서연', grade: '초6', school: '대구서초등학교', concept: '90p까지', sen: '', topS: false, topSProgress: '' },
+  { id: 3, name: '박지호', grade: '중1', school: '대구중학교', concept: '', sen: '', topS: false, topSProgress: '' }
+];
+let nextStudentId = 4;
+let editingStudentId = null;
+
+let progressLogs = [
+  { id: 1, studentId: 1, book: '개념+유형', page: '62p까지', date: '2026-06-28' },
+  { id: 2, studentId: 1, book: '쎈', page: '48p까지', date: '2026-06-30' },
+  { id: 3, studentId: 2, book: '개념+유형', page: '90p까지', date: '2026-06-29' }
+];
+let nextProgressId = 4;
+const BOOKS = ['개념+유형','쎈','최상위S'];
+
+let attendanceRecords = [
+  { id: 1, studentId: 1, date: '2026-07-01', status: '출석' },
+  { id: 2, studentId: 2, date: '2026-07-01', status: '지각' },
+  { id: 3, studentId: 3, date: '2026-07-01', status: '결석', makeupDate: null, makeupDone: false },
+  { id: 4, studentId: 1, date: '2026-06-25', status: '결석', makeupDate: '2026-06-29', makeupDone: false },
+  { id: 5, studentId: 2, date: '2026-06-20', status: '결석', makeupDate: '2026-06-22', makeupDone: true }
+];
+let nextAttendanceId = 6;
+const ATT_STATUSES = [
+  { key:'출석', cls:'present' },
+  { key:'지각', cls:'late' },
+  { key:'결석', cls:'absent' },
+  { key:'조퇴', cls:'early' }
+];
+const ATT_CLASS_MAP = { 출석:'present', 지각:'late', 결석:'absent', 조퇴:'early' };
+let attCalYear, attCalMonth; // attCalMonth is 0-indexed
+
+let dailyTests = [
+  { id: 1, studentId: 1, date: '2026-06-20', unit: '2단원 분수의 곱셈', mode:'count', total: 20, correct: 17, score: 85 },
+  { id: 2, studentId: 1, date: '2026-06-27', unit: '3단원 분수의 나눗셈', mode:'count', total: 20, correct: 19, score: 95 },
+  { id: 3, studentId: 1, date: '2026-07-02', unit: '3단원 분수의 나눗셈', mode:'score', total: null, correct: null, score: 78 },
+  { id: 4, studentId: 2, date: '2026-06-22', unit: '5단원 원의 넓이', mode:'count', total: 15, correct: 9, score: 60 },
+  { id: 5, studentId: 2, date: '2026-06-29', unit: '5단원 원의 넓이', mode:'count', total: 15, correct: 12, score: 80 }
+];
+let nextDailyId = 6;
+let currentDailyMode = 'count';
+
+let homeworkRecords = [
+  { id: 1, studentId: 1, date: '2026-06-30', range: '쎈 62p~68p', total: 15, correct: 13, wrongNumbers: [4, 11], score: 87 },
+  { id: 2, studentId: 2, date: '2026-06-29', range: '개념+유형 90p~95p', total: 12, correct: 9, wrongNumbers: [2, 7, 10], score: 75 }
+];
+let nextHomeworkId = 3;
+
+let mistakeRecords = [
+  { id: 1, studentId: 1, date: '2026-06-21', unit: '3단원 분수의 나눗셈', cause: '통분 실수', note: '12번 문제' },
+  { id: 2, studentId: 1, date: '2026-06-27', unit: '3단원 분수의 나눗셈', cause: '개념 이해 부족', note: '' },
+  { id: 3, studentId: 1, date: '2026-07-02', unit: '3단원 분수의 나눗셈', cause: '계산 실수', note: '18번 문제' },
+  { id: 4, studentId: 2, date: '2026-06-24', unit: '5단원 원의 넓이', cause: '공식 암기 부족', note: '' }
+];
+let nextMistakeId = 5;
+const MISTAKE_WARNING_THRESHOLD = 3;
+
+let teacherComments = {
+  1: '민준이는 요즘 집중력이 부쩍 좋아졌어요! 분수 나눗셈에서 실수만 조금 줄이면 훨씬 안정적일 것 같습니다 :)',
+  2: '서연이는 성실하게 잘 따라오고 있어요. 원의 넓이 단원만 한 번 더 다지면 좋겠습니다.'
+};
+
+let schoolInfos = [
+  { id: 1, school: '대구중학교', examName: '1학기 기말고사', examDate: '2026-07-10', examRange: '2단원~4단원 (방정식, 부등식)', note: '서술형 비중 높음' }
+];
+let nextSchoolInfoId = 2;
+
+let examAnalysis = [
+  { id: 1, studentId: 3, school: '대구중학교', examName: '1학기 중간고사', unit: '문자와 식', total: 20, correct: 18, score: 90, date: '2026-05-15' },
+  { id: 2, studentId: 3, school: '대구중학교', examName: '1학기 중간고사', unit: '방정식', total: 20, correct: 12, score: 60, date: '2026-05-15' }
+];
+let nextExamId = 3;
+
+const TAB_TITLES = {
+  home:'홈', dashboard:'대시보드', students:'학생 명단', progress:'진도 관리', attendance:'출결 관리', daily:'데일리 테스트',
+  homework:'숙제 채점', mistakes:'오답노트', report:'학생 리포트', middle:'중등부 정보', backup:'데이터 관리'
+};
+
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function openSchoolInfo(schoolName){
+  if(!schoolName) return;
+  window.open('https://search.naver.com/search.naver?query=' + encodeURIComponent(schoolName + ' 학교알리미'), '_blank');
+}
+function levelOf(grade){
+  if(!grade) return '';
+  return grade.startsWith('초') ? '초등부' : grade.startsWith('중') ? '중등부' : '';
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.querySelectorAll('.tab-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('pageTitle').textContent = TAB_TITLES[tab];
+  document.getElementById('topbarSlim').style.display = tab === 'home' ? 'none' : 'flex';
+  window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  if(tab === 'dashboard') renderDashboard();
+}
+
+/* =========================================================
+   학생 명단
+========================================================= */
+function addStudent(e){
+  e.preventDefault();
+  const name = document.getElementById('s-name').value.trim();
+  const grade = document.getElementById('s-grade').value;
+  const school = document.getElementById('s-school').value.trim();
+  const topS = document.getElementById('s-tops').checked;
+
+  if(!name || !grade){
+    alert('이름과 학년은 필수 입력 항목입니다.');
+    return;
+  }
+
+  students.push({ id: nextStudentId++, name, grade, school, concept:'', sen:'', topS, topSProgress:'' });
+
+  document.getElementById('s-name').value = '';
+  document.getElementById('s-grade').value = '';
+  document.getElementById('s-school').value = '';
+  document.getElementById('s-tops').checked = false;
+  document.getElementById('s-name').focus();
+
+  renderStudents();
+  scheduleSync();
+}
+
+function startEditStudent(id){ editingStudentId = id; renderStudents(); }
+function cancelEditStudent(){ editingStudentId = null; renderStudents(); }
+function saveEditStudent(id){
+  const name = document.getElementById(`e-name-${id}`).value.trim();
+  const grade = document.getElementById(`e-grade-${id}`).value;
+  const school = document.getElementById(`e-school-${id}`).value.trim();
+  const topS = document.getElementById(`e-tops-${id}`).checked;
+  if(!name || !grade){ alert('이름과 학년은 필수 입력 항목입니다.'); return; }
+  const s = students.find(x => x.id === id);
+  Object.assign(s, { name, grade, school, topS });
+  editingStudentId = null;
+  renderStudents();
+  scheduleSync();
+}
+function deleteStudent(id){
+  const s = students.find(x => x.id === id);
+  if(!s) return;
+  if(!confirm(`'${s.name}' 학생을 명단에서 삭제하시겠습니까?`)) return;
+  students = students.filter(x => x.id !== id);
+  renderStudents();
+  scheduleSync();
+}
+
+const gradeOptionsHTML = `
+  <option value="">선택</option>
+  <optgroup label="초등부">
+    <option>초1</option><option>초2</option><option>초3</option>
+    <option>초4</option><option>초5</option><option>초6</option>
+  </optgroup>
+  <optgroup label="중등부">
+    <option>중1</option><option>중2</option><option>중3</option>
+  </optgroup>`;
+
+function renderStudents(){
+  const tbody = document.getElementById('studentsTableBody');
+  const filter = document.getElementById('gradeFilter').value;
+
+  let list = students.slice();
+  if(filter !== 'all') list = list.filter(s => levelOf(s.grade) === filter);
+
+  document.getElementById('studentCountSub').textContent =
+    `등록된 학생 ${students.length}명 (표시 중 ${list.length}명)`;
+
+  if(list.length === 0){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="4"><span class="empty-icon">📋</span>등록된 학생이 없습니다. 위 양식에서 첫 학생을 등록해보세요.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(s => {
+    if(editingStudentId === s.id){
+      return `
+        <tr>
+          <td><input type="text" id="e-name-${s.id}" value="${escapeHtml(s.name)}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;"></td>
+          <td><select id="e-grade-${s.id}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">${gradeOptionsHTML}</select></td>
+          <td><input type="text" id="e-school-${s.id}" value="${escapeHtml(s.school)}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;"></td>
+          <td>
+            <label style="display:flex; align-items:center; gap:5px; font-size:12px; margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;">
+              <input type="checkbox" id="e-tops-${s.id}" ${s.topS ? 'checked' : ''} style="width:15px; height:15px;"> 최상위S
+            </label>
+            <button class="btn small" onclick="saveEditStudent(${s.id})">저장</button>
+            <button class="btn small ghost" onclick="cancelEditStudent()">취소</button>
+          </td>
+        </tr>`;
+    }
+    return `
+      <tr>
+        <td>
+          <strong>${escapeHtml(s.name)}</strong>${s.topS ? '<span class="badge top-s">⭐ 최상위S</span>' : ''}
+          ${s.topS && s.topSProgress ? `<div style="font-size:11.5px; color:var(--gold); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">최상위S ${escapeHtml(s.topSProgress)}</div>` : ''}
+        </td>
+        <td><span class="badge gray">${escapeHtml(s.grade)}</span></td>
+        <td>${s.school ? `${escapeHtml(s.school)} <button type="button" class="btn small ghost" data-school="${escapeHtml(s.school)}" onclick="openSchoolInfo(this.dataset.school)" style="margin-left:6px; padding:2px 9px; font-size:11px;">🔍 학교알리미</button>` : '<span style="color:var(--ink-soft)">-</span>'}</td>
+        <td>
+          <button class="btn small ghost" onclick="startEditStudent(${s.id})">수정</button>
+          <button class="btn small danger-text" onclick="deleteStudent(${s.id})">삭제</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  if(editingStudentId){
+    const s = students.find(x => x.id === editingStudentId);
+    const sel = document.getElementById(`e-grade-${editingStudentId}`);
+    if(s && sel) sel.value = s.grade;
+  }
+
+  if(document.getElementById('p-student')) refreshProgressStudentSelects();
+  if(document.getElementById('att-cal-student')){
+    refreshAttendanceStudentSelect();
+    renderAttendanceRoster();
+    renderAttendanceCalendar();
+    renderMakeupList();
+  }
+  if(document.getElementById('dt-student')){
+    refreshDailyStudentSelects();
+    renderDailyList();
+    renderScoreChart();
+  }
+  if(document.getElementById('hw-student')){
+    refreshHomeworkStudentSelects();
+    renderHomeworkList();
+  }
+  if(document.getElementById('m-student')){
+    refreshMistakeStudentSelects();
+    renderMistakeList();
+    renderMistakeChart();
+  }
+  if(document.getElementById('report-student')){
+    refreshReportStudentSelect();
+    renderReport();
+  }
+  if(document.getElementById('ea-student')){
+    refreshMiddleStudentSelects();
+    renderExamList();
+    renderExamWeakSummary();
+  }
+}
+
+/* =========================================================
+   진도 관리
+========================================================= */
+function refreshProgressStudentSelects(){
+  const pStudent = document.getElementById('p-student');
+  const filterStudent = document.getElementById('progressFilterStudent');
+  const prevP = pStudent.value;
+  const prevFilter = filterStudent.value;
+
+  const optionsHtml = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
+  pStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
+  filterStudent.innerHTML = `<option value="all">전체 학생</option>` + optionsHtml;
+
+  if(students.some(s => String(s.id) === prevP)) pStudent.value = prevP;
+  if(prevFilter === 'all' || students.some(s => String(s.id) === prevFilter)) filterStudent.value = prevFilter;
+
+  refreshProgressBookOptions();
+}
+
+function refreshProgressBookOptions(){
+  const pStudent = document.getElementById('p-student');
+  const pBook = document.getElementById('p-book');
+  const studentId = Number(pStudent.value);
+  const student = students.find(s => s.id === studentId);
+
+  if(!student){
+    pBook.innerHTML = `<option value="">학생을 먼저 선택하세요</option>`;
+    return;
+  }
+  const books = student.topS ? BOOKS : BOOKS.filter(b => b !== '최상위S');
+  pBook.innerHTML = books.map(b => `<option value="${b}">${b}</option>`).join('');
+}
+
+function updateStudentQuickField(studentId, book, page){
+  const s = students.find(x => x.id === studentId);
+  if(!s) return;
+  if(book === '개념+유형') s.concept = page;
+  else if(book === '쎈') s.sen = page;
+  else if(book === '최상위S') s.topSProgress = page;
+}
+
+function addProgressLog(e){
+  e.preventDefault();
+  const studentId = Number(document.getElementById('p-student').value);
+  const book = document.getElementById('p-book').value;
+  const page = document.getElementById('p-page').value.trim();
+  const date = document.getElementById('p-date').value;
+
+  if(!studentId || !book || !page || !date){
+    alert('학생, 교재, 진도, 날짜를 모두 입력해주세요.');
+    return;
+  }
+
+  progressLogs.push({ id: nextProgressId++, studentId, book, page, date });
+  updateStudentQuickField(studentId, book, page);
+
+  document.getElementById('p-page').value = '';
+  document.getElementById('p-page').focus();
+
+  renderProgressList();
+  renderStudents();
+  scheduleSync();
+}
+
+function deleteProgressLog(id){
+  if(!confirm('이 진도 기록을 삭제하시겠습니까?')) return;
+  progressLogs = progressLogs.filter(l => l.id !== id);
+  renderProgressList();
+  scheduleSync();
+}
+
+function renderProgressList(){
+  const listEl = document.getElementById('progressListBody');
+  const filter = document.getElementById('progressFilterStudent').value;
+
+  let list = progressLogs.slice();
+  if(filter !== 'all') list = list.filter(l => String(l.studentId) === filter);
+  list.sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+  document.getElementById('progressCountSub').textContent =
+    `기록된 진도 ${progressLogs.length}건 (표시 중 ${list.length}건)`;
+
+  if(list.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">기록된 진도 이력이 없습니다.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(l => {
+    const s = students.find(x => x.id === l.studentId);
+    const badgeClass = l.book === '최상위S' ? 'book-badge top-s' : 'book-badge';
+    return `
+      <li>
+        <div class="left">
+          <span class="date">${l.date.replace(/-/g,'.')}</span>
+          <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
+          <span class="${badgeClass}">${escapeHtml(l.book)}</span>
+          <span>${escapeHtml(l.page)}</span>
+        </div>
+        <button class="btn small danger-text" onclick="deleteProgressLog(${l.id})">삭제</button>
+      </li>`;
+  }).join('');
+}
+
+/* =========================================================
+   출결 관리
+========================================================= */
+function getAttendanceRecord(studentId, date){
+  return attendanceRecords.find(r => r.studentId === studentId && r.date === date);
+}
+
+function setAttendanceStatus(studentId, status){
+  const date = document.getElementById('att-date').value;
+  if(!date){ alert('먼저 날짜를 선택해주세요.'); return; }
+
+  const existing = getAttendanceRecord(studentId, date);
+  if(existing){
+    if(existing.status === status){
+      attendanceRecords = attendanceRecords.filter(r => r.id !== existing.id);
+    } else {
+      existing.status = status;
+      if(status === '결석' && existing.makeupDate === undefined){
+        existing.makeupDate = null;
+        existing.makeupDone = false;
+      }
+    }
+  } else {
+    const rec = { id: nextAttendanceId++, studentId, date, status };
+    if(status === '결석'){ rec.makeupDate = null; rec.makeupDone = false; }
+    attendanceRecords.push(rec);
+  }
+
+  renderAttendanceRoster();
+  renderAttendanceCalendar();
+  renderMakeupList();
+  scheduleSync();
+}
+
+function renderAttendanceRoster(){
+  const dateInput = document.getElementById('att-date');
+  if(!dateInput.value){
+    const now = new Date();
+    dateInput.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  }
+  const date = dateInput.value;
+  const filter = document.getElementById('attGradeFilter').value;
+  const tbody = document.getElementById('attendanceRosterBody');
+
+  let list = students.slice();
+  if(filter !== 'all') list = list.filter(s => levelOf(s.grade) === filter);
+
+  if(list.length === 0){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="3"><span class="empty-icon">🗓️</span>등록된 학생이 없습니다. 먼저 학생 명단에 학생을 등록해주세요.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(s => {
+    const rec = getAttendanceRecord(s.id, date);
+    const btns = ATT_STATUSES.map(st => `
+      <button type="button" class="att-btn ${st.cls} ${rec && rec.status === st.key ? 'active' : ''}" onclick="setAttendanceStatus(${s.id}, '${st.key}')">${st.key}</button>
+    `).join('');
+    return `
+      <tr>
+        <td><strong>${escapeHtml(s.name)}</strong>${s.topS ? '<span class="badge top-s">⭐</span>' : ''}</td>
+        <td><span class="badge gray">${escapeHtml(s.grade)}</span></td>
+        <td><div class="att-btn-group">${btns}</div></td>
+      </tr>`;
+  }).join('');
+}
+
+function refreshAttendanceStudentSelect(){
+  const sel = document.getElementById('att-cal-student');
+  const prev = sel.value;
+  sel.innerHTML = `<option value="">선택</option>` + students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
+  if(students.some(s => String(s.id) === prev)) sel.value = prev;
+}
+
+function changeAttMonth(delta){
+  attCalMonth += delta;
+  if(attCalMonth < 0){ attCalMonth = 11; attCalYear--; }
+  if(attCalMonth > 11){ attCalMonth = 0; attCalYear++; }
+  renderAttendanceCalendar();
+}
+
+function quickJumpToAttendanceDate(dateStr){
+  document.getElementById('att-date').value = dateStr;
+  renderAttendanceRoster();
+  document.getElementById('attendanceRosterBody').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+function renderAttendanceCalendar(){
+  const wrap = document.getElementById('attCalendarWrap');
+  const sel = document.getElementById('att-cal-student');
+  const studentId = Number(sel.value);
+  const student = students.find(s => s.id === studentId);
+  const subEl = document.getElementById('attCalendarSub');
+  const monthLabel = `${attCalYear}년 ${attCalMonth + 1}월`;
+
+  if(!student){
+    wrap.innerHTML = `<div class="placeholder-box"><span class="icon">🗓️</span>학생을 선택하면 ${monthLabel} 출결 캘린더를 볼 수 있어요.</div>`;
+    subEl.textContent = '학생을 선택하면 한 달 출결 현황을 볼 수 있어요.';
+    return;
+  }
+
+  const firstDay = new Date(attCalYear, attCalMonth, 1);
+  const startWeekday = firstDay.getDay();
+  const daysInMonth = new Date(attCalYear, attCalMonth + 1, 0).getDate();
+  const counts = { 출석:0, 지각:0, 결석:0, 조퇴:0 };
+
+  let cells = '';
+  for(let i = 0; i < startWeekday; i++) cells += `<div class="cal-cell empty"></div>`;
+  for(let d = 1; d <= daysInMonth; d++){
+    const dateStr = `${attCalYear}-${String(attCalMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const rec = getAttendanceRecord(studentId, dateStr);
+    if(rec) counts[rec.status] = (counts[rec.status] || 0) + 1;
+    const statusCls = rec ? ATT_CLASS_MAP[rec.status] : '';
+
+    let makeupTagHtml = '';
+    if(rec && rec.status === '결석'){
+      let label, cls;
+      if(rec.makeupDone){ label = `보강완료 ${rec.makeupDate ? rec.makeupDate.slice(5).replace('-','/') : ''}`; cls = 'done'; }
+      else if(rec.makeupDate){ label = `보강예정 ${rec.makeupDate.slice(5).replace('-','/')}`; cls = 'scheduled'; }
+      else { label = '보강필요'; cls = 'need'; }
+      makeupTagHtml = `<span class="cal-makeup-tag ${cls}">${label}</span>`;
+    }
+
+    cells += `
+      <div class="cal-cell ${statusCls}" onclick="quickJumpToAttendanceDate('${dateStr}')">
+        <span class="cal-day">${d}</span>
+        ${rec ? `<span class="cal-status">${rec.status}</span>` : ''}
+        ${makeupTagHtml}
+      </div>`;
+  }
+
+  wrap.innerHTML = `
+    <div class="cal-header"><strong>${monthLabel}</strong> · ${escapeHtml(student.name)} 학생</div>
+    <div class="cal-grid cal-grid-head">
+      <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+    </div>
+    <div class="cal-grid">${cells}</div>
+  `;
+
+  subEl.textContent = `${monthLabel} · 출석 ${counts.출석}회 · 지각 ${counts.지각}회 · 결석 ${counts.결석}회 · 조퇴 ${counts.조퇴}회`;
+}
+
+function renderMakeupList(){
+  const listEl = document.getElementById('makeupListBody');
+  const hideDone = document.getElementById('makeupHideDone').checked;
+  const absences = attendanceRecords.filter(r => r.status === '결석');
+
+  let list = absences.slice();
+  if(hideDone) list = list.filter(r => !r.makeupDone);
+  list.sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+  const doneCount = absences.filter(r => r.makeupDone).length;
+  document.getElementById('makeupCountSub').textContent =
+    `결석 ${absences.length}건 · 보강 완료 ${doneCount}건 · 보강 미완료 ${absences.length - doneCount}건 (표시 중 ${list.length}건)`;
+
+  if(list.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">결석 기록이 없습니다.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(r => {
+    const s = students.find(x => x.id === r.studentId);
+    let statusLabel, statusCls;
+    if(r.makeupDone){ statusLabel = '보강 완료'; statusCls = 'score-high'; }
+    else if(r.makeupDate){ statusLabel = '보강 예정'; statusCls = 'score-mid'; }
+    else { statusLabel = '보강 필요'; statusCls = 'score-low'; }
+    return `
+      <li>
+        <div class="left">
+          <span class="date">${r.date.replace(/-/g,'.')}</span>
+          <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
+          <span class="badge ${statusCls}">${statusLabel}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <input type="date" value="${r.makeupDate || ''}" onchange="updateMakeupDate(${r.id}, this.value)"
+            style="border:1px solid var(--line); border-radius:6px; padding:5px 8px; font-size:12.5px; background:#fff;">
+          <label style="display:flex; align-items:center; gap:4px; font-size:12px; font-family:'Noto Sans KR',sans-serif; font-weight:500;">
+            <input type="checkbox" ${r.makeupDone ? 'checked' : ''} onchange="toggleMakeupDone(${r.id}, this.checked)" style="width:15px; height:15px;">
+            완료
+          </label>
+        </div>
+      </li>`;
+  }).join('');
+}
+
+function updateMakeupDate(recordId, value){
+  const r = attendanceRecords.find(x => x.id === recordId);
+  if(!r) return;
+  r.makeupDate = value || null;
+  renderMakeupList();
+  renderAttendanceCalendar();
+  scheduleSync();
+}
+
+function toggleMakeupDone(recordId, checked){
+  const r = attendanceRecords.find(x => x.id === recordId);
+  if(!r) return;
+  r.makeupDone = checked;
+  renderMakeupList();
+  renderAttendanceCalendar();
+  scheduleSync();
+}
+
+/* =========================================================
+   데일리 테스트
+========================================================= */
+function setDailyMode(mode){
+  currentDailyMode = mode;
+  document.getElementById('dt-mode-count').classList.toggle('active', mode === 'count');
+  document.getElementById('dt-mode-score').classList.toggle('active', mode === 'score');
+  document.getElementById('dt-mode-tap').classList.toggle('active', mode === 'tap');
+  document.getElementById('dt-count-wrap').style.display = mode === 'count' ? 'flex' : 'none';
+  document.getElementById('dt-score-wrap').style.display = mode === 'score' ? 'flex' : 'none';
+  document.getElementById('dt-tap-wrap').style.display = mode === 'tap' ? 'block' : 'none';
+}
+
+function updateDailyPreview(){
+  const totalStr = document.getElementById('dt-total').value;
+  const correctStr = document.getElementById('dt-correct').value;
+  const previewEl = document.getElementById('dt-preview');
+  const total = Number(totalStr);
+  const correct = Number(correctStr);
+  if(!total || correctStr === '' || correct < 0 || correct > total){
+    previewEl.textContent = '-';
+    return;
+  }
+  previewEl.textContent = Math.round((correct / total) * 100) + '점';
+}
+
+let dtWrongSet = new Set();
+
+function renderDtTapGrid(){
+  const total = Number(document.getElementById('dt-tap-total').value);
+  const gridEl = document.getElementById('dt-tap-grid');
+  dtWrongSet.clear();
+  if(!total || total < 1){
+    gridEl.innerHTML = '';
+    updateDtTapPreview(0, 0);
+    return;
+  }
+  let html = '';
+  for(let i = 1; i <= total; i++){
+    html += `<button type="button" class="tap-num-btn" data-num="${i}" onclick="toggleDtWrongNum(${i})">${i}</button>`;
+  }
+  gridEl.innerHTML = html;
+  updateDtTapPreview(total, 0);
+}
+
+function toggleDtWrongNum(num){
+  if(dtWrongSet.has(num)) dtWrongSet.delete(num); else dtWrongSet.add(num);
+  const btn = document.querySelector(`#dt-tap-grid .tap-num-btn[data-num="${num}"]`);
+  if(btn) btn.classList.toggle('wrong', dtWrongSet.has(num));
+  const total = Number(document.getElementById('dt-tap-total').value);
+  updateDtTapPreview(total, dtWrongSet.size);
+}
+
+function updateDtTapPreview(total, wrongCount){
+  const el = document.getElementById('dt-tap-preview');
+  if(!total){ el.textContent = '전체 문항 수를 먼저 입력해주세요.'; return; }
+  const perQuestion = (100 / total).toFixed(1);
+  const score = Math.round(((total - wrongCount) / total) * 100);
+  el.textContent = `문항당 ${perQuestion}점 · 틀린 ${wrongCount}개 · 예상 점수 ${score}점`;
+}
+
+function scoreBadgeClass(score){
+  if(score >= 90) return 'score-high';
+  if(score >= 70) return 'score-mid';
+  return 'score-low';
+}
+
+function addDailyTest(e){
+  e.preventDefault();
+  const studentId = Number(document.getElementById('dt-student').value);
+  const date = document.getElementById('dt-date').value;
+  const unit = document.getElementById('dt-unit').value.trim();
+
+  if(!studentId || !date || !unit){
+    alert('학생, 날짜, 단원은 필수 입력 항목입니다.');
+    return;
+  }
+
+  let score, total = null, correct = null, wrongNumbers = null;
+
+  if(currentDailyMode === 'count'){
+    total = Number(document.getElementById('dt-total').value);
+    const correctStr = document.getElementById('dt-correct').value;
+    correct = Number(correctStr);
+    if(!total || correctStr === '' || correct < 0 || correct > total){
+      alert('전체 문제 수와 맞힌 개수를 올바르게 입력해주세요.');
+      return;
+    }
+    score = Math.round((correct / total) * 100);
+  } else if(currentDailyMode === 'tap'){
+    total = Number(document.getElementById('dt-tap-total').value);
+    if(!total){
+      alert('전체 문항 수를 입력해주세요.');
+      return;
+    }
+    wrongNumbers = Array.from(dtWrongSet).sort((a,b) => a - b);
+    correct = total - wrongNumbers.length;
+    score = Math.round((correct / total) * 100);
+  } else {
+    const scoreStr = document.getElementById('dt-score-direct').value;
+    if(scoreStr === '' || Number(scoreStr) < 0 || Number(scoreStr) > 100){
+      alert('점수는 0~100 사이로 입력해주세요.');
+      return;
+    }
+    score = Number(scoreStr);
+  }
+
+  dailyTests.push({ id: nextDailyId++, studentId, date, unit, mode: currentDailyMode, total, correct, score, wrongNumbers });
+
+  document.getElementById('dt-unit').value = '';
+  document.getElementById('dt-total').value = '';
+  document.getElementById('dt-correct').value = '';
+  document.getElementById('dt-score-direct').value = '';
+  document.getElementById('dt-preview').textContent = '-';
+  document.getElementById('dt-tap-total').value = '';
+  document.getElementById('dt-tap-grid').innerHTML = '';
+  dtWrongSet.clear();
+  updateDtTapPreview(0, 0);
+  document.getElementById('dt-unit').focus();
+
+  renderDailyList();
+  renderScoreChart();
+  scheduleSync();
+}
+
+function deleteDailyTest(id){
+  if(!confirm('이 테스트 기록을 삭제하시겠습니까?')) return;
+  dailyTests = dailyTests.filter(t => t.id !== id);
+  renderDailyList();
+  renderScoreChart();
+  scheduleSync();
+}
+
+function refreshDailyStudentSelects(){
+  const dtStudent = document.getElementById('dt-student');
+  const filterStudent = document.getElementById('dailyFilterStudent');
+  const chartStudent = document.getElementById('score-chart-student');
+  const prevDt = dtStudent.value, prevFilter = filterStudent.value, prevChart = chartStudent.value;
+
+  const optionsHtml = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
+  dtStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
+  filterStudent.innerHTML = `<option value="all">전체 학생</option>` + optionsHtml;
+  chartStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
+
+  if(students.some(s => String(s.id) === prevDt)) dtStudent.value = prevDt;
+  if(prevFilter === 'all' || students.some(s => String(s.id) === prevFilter)) filterStudent.value = prevFilter;
+  if(students.some(s => String(s.id) === prevChart)) chartStudent.value = prevChart;
+}
+
+function renderDailyList(){
+  const listEl = document.getElementById('dailyListBody');
+  const filter = document.getElementById('dailyFilterStudent').value;
+
+  let list = dailyTests.slice();
+  if(filter !== 'all') list = list.filter(t => String(t.studentId) === filter);
+  list.sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+  document.getElementById('dailyCountSub').textContent =
+    `기록된 테스트 ${dailyTests.length}건 (표시 중 ${list.length}건)`;
+
+  if(list.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">기록된 테스트가 없습니다.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(t => {
+    const s = students.find(x => x.id === t.studentId);
+    let detail;
+    if(t.mode === 'count'){
+      detail = `${t.correct}/${t.total}문제`;
+    } else if(t.mode === 'tap'){
+      const wrongText = (t.wrongNumbers && t.wrongNumbers.length) ? t.wrongNumbers.join(', ') : '없음';
+      detail = `${t.correct}/${t.total}문제 · 틀림: ${wrongText}`;
+    } else {
+      detail = '점수 직접입력';
+    }
+    return `
+      <li>
+        <div class="left">
+          <span class="date">${t.date.replace(/-/g,'.')}</span>
+          <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
+          <span class="book-badge">${escapeHtml(t.unit)}</span>
+          <span style="font-size:12px; color:var(--ink-soft);">${detail}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="badge ${scoreBadgeClass(t.score)}">${t.score}점</span>
+          <button class="btn small danger-text" onclick="deleteDailyTest(${t.id})">삭제</button>
+        </div>
+      </li>`;
+  }).join('');
+}
+
+function buildScoreChartSVG(tests){
+  const w = 640, h = 220, padL = 40, padR = 20, padT = 20, padB = 36;
+  const chartW = w - padL - padR, chartH = h - padT - padB;
+  const n = tests.length;
+  const xAt = i => n <= 1 ? padL + chartW / 2 : padL + (chartW * i / (n - 1));
+  const yAt = score => padT + chartH - (score / 100 * chartH);
+
+  const gridLines = [0, 50, 100].map(v => `
+    <line x1="${padL}" y1="${yAt(v)}" x2="${w - padR}" y2="${yAt(v)}" stroke="var(--line)" stroke-width="1"/>
+    <text x="${padL - 8}" y="${yAt(v) + 4}" font-size="11" text-anchor="end" fill="var(--ink-soft)" font-family="'Space Mono',monospace">${v}</text>
+  `).join('');
+
+  const pathD = tests.map((t, i) => `${i === 0 ? 'M' : 'L'}${xAt(i).toFixed(1)},${yAt(t.score).toFixed(1)}`).join(' ');
+
+  const points = tests.map((t, i) => `
+    <circle cx="${xAt(i).toFixed(1)}" cy="${yAt(t.score).toFixed(1)}" r="4.5" fill="var(--brand)" stroke="#fff" stroke-width="2"/>
+    <text x="${xAt(i).toFixed(1)}" y="${(yAt(t.score) - 11).toFixed(1)}" font-size="11.5" text-anchor="middle" fill="var(--ink)" font-family="'Space Mono',monospace" font-weight="700">${t.score}</text>
+    <text x="${xAt(i).toFixed(1)}" y="${h - padB + 18}" font-size="10.5" text-anchor="middle" fill="var(--ink-soft)" font-family="'Space Mono',monospace">${t.date.slice(5).replace('-', '/')}</text>
+  `).join('');
+
+  return `
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto;">
+      ${gridLines}
+      <path d="${pathD}" fill="none" stroke="var(--brand)" stroke-width="2.5"/>
+      ${points}
+    </svg>
+  `;
+}
+
+function renderScoreChart(){
+  const wrap = document.getElementById('scoreChartWrap');
+  const sel = document.getElementById('score-chart-student');
+  const studentId = Number(sel.value);
+  const student = students.find(s => s.id === studentId);
+  const subEl = document.getElementById('scoreChartSub');
+
+  if(!student){
+    wrap.innerHTML = `<div class="placeholder-box"><span class="icon">📈</span>학생을 선택하면 점수 추이 그래프를 볼 수 있어요.</div>`;
+    subEl.textContent = '학생을 선택하면 데일리 테스트 점수 변화를 그래프로 볼 수 있어요.';
+    return;
+  }
+
+  const tests = dailyTests.filter(t => t.studentId === studentId)
+    .slice().sort((a,b) => a.date.localeCompare(b.date) || a.id - b.id);
+
+  if(tests.length === 0){
+    wrap.innerHTML = `<div class="placeholder-box"><span class="icon">📈</span>${escapeHtml(student.name)} 학생의 테스트 기록이 아직 없어요.</div>`;
+    subEl.textContent = '테스트 기록이 쌓이면 점수 변화를 그래프로 볼 수 있어요.';
+    return;
+  }
+
+  wrap.innerHTML = buildScoreChartSVG(tests);
+
+  const avg = Math.round(tests.reduce((sum, t) => sum + t.score, 0) / tests.length);
+  subEl.textContent = `${escapeHtml(student.name)} 학생 · 테스트 ${tests.length}건 · 평균 ${avg}점`;
+}
+
+/* =========================================================
+   숙제 자기 채점
+========================================================= */
+let hwWrongSet = new Set();
+
+function renderHwTapGrid(){
+  const total = Number(document.getElementById('hw-total').value);
+  const gridEl = document.getElementById('hw-tap-grid');
+  hwWrongSet.clear();
+  if(!total || total < 1){
+    gridEl.innerHTML = '';
+    updateHwPreview(0, 0);
+    return;
+  }
+  let html = '';
+  for(let i = 1; i <= total; i++){
+    html += `<button type="button" class="tap-num-btn" data-num="${i}" onclick="toggleHwWrongNum(${i})">${i}</button>`;
+  }
+  gridEl.innerHTML = html;
+  updateHwPreview(total, 0);
+}
+
+function toggleHwWrongNum(num){
+  if(hwWrongSet.has(num)) hwWrongSet.delete(num); else hwWrongSet.add(num);
+  const btn = document.querySelector(`#hw-tap-grid .tap-num-btn[data-num="${num}"]`);
+  if(btn) btn.classList.toggle('wrong', hwWrongSet.has(num));
+  const total = Number(document.getElementById('hw-total').value);
+  updateHwPreview(total, hwWrongSet.size);
+}
+
+function updateHwPreview(total, wrongCount){
+  const el = document.getElementById('hw-preview');
+  if(!total){ el.textContent = '전체 문항 수를 먼저 입력해주세요.'; return; }
+  const perQuestion = (100 / total).toFixed(1);
+  const score = Math.round(((total - wrongCount) / total) * 100);
+  el.textContent = `문항당 ${perQuestion}점 · 틀린 ${wrongCount}개 · 예상 점수 ${score}점`;
+}
+
+function addHomework(e){
+  e.preventDefault();
+  const studentId = Number(document.getElementById('hw-student').value);
+  const date = document.getElementById('hw-date').value;
+  const range = document.getElementById('hw-range').value.trim();
+  const total = Number(document.getElementById('hw-total').value);
+
+  if(!studentId || !date || !range || !total){
+    alert('학생, 날짜, 숙제 범위, 전체 문항 수를 모두 입력해주세요.');
+    return;
+  }
+
+  const wrongNumbers = Array.from(hwWrongSet).sort((a,b) => a - b);
+  const correct = total - wrongNumbers.length;
+  const score = Math.round((correct / total) * 100);
+
+  homeworkRecords.push({ id: nextHomeworkId++, studentId, date, range, total, correct, wrongNumbers, score });
+
+  document.getElementById('hw-range').value = '';
+  document.getElementById('hw-total').value = '';
+  hwWrongSet.clear();
+  document.getElementById('hw-tap-grid').innerHTML = '';
+  updateHwPreview(0, 0);
+  document.getElementById('hw-range').focus();
+
+  renderHomeworkList();
+  scheduleSync();
+}
+
+function deleteHomework(id){
+  if(!confirm('이 숙제 기록을 삭제하시겠습니까?')) return;
+  homeworkRecords = homeworkRecords.filter(h => h.id !== id);
+  renderHomeworkList();
+  scheduleSync();
+}
+
+function refreshHomeworkStudentSelects(){
+  const hwStudent = document.getElementById('hw-student');
+  const filterStudent = document.getElementById('homeworkFilterStudent');
+  const prevHw = hwStudent.value, prevFilter = filterStudent.value;
+
+  const optionsHtml = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
+  hwStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
+  filterStudent.innerHTML = `<option value="all">전체 학생</option>` + optionsHtml;
+
+  if(students.some(s => String(s.id) === prevHw)) hwStudent.value = prevHw;
+  if(prevFilter === 'all' || students.some(s => String(s.id) === prevFilter)) filterStudent.value = prevFilter;
+}
+
+function renderHomeworkList(){
+  const listEl = document.getElementById('homeworkListBody');
+  const filter = document.getElementById('homeworkFilterStudent').value;
+
+  let list = homeworkRecords.slice();
+  if(filter !== 'all') list = list.filter(h => String(h.studentId) === filter);
+  list.sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+  document.getElementById('homeworkCountSub').textContent =
+    `기록된 숙제 ${homeworkRecords.length}건 (표시 중 ${list.length}건)`;
+
+  if(list.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">기록된 숙제가 없습니다.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(h => {
+    const s = students.find(x => x.id === h.studentId);
+    const wrongText = (h.wrongNumbers && h.wrongNumbers.length) ? h.wrongNumbers.join(', ') : '없음';
+    return `
+      <li>
+        <div class="left">
+          <span class="date">${h.date.replace(/-/g,'.')}</span>
+          <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
+          <span class="book-badge">${escapeHtml(h.range)}</span>
+          <span style="font-size:12px; color:var(--ink-soft);">${h.correct}/${h.total}문제 · 틀림: ${wrongText}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="badge ${scoreBadgeClass(h.score)}">${h.score}점</span>
+          <button class="btn small danger-text" onclick="deleteHomework(${h.id})">삭제</button>
+        </div>
+      </li>`;
+  }).join('');
+}
+
+/* =========================================================
+   오답노트
+========================================================= */
+function addMistake(e){
+  e.preventDefault();
+  const studentId = Number(document.getElementById('m-student').value);
+  const date = document.getElementById('m-date').value;
+  const unit = document.getElementById('m-unit').value.trim();
+  const cause = document.getElementById('m-cause').value.trim();
+  const note = document.getElementById('m-note').value.trim();
+
+  if(!studentId || !date || !unit || !cause){
+    alert('학생, 날짜, 단원, 원인은 필수 입력 항목입니다.');
+    return;
+  }
+
+  mistakeRecords.push({ id: nextMistakeId++, studentId, date, unit, cause, note });
+
+  document.getElementById('m-unit').value = '';
+  document.getElementById('m-cause').value = '';
+  document.getElementById('m-note').value = '';
+  document.getElementById('m-unit').focus();
+
+  renderMistakeList();
+  renderMistakeChart();
+  scheduleSync();
+}
+
+function deleteMistake(id){
+  if(!confirm('이 오답 기록을 삭제하시겠습니까?')) return;
+  mistakeRecords = mistakeRecords.filter(m => m.id !== id);
+  renderMistakeList();
+  renderMistakeChart();
+  scheduleSync();
+}
+
+function refreshMistakeStudentSelects(){
+  const mStudent = document.getElementById('m-student');
+  const filterStudent = document.getElementById('mistakeFilterStudent');
+  const statStudent = document.getElementById('mistakeStatStudent');
+  const prevM = mStudent.value, prevFilter = filterStudent.value, prevStat = statStudent.value;
+
+  const optionsHtml = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
+  mStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
+  filterStudent.innerHTML = `<option value="all">전체 학생</option>` + optionsHtml;
+  statStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
+
+  if(students.some(s => String(s.id) === prevM)) mStudent.value = prevM;
+  if(prevFilter === 'all' || students.some(s => String(s.id) === prevFilter)) filterStudent.value = prevFilter;
+  if(students.some(s => String(s.id) === prevStat)) statStudent.value = prevStat;
+}
+
+function countMistakesForUnit(studentId, unit){
+  return mistakeRecords.filter(m => m.studentId === studentId && m.unit === unit).length;
+}
+
+function renderMistakeList(){
+  const listEl = document.getElementById('mistakeListBody');
+  const filter = document.getElementById('mistakeFilterStudent').value;
+
+  let list = mistakeRecords.slice();
+  if(filter !== 'all') list = list.filter(m => String(m.studentId) === filter);
+  list.sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+  document.getElementById('mistakeCountSub').textContent =
+    `기록된 오답 ${mistakeRecords.length}건 (표시 중 ${list.length}건)`;
+
+  if(list.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">기록된 오답이 없습니다.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(m => {
+    const s = students.find(x => x.id === m.studentId);
+    const cnt = s ? countMistakesForUnit(s.id, m.unit) : 0;
+    const warn = cnt >= MISTAKE_WARNING_THRESHOLD ? `<span class="badge score-low">⚠️ 취약단원 ${cnt}회</span>` : '';
+    return `
+      <li>
+        <div class="left">
+          <span class="date">${m.date.replace(/-/g,'.')}</span>
+          <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
+          <span class="book-badge">${escapeHtml(m.unit)}</span>
+          <span style="font-size:12px; color:var(--ink-soft);">${escapeHtml(m.cause)}</span>
+          ${m.note ? `<span style="font-size:12px; color:var(--ink-soft);">· ${escapeHtml(m.note)}</span>` : ''}
+          ${warn}
+        </div>
+        <button class="btn small danger-text" onclick="deleteMistake(${m.id})">삭제</button>
+      </li>`;
+  }).join('');
+}
+
+function getUnitPerformanceData(studentId){
+  const scoreAgg = {};
+  dailyTests.filter(t => t.studentId === studentId).forEach(t => {
+    if(!scoreAgg[t.unit]) scoreAgg[t.unit] = { sum: 0, count: 0 };
+    scoreAgg[t.unit].sum += t.score;
+    scoreAgg[t.unit].count++;
+  });
+  const avgScoreByUnit = {};
+  Object.keys(scoreAgg).forEach(u => { avgScoreByUnit[u] = Math.round(scoreAgg[u].sum / scoreAgg[u].count); });
+
+  const mistakeByUnit = {};
+  mistakeRecords.filter(m => m.studentId === studentId).forEach(m => {
+    mistakeByUnit[m.unit] = (mistakeByUnit[m.unit] || 0) + 1;
+  });
+
+  const allUnits = Array.from(new Set([...Object.keys(avgScoreByUnit), ...Object.keys(mistakeByUnit)]));
+
+  function classify(u){
+    const score = avgScoreByUnit[u];
+    const mistakes = mistakeByUnit[u] || 0;
+    if(score !== undefined && score >= 85 && mistakes < MISTAKE_WARNING_THRESHOLD) return 'strong';
+    if((score !== undefined && score < 70) || mistakes >= MISTAKE_WARNING_THRESHOLD) return 'weak';
+    return 'neutral';
+  }
+
+  return { avgScoreByUnit, mistakeByUnit, allUnits, classify };
+}
+
+function renderMistakeChart(){
+  const wrap = document.getElementById('mistakeChartWrap');
+  const sel = document.getElementById('mistakeStatStudent');
+  const studentId = Number(sel.value);
+  const student = students.find(s => s.id === studentId);
+  const subEl = document.getElementById('mistakeStatSub');
+
+  if(!student){
+    wrap.innerHTML = `<div class="placeholder-box"><span class="icon">📊</span>학생을 선택하면 단원별 강점·취약 그래프를 볼 수 있어요.</div>`;
+    subEl.textContent = '학생을 선택하면 단원별 평균 점수와 오답 횟수를 함께 볼 수 있어요.';
+    return;
+  }
+
+  const perf = getUnitPerformanceData(studentId);
+  const avgScoreByUnit = perf.avgScoreByUnit;
+  const mistakeByUnit = perf.mistakeByUnit;
+  const allUnits = perf.allUnits;
+
+  if(allUnits.length === 0){
+    wrap.innerHTML = `<div class="placeholder-box"><span class="icon">📊</span>${escapeHtml(student.name)} 학생의 테스트·오답 기록이 아직 없어요.</div>`;
+    subEl.textContent = '데일리 테스트나 오답을 기록하면 단원별 그래프를 볼 수 있어요.';
+    return;
+  }
+
+  const CLASSIFY_INFO = {
+    strong: { label:'💪 강점', color:'var(--brand-dark)' },
+    weak: { label:'⚠️ 취약', color:'#B8391F' },
+    neutral: { label:'보통', color:'var(--ink-soft)' }
+  };
+  function classify(u){ return CLASSIFY_INFO[perf.classify(u)]; }
+
+  allUnits.sort((a,b) => {
+    const sa = avgScoreByUnit[a] !== undefined ? avgScoreByUnit[a] : 100;
+    const sb = avgScoreByUnit[b] !== undefined ? avgScoreByUnit[b] : 100;
+    if(sa !== sb) return sa - sb;
+    return (mistakeByUnit[b] || 0) - (mistakeByUnit[a] || 0);
+  });
+
+  const maxMistake = Math.max(...allUnits.map(u => mistakeByUnit[u] || 0), MISTAKE_WARNING_THRESHOLD);
+  const barW = 18, barGap = 6, groupGap = 34;
+  const groupW = barW * 2 + barGap;
+  const padL = 20, padR = 20, padT = 30, padB = 64;
+  const chartH = 200;
+  const w = padL + padR + allUnits.length * (groupW + groupGap);
+  const h = padT + chartH + padB;
+
+  const bars = allUnits.map((u, i) => {
+    const x0 = padL + i * (groupW + groupGap);
+    const score = avgScoreByUnit[u];
+    const mistakes = mistakeByUnit[u] || 0;
+    const scoreH = score !== undefined ? (score / 100 * chartH) : 0;
+    const mistakeH = mistakes > 0 ? (mistakes / maxMistake * chartH) : 0;
+    const scoreY = padT + chartH - scoreH;
+    const mistakeY = padT + chartH - mistakeH;
+    const info = classify(u);
+    const unitLabel = u.length > 9 ? u.slice(0, 8) + '…' : u;
+
+    return `
+      <g>
+        ${score !== undefined ? `
+          <rect x="${x0}" y="${scoreY.toFixed(1)}" width="${barW}" height="${scoreH.toFixed(1)}" rx="5" fill="var(--brand)"/>
+          <text x="${x0 + barW/2}" y="${(scoreY - 7).toFixed(1)}" font-size="11" font-weight="700" text-anchor="middle" fill="var(--ink)" font-family="'Space Mono',monospace">${score}</text>
+        ` : `<rect x="${x0}" y="${padT + chartH - 2}" width="${barW}" height="2" fill="var(--line)"/>`}
+        ${mistakes > 0 ? `
+          <rect x="${x0 + barW + barGap}" y="${mistakeY.toFixed(1)}" width="${barW}" height="${mistakeH.toFixed(1)}" rx="5" fill="#B8391F"/>
+          <text x="${x0 + barW + barGap + barW/2}" y="${(mistakeY - 7).toFixed(1)}" font-size="11" font-weight="700" text-anchor="middle" fill="var(--ink)" font-family="'Space Mono',monospace">${mistakes}</text>
+        ` : `<rect x="${x0 + barW + barGap}" y="${padT + chartH - 2}" width="${barW}" height="2" fill="var(--line)"/>`}
+        <text x="${x0 + groupW/2}" y="${padT + chartH + 18}" font-size="10.5" text-anchor="middle" fill="var(--ink-soft)" font-family="'Noto Sans KR',sans-serif" transform="rotate(20 ${x0 + groupW/2} ${padT + chartH + 18})">${escapeHtml(unitLabel)}</text>
+        <text x="${x0 + groupW/2}" y="${padT + chartH + 42}" font-size="10.5" font-weight="700" text-anchor="middle" fill="${info.color}" font-family="'Noto Sans KR',sans-serif">${info.label}</text>
+      </g>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto; max-width:${w}px;">
+      <line x1="${padL}" y1="${padT + chartH}" x2="${w - padR}" y2="${padT + chartH}" stroke="var(--line)" stroke-width="1"/>
+      ${bars}
+    </svg>`;
+
+  const strongCount = allUnits.filter(u => classify(u).label === '💪 강점').length;
+  const weakCount = allUnits.filter(u => classify(u).label === '⚠️ 취약').length;
+  subEl.textContent = `${escapeHtml(student.name)} 학생 · 강점 단원 ${strongCount}개 · 취약 단원 ${weakCount}개`;
+}
+
+/* =========================================================
+   학생 리포트
+========================================================= */
+function refreshReportStudentSelect(){
+  const sel = document.getElementById('report-student');
+  const prev = sel.value;
+  sel.innerHTML = `<option value="">선택</option>` + students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
+  if(students.some(s => String(s.id) === prev)) sel.value = prev;
+}
+
+function updateTeacherComment(studentId, value){
+  teacherComments[studentId] = value;
+  scheduleSync();
+}
+
+function renderReport(){
+  const sel = document.getElementById('report-student');
+  const studentId = Number(sel.value);
+  const student = students.find(s => s.id === studentId);
+  const wrap = document.getElementById('reportContent');
+
+  if(!student){
+    wrap.innerHTML = `<div class="card"><div class="placeholder-box"><span class="icon">📄</span>학생을 선택하면 통합 리포트가 여기에 만들어져요.</div></div>`;
+    return;
+  }
+
+  const progressRows = [
+    { label:'개념+유형', value: student.concept || '기록 없음' },
+    { label:'쎈', value: student.sen || '기록 없음' }
+  ];
+  if(student.topS) progressRows.push({ label:'최상위S', value: student.topSProgress || '기록 없음' });
+
+  const now = new Date();
+  const y = now.getFullYear(), mo = now.getMonth();
+  const monthPrefix = `${y}-${String(mo + 1).padStart(2,'0')}`;
+  const monthRecords = attendanceRecords.filter(r => r.studentId === studentId && r.date.startsWith(monthPrefix));
+  const attCounts = { 출석:0, 지각:0, 결석:0, 조퇴:0 };
+  monthRecords.forEach(r => { attCounts[r.status] = (attCounts[r.status] || 0) + 1; });
+
+  const studentTests = dailyTests.filter(t => t.studentId === studentId)
+    .slice().sort((a,b) => a.date.localeCompare(b.date) || a.id - b.id);
+  const avgScore = studentTests.length ? Math.round(studentTests.reduce((s,t) => s + t.score, 0) / studentTests.length) : null;
+
+  const perf = getUnitPerformanceData(studentId);
+  const strongUnits = perf.allUnits.filter(u => perf.classify(u) === 'strong');
+  const weakUnits = perf.allUnits.filter(u => perf.classify(u) === 'weak');
+
+  const studentMistakes = mistakeRecords.filter(m => m.studentId === studentId);
+  const causeCounts = {};
+  studentMistakes.forEach(m => { causeCounts[m.cause] = (causeCounts[m.cause] || 0) + 1; });
+  const topCauses = Object.entries(causeCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+
+  const todayStr = `${y}.${String(mo + 1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+  const academyEl = document.querySelector('.brand-title');
+  const academyName = (academyEl && academyEl.textContent.trim()) || '아임수학학원';
+
+  wrap.innerHTML = `
+    <div class="card report-sheet">
+      <div class="report-head">
+        <div class="academy">${escapeHtml(academyName)}</div>
+        <h2>${escapeHtml(student.name)} 학생 학습 리포트</h2>
+        <div class="meta">${escapeHtml(student.grade)} · ${escapeHtml(student.school) || '학교 정보 없음'}${student.topS ? ' · ⭐ 최상위S' : ''} · 발급일 ${todayStr}</div>
+      </div>
+
+      <div class="report-section">
+        <h4>📘 진도 현황</h4>
+        <div class="report-grid">
+          ${progressRows.map(r => `<div><span class="label">${r.label}</span>${escapeHtml(r.value)}</div>`).join('')}
+        </div>
+      </div>
+
+      <div class="report-section">
+        <h4>🗓️ 이번 달 출결 현황</h4>
+        ${monthRecords.length === 0 ? `<div class="report-empty">이번 달 출결 기록이 아직 없어요.</div>` : `
+          <div class="report-grid">
+            <div><span class="label">출석</span>${attCounts.출석}일</div>
+            <div><span class="label">지각</span>${attCounts.지각}일</div>
+            <div><span class="label">결석</span>${attCounts.결석}일</div>
+            <div><span class="label">조퇴</span>${attCounts.조퇴}일</div>
+          </div>`}
+      </div>
+
+      <div class="report-section">
+        <h4>✏️ 데일리 테스트${avgScore !== null ? ` · 평균 ${avgScore}점` : ''}</h4>
+        ${studentTests.length === 0 ? `<div class="report-empty">기록된 데일리 테스트가 없어요.</div>` : buildScoreChartSVG(studentTests)}
+      </div>
+
+      <div class="report-section">
+        <h4>💪 강점 단원</h4>
+        ${strongUnits.length === 0
+          ? `<div class="report-empty">아직 강점으로 뽑을 만큼 데이터가 쌓이지 않았어요.</div>`
+          : `<ul class="report-list">${strongUnits.map(u => `<li class="strong-item">${escapeHtml(u)}</li>`).join('')}</ul>`}
+      </div>
+
+      <div class="report-section">
+        <h4>🌱 보완하면 좋은 부분</h4>
+        ${weakUnits.length === 0
+          ? `<div class="report-empty">지금까지는 특별히 보완이 필요한 단원이 없어요.</div>`
+          : `<ul class="report-list">${weakUnits.map(u => `<li class="grow-item">${escapeHtml(u)} · 조금 더 연습하면 훨씬 좋아질 부분이에요</li>`).join('')}</ul>`}
+      </div>
+
+      <div class="report-section">
+        <h4>🔎 자주 보이는 실수 유형</h4>
+        ${topCauses.length === 0
+          ? `<div class="report-empty">기록된 오답 원인이 없어요.</div>`
+          : `<ul class="report-list">${topCauses.map(([cause, cnt]) => `<li>${escapeHtml(cause)} <span style="color:var(--ink-soft); font-size:12px;">· ${cnt}회</span></li>`).join('')}</ul>`}
+      </div>
+
+      <div class="report-section">
+        <h4>💬 선생님 한마디</h4>
+        <textarea class="report-comment" rows="4" placeholder="학생에게 전하고 싶은 말을 자유롭게 적어주세요." oninput="updateTeacherComment(${studentId}, this.value)">${escapeHtml(teacherComments[studentId] || '')}</textarea>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================================================
+   대시보드
+========================================================= */
+function renderDashboard(){
+  const totalEl = document.getElementById('dashTotalStudents');
+  if(!totalEl) return;
+
+  // 1. 전체 학생 수
+  totalEl.textContent = `${students.length}명`;
+  const byLevel = students.reduce((acc, s) => {
+    const lvl = levelOf(s.grade);
+    if(lvl) acc[lvl] = (acc[lvl] || 0) + 1;
+    return acc;
+  }, {});
+  document.getElementById('dashStudentsBreakdown').textContent =
+    `초등부 ${byLevel['초등부'] || 0}명 · 중등부 ${byLevel['중등부'] || 0}명`;
+
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const monthPrefix = todayIso.slice(0, 7);
+
+  // 2. 오늘 출결
+  const todayRecords = attendanceRecords.filter(r => r.date === todayIso);
+  const todayCounts = { 출석:0, 지각:0, 결석:0, 조퇴:0 };
+  todayRecords.forEach(r => { todayCounts[r.status] = (todayCounts[r.status] || 0) + 1; });
+  document.getElementById('dashTodayAttendance').textContent = `${todayCounts.출석}/${students.length}`;
+  document.getElementById('dashTodayAttendanceSub').textContent = todayRecords.length === 0
+    ? '오늘 기록된 출결이 없어요'
+    : `출석 ${todayCounts.출석} · 지각 ${todayCounts.지각} · 결석 ${todayCounts.결석} · 조퇴 ${todayCounts.조퇴}`;
+
+  // 3. 이번 달 평균 점수
+  const monthTests = dailyTests.filter(t => t.date.startsWith(monthPrefix));
+  const avgScore = monthTests.length ? Math.round(monthTests.reduce((s,t) => s + t.score, 0) / monthTests.length) : null;
+  document.getElementById('dashAvgScore').textContent = avgScore !== null ? `${avgScore}점` : '-';
+  document.getElementById('dashAvgScoreSub').textContent = monthTests.length
+    ? `이번 달 테스트 ${monthTests.length}건 기준`
+    : '이번 달 기록된 테스트 없음';
+
+  // 4·보강 필요 학생
+  const needMakeup = attendanceRecords.filter(r => r.status === '결석' && !r.makeupDone);
+  document.getElementById('dashMakeupNeeded').textContent = `${needMakeup.length}건`;
+  document.getElementById('dashMakeupSub').textContent = `보강 예정/필요 ${needMakeup.length}건`;
+
+  const makeupListEl = document.getElementById('dashMakeupList');
+  if(needMakeup.length === 0){
+    makeupListEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">보강이 필요한 학생이 없어요.</li>`;
+  } else {
+    const sorted = needMakeup.slice().sort((a,b) => a.date.localeCompare(b.date));
+    makeupListEl.innerHTML = sorted.map(r => {
+      const s = students.find(x => x.id === r.studentId);
+      const label = r.makeupDate ? `보강 예정 ${r.makeupDate.slice(5).replace('-','/')}` : '보강 필요';
+      const cls = r.makeupDate ? 'score-mid' : 'score-low';
+      return `
+        <li>
+          <div class="left">
+            <span class="date">${r.date.replace(/-/g,'.')}</span>
+            <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
+            <span class="badge ${cls}">${label}</span>
+          </div>
+        </li>`;
+    }).join('');
+  }
+
+  // 5. 최근 7일 오답 알림
+  const weekAgo = new Date(now);
+  weekAgo.setDate(now.getDate() - 6);
+  const weekAgoIso = `${weekAgo.getFullYear()}-${String(weekAgo.getMonth()+1).padStart(2,'0')}-${String(weekAgo.getDate()).padStart(2,'0')}`;
+  const recentMistakes = mistakeRecords.filter(m => m.date >= weekAgoIso)
+    .slice().sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+  const recentListEl = document.getElementById('dashRecentMistakeList');
+  if(recentMistakes.length === 0){
+    recentListEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">최근 7일간 기록된 오답이 없어요.</li>`;
+  } else {
+    recentListEl.innerHTML = recentMistakes.map(m => {
+      const s = students.find(x => x.id === m.studentId);
+      return `
+        <li>
+          <div class="left">
+            <span class="date">${m.date.replace(/-/g,'.')}</span>
+            <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
+            <span class="book-badge">${escapeHtml(m.unit)}</span>
+            <span style="font-size:12px; color:var(--ink-soft);">${escapeHtml(m.cause)}</span>
+          </div>
+        </li>`;
+    }).join('');
+  }
+
+  // 6. 전체 취약 단원 TOP 5
+  const unitTotals = {};
+  mistakeRecords.forEach(m => { unitTotals[m.unit] = (unitTotals[m.unit] || 0) + 1; });
+  const topUnits = Object.entries(unitTotals).sort((a,b) => b[1] - a[1]).slice(0, 5);
+  const topUnitsBody = document.getElementById('dashTopUnitsBody');
+  if(topUnits.length === 0){
+    topUnitsBody.innerHTML = `<tr class="empty-row"><td colspan="3"><span class="empty-icon">📊</span>기록된 오답이 없어요.</td></tr>`;
+  } else {
+    topUnitsBody.innerHTML = topUnits.map(([unit, count], i) => `
+      <tr>
+        <td><span class="progress-pill">${i + 1}</span></td>
+        <td>${escapeHtml(unit)}</td>
+        <td><span class="badge ${count >= MISTAKE_WARNING_THRESHOLD ? 'score-low' : 'gray'}">${count}회</span></td>
+      </tr>`).join('');
+  }
+}
+
+/* =========================================================
+   중등부 정보
+========================================================= */
+function addSchoolInfo(e){
+  e.preventDefault();
+  const school = document.getElementById('si-school').value.trim();
+  const examName = document.getElementById('si-exam-name').value.trim();
+  const examDate = document.getElementById('si-exam-date').value;
+  const examRange = document.getElementById('si-exam-range').value.trim();
+  const note = document.getElementById('si-note').value.trim();
+
+  if(!school || !examName){
+    alert('학교명과 시험명은 필수 입력 항목입니다.');
+    return;
+  }
+
+  schoolInfos.push({ id: nextSchoolInfoId++, school, examName, examDate, examRange, note });
+
+  document.getElementById('si-school').value = '';
+  document.getElementById('si-exam-name').value = '';
+  document.getElementById('si-exam-date').value = '';
+  document.getElementById('si-exam-range').value = '';
+  document.getElementById('si-note').value = '';
+  document.getElementById('si-school').focus();
+
+  renderSchoolInfoList();
+  scheduleSync();
+}
+
+function deleteSchoolInfo(id){
+  if(!confirm('이 학교 정보를 삭제하시겠습니까?')) return;
+  schoolInfos = schoolInfos.filter(x => x.id !== id);
+  renderSchoolInfoList();
+  scheduleSync();
+}
+
+function renderSchoolInfoList(){
+  const listEl = document.getElementById('schoolInfoListBody');
+  const list = schoolInfos.slice().sort((a,b) => (b.examDate || '').localeCompare(a.examDate || '') || b.id - a.id);
+
+  document.getElementById('schoolInfoCountSub').textContent = `등록된 정보 ${schoolInfos.length}건`;
+
+  if(list.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">등록된 학교 정보가 없습니다.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(s => `
+    <li>
+      <div class="left">
+        ${s.examDate ? `<span class="date">${s.examDate.replace(/-/g,'.')}</span>` : ''}
+        <strong>${escapeHtml(s.school)}</strong>
+        <button type="button" class="btn small ghost" data-school="${escapeHtml(s.school)}" onclick="openSchoolInfo(this.dataset.school)" style="padding:2px 9px; font-size:11px;">🔍 학교알리미</button>
+        <span class="book-badge">${escapeHtml(s.examName)}</span>
+        ${s.examRange ? `<span style="font-size:12px; color:var(--ink-soft);">${escapeHtml(s.examRange)}</span>` : ''}
+        ${s.note ? `<span style="font-size:12px; color:var(--ink-soft);">· ${escapeHtml(s.note)}</span>` : ''}
+      </div>
+      <button class="btn small danger-text" onclick="deleteSchoolInfo(${s.id})">삭제</button>
+    </li>`).join('');
+}
+
+function refreshMiddleStudentSelects(){
+  const middleStudents = students.filter(s => levelOf(s.grade) === '중등부');
+  const eaStudent = document.getElementById('ea-student');
+  const filterStudent = document.getElementById('examFilterStudent');
+  const weakStudent = document.getElementById('examWeakStudent');
+  const prevEa = eaStudent.value, prevFilter = filterStudent.value, prevWeak = weakStudent.value;
+
+  const optionsHtml = middleStudents.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.school) || '학교 미입력'})</option>`).join('');
+  eaStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
+  filterStudent.innerHTML = `<option value="all">전체 학생</option>` + optionsHtml;
+  weakStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
+
+  if(middleStudents.some(s => String(s.id) === prevEa)) eaStudent.value = prevEa;
+  if(prevFilter === 'all' || middleStudents.some(s => String(s.id) === prevFilter)) filterStudent.value = prevFilter;
+  if(middleStudents.some(s => String(s.id) === prevWeak)) weakStudent.value = prevWeak;
+}
+
+function updateExamPreview(){
+  const total = Number(document.getElementById('ea-total').value);
+  const correctStr = document.getElementById('ea-correct').value;
+  const correct = Number(correctStr);
+  const previewEl = document.getElementById('ea-preview');
+  if(!total || correctStr === '' || correct < 0 || correct > total){
+    previewEl.textContent = '-';
+    return;
+  }
+  previewEl.textContent = Math.round((correct / total) * 100) + '점';
+}
+
+function addExamAnalysis(e){
+  e.preventDefault();
+  const studentId = Number(document.getElementById('ea-student').value);
+  const examName = document.getElementById('ea-exam-name').value.trim();
+  const date = document.getElementById('ea-date').value;
+  const unit = document.getElementById('ea-unit').value.trim();
+  const total = Number(document.getElementById('ea-total').value);
+  const correctStr = document.getElementById('ea-correct').value;
+  const correct = Number(correctStr);
+
+  if(!studentId || !examName || !unit || !total || correctStr === '' || correct < 0 || correct > total){
+    alert('학생, 시험명, 단원, 전체 문항 수, 정답 개수를 올바르게 입력해주세요.');
+    return;
+  }
+
+  const student = students.find(s => s.id === studentId);
+  const score = Math.round((correct / total) * 100);
+
+  examAnalysis.push({ id: nextExamId++, studentId, school: student ? student.school : '', examName, unit, total, correct, score, date });
+
+  document.getElementById('ea-exam-name').value = '';
+  document.getElementById('ea-unit').value = '';
+  document.getElementById('ea-total').value = '';
+  document.getElementById('ea-correct').value = '';
+  document.getElementById('ea-preview').textContent = '-';
+  document.getElementById('ea-unit').focus();
+
+  renderExamList();
+  renderExamWeakSummary();
+  scheduleSync();
+}
+
+function deleteExamAnalysis(id){
+  if(!confirm('이 시험지 분석 기록을 삭제하시겠습니까?')) return;
+  examAnalysis = examAnalysis.filter(x => x.id !== id);
+  renderExamList();
+  renderExamWeakSummary();
+  scheduleSync();
+}
+
+function renderExamList(){
+  const listEl = document.getElementById('examListBody');
+  const filter = document.getElementById('examFilterStudent').value;
+
+  let list = examAnalysis.slice();
+  if(filter !== 'all') list = list.filter(x => String(x.studentId) === filter);
+  list.sort((a,b) => (b.date || '').localeCompare(a.date || '') || b.id - a.id);
+
+  document.getElementById('examCountSub').textContent =
+    `기록된 분석 ${examAnalysis.length}건 (표시 중 ${list.length}건)`;
+
+  if(list.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">기록된 시험지 분석이 없습니다.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(x => {
+    const s = students.find(st => st.id === x.studentId);
+    return `
+      <li>
+        <div class="left">
+          ${x.date ? `<span class="date">${x.date.replace(/-/g,'.')}</span>` : ''}
+          <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
+          <span class="book-badge">${escapeHtml(x.examName)}</span>
+          <span style="font-size:12px; color:var(--ink-soft);">${escapeHtml(x.unit)}</span>
+          <span style="font-size:12px; color:var(--ink-soft);">${x.correct}/${x.total}문항</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="badge ${scoreBadgeClass(x.score)}">${x.score}점</span>
+          <button class="btn small danger-text" onclick="deleteExamAnalysis(${x.id})">삭제</button>
+        </div>
+      </li>`;
+  }).join('');
+}
+
+function renderExamWeakSummary(){
+  const listEl = document.getElementById('examWeakList');
+  const sel = document.getElementById('examWeakStudent');
+  const studentId = Number(sel.value);
+  const student = students.find(s => s.id === studentId);
+  const subEl = document.getElementById('examWeakSub');
+
+  if(!student){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">학생을 선택해주세요.</li>`;
+    subEl.textContent = '학생을 선택하면 점수가 낮은 단원을 모아서 보여드려요.';
+    return;
+  }
+
+  const records = examAnalysis.filter(x => x.studentId === studentId && x.score < 70)
+    .slice().sort((a,b) => a.score - b.score);
+
+  if(records.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">특별히 취약한 단원이 없어요. 잘하고 있어요!</li>`;
+    subEl.textContent = `${escapeHtml(student.name)} 학생 · 70점 미만 단원 없음`;
+    return;
+  }
+
+  listEl.innerHTML = records.map(x => `
+    <li>
+      <div class="left">
+        <span class="book-badge">${escapeHtml(x.examName)}</span>
+        <strong>${escapeHtml(x.unit)}</strong>
+        <span style="font-size:12px; color:var(--ink-soft);">${x.correct}/${x.total}문항</span>
+      </div>
+      <span class="badge score-low">${x.score}점</span>
+    </li>`).join('');
+
+  subEl.textContent = `${escapeHtml(student.name)} 학생 · 70점 미만 단원 ${records.length}개`;
+}
+
+/* =========================================================
+   데이터 관리 (백업/복원)
+========================================================= */
+function collectAllData(){
+  const academyEl = document.querySelector('.brand-title');
+  return {
+    version: 2,
+    savedAt: new Date().toISOString(),
+    academyName: (academyEl && academyEl.textContent.trim()) || '',
+    students, nextStudentId,
+    progressLogs, nextProgressId,
+    attendanceRecords, nextAttendanceId,
+    dailyTests, nextDailyId,
+    homeworkRecords, nextHomeworkId,
+    mistakeRecords, nextMistakeId,
+    teacherComments,
+    schoolInfos, nextSchoolInfoId,
+    examAnalysis, nextExamId
+  };
+}
+
+function applyAllData(data){
+  const maxId = arr => (arr && arr.length) ? Math.max(...arr.map(x => x.id || 0)) + 1 : 1;
+
+  students = data.students || [];
+  nextStudentId = data.nextStudentId || maxId(students);
+  progressLogs = data.progressLogs || [];
+  nextProgressId = data.nextProgressId || maxId(progressLogs);
+  attendanceRecords = data.attendanceRecords || [];
+  nextAttendanceId = data.nextAttendanceId || maxId(attendanceRecords);
+  dailyTests = data.dailyTests || [];
+  nextDailyId = data.nextDailyId || maxId(dailyTests);
+  homeworkRecords = data.homeworkRecords || [];
+  nextHomeworkId = data.nextHomeworkId || maxId(homeworkRecords);
+  mistakeRecords = data.mistakeRecords || [];
+  nextMistakeId = data.nextMistakeId || maxId(mistakeRecords);
+  teacherComments = data.teacherComments || {};
+  schoolInfos = data.schoolInfos || [];
+  nextSchoolInfoId = data.nextSchoolInfoId || maxId(schoolInfos);
+  examAnalysis = data.examAnalysis || [];
+  nextExamId = data.nextExamId || maxId(examAnalysis);
+
+  if(data.academyName){
+    const brandEl = document.querySelector('.brand-title');
+    if(brandEl) brandEl.textContent = data.academyName;
+  }
+}
+
+function exportBackup(){
+  const backup = collectAllData();
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `아임수학학원_백업_${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  document.getElementById('backupStatus').textContent = `✅ 방금 백업 파일을 저장했어요. (${now.toLocaleString('ko-KR')})`;
+}
+
+function handleRestoreFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    let data;
+    try {
+      data = JSON.parse(evt.target.result);
+    } catch(err){
+      alert('올바른 백업 파일이 아니에요. .json 백업 파일을 선택해주세요.');
+      e.target.value = '';
+      return;
+    }
+
+    if(!data || !Array.isArray(data.students)){
+      alert('백업 파일 형식이 올바르지 않아요.');
+      e.target.value = '';
+      return;
+    }
+
+    if(!confirm('현재 화면에 있는 모든 데이터가 이 백업 파일의 내용으로 교체됩니다. 계속할까요?')){
+      e.target.value = '';
+      return;
+    }
+
+    applyAllData(data);
+    renderStudents();
+    renderDashboard();
+
+    document.getElementById('backupStatus').textContent =
+      `✅ 백업 파일을 불러왔어요. (백업 시각: ${data.savedAt || data.exportedAt ? new Date(data.savedAt || data.exportedAt).toLocaleString('ko-KR') : '알 수 없음'})`;
+
+    e.target.value = '';
+    scheduleSync();
+  };
+  reader.readAsText(file);
+}
+
+function resetAllData(){
+  if(!confirm('정말 모든 데이터를 지우시겠습니까? 이 작업은 되돌릴 수 없어요.')) return;
+  if(!confirm('한 번 더 확인할게요. 백업 파일 없이 지우면 복구할 수 없어요. 정말 초기화할까요?')) return;
+
+  students = []; nextStudentId = 1;
+  progressLogs = []; nextProgressId = 1;
+  attendanceRecords = []; nextAttendanceId = 1;
+  dailyTests = []; nextDailyId = 1;
+  homeworkRecords = []; nextHomeworkId = 1;
+  mistakeRecords = []; nextMistakeId = 1;
+  teacherComments = {};
+  schoolInfos = []; nextSchoolInfoId = 1;
+  examAnalysis = []; nextExamId = 1;
+
+  renderStudents();
+  renderDashboard();
+
+  document.getElementById('backupStatus').textContent = '🗑️ 전체 데이터를 초기화했어요.';
+  scheduleSync();
+}
+
+/* =========================================================
+   구글시트 연동
+========================================================= */
+let sheetSyncUrl = '';
+try { sheetSyncUrl = localStorage.getItem('academySheetSyncUrl') || ''; } catch(err) { sheetSyncUrl = ''; }
+let syncTimer = null;
+
+function setSyncStatus(text){
+  const el = document.getElementById('sheetSyncStatus');
+  if(el) el.textContent = text;
+}
+
+function saveSheetSyncUrl(){
+  const val = document.getElementById('sheetSyncUrlInput').value.trim();
+  sheetSyncUrl = val;
+  try { localStorage.setItem('academySheetSyncUrl', val); } catch(err) {}
+
+  if(!val){
+    setSyncStatus('구글시트 연동이 꺼져 있어요.');
+    return;
+  }
+  setSyncStatus('🔄 연결 확인 중...');
+  syncFromSheet();
+}
+
+function disconnectSheetSync(){
+  sheetSyncUrl = '';
+  try { localStorage.removeItem('academySheetSyncUrl'); } catch(err) {}
+  document.getElementById('sheetSyncUrlInput').value = '';
+  setSyncStatus('구글시트 연동이 꺼져 있어요.');
+}
+
+async function syncFromSheet(){
+  if(!sheetSyncUrl) return;
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const data = await res.json();
+    if(data && Array.isArray(data.students)){
+      applyAllData(data);
+      renderStudents();
+      renderDashboard();
+      setSyncStatus(`✅ 구글시트에서 불러왔어요. (${new Date().toLocaleString('ko-KR')})`);
+    } else {
+      setSyncStatus('📄 시트가 비어있어요. 지금 데이터를 첫 저장할게요.');
+      scheduleSync();
+    }
+  } catch(err){
+    setSyncStatus('❌ 구글시트에 연결하지 못했어요. URL을 다시 확인해주세요.');
+  }
+}
+
+function scheduleSync(){
+  if(!sheetSyncUrl) return;
+  clearTimeout(syncTimer);
+  setSyncStatus('⏳ 저장 대기 중...');
+  syncTimer = setTimeout(syncToSheet, 900);
+}
+
+async function syncToSheet(){
+  if(!sheetSyncUrl) return;
+  try {
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(collectAllData())
+    });
+    setSyncStatus(`✅ 방금 구글시트에 저장했어요. (${new Date().toLocaleString('ko-KR')})`);
+  } catch(err){
+    setSyncStatus('❌ 저장에 실패했어요. 인터넷 연결과 URL을 확인해주세요.');
+  }
+}
+
+/* =========================================================
+   초기화
+========================================================= */
+function init(){
+  const now = new Date();
+  document.getElementById('todayLabel').textContent =
+    now.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+  document.getElementById('heroDateLabel').textContent =
+    now.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+  const iso = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  document.getElementById('p-date').value = iso;
+  document.getElementById('att-date').value = iso;
+  document.getElementById('dt-date').value = iso;
+  document.getElementById('hw-date').value = iso;
+  document.getElementById('m-date').value = iso;
+  document.getElementById('ea-date').value = iso;
+  attCalYear = now.getFullYear();
+  attCalMonth = now.getMonth();
+  setDailyMode('count');
+  renderStudents();
+  refreshProgressStudentSelects();
+  renderProgressList();
+  refreshAttendanceStudentSelect();
+  renderAttendanceRoster();
+  renderAttendanceCalendar();
+  renderMakeupList();
+  refreshDailyStudentSelects();
+  renderDailyList();
+  renderScoreChart();
+  refreshHomeworkStudentSelects();
+  renderHomeworkList();
+  refreshMistakeStudentSelects();
+  renderMistakeList();
+  renderMistakeChart();
+  refreshReportStudentSelect();
+  renderReport();
+  renderDashboard();
+  refreshMiddleStudentSelects();
+  renderSchoolInfoList();
+  renderExamList();
+  renderExamWeakSummary();
+
+  if(sheetSyncUrl){
+    document.getElementById('sheetSyncUrlInput').value = sheetSyncUrl;
+    setSyncStatus('🔄 구글시트에서 불러오는 중...');
+    syncFromSheet();
+  }
+}
+init();
+</script>
+</body>
+</html>
