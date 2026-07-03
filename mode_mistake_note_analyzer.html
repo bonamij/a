@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MODE 오답노트 · 취약개념 분석기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Hi+Melody&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#E2631B;
+    --brand-dark:#B84E14;
+    --brand-soft:rgba(226,99,27,0.12);
+    --ribbon:#5B3A29;
+    --ribbon-soft:rgba(91,58,41,0.12);
+    --cream:#F5F2EB;
+    --cream-alt:#ECE6D8;
+    --ink:#2A2018;
+    --ink-soft:#6E5D4C;
+    --line:#E1D8C7;
+    --card-bg:#FFFFFF;
+    --danger:#C23B2B;
+    --danger-soft:rgba(194,59,43,0.12);
+    --shadow:0 2px 10px rgba(42,32,24,0.08);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--cream); color:var(--ink); font-family:'Gaegu','Hi Melody',cursive,sans-serif; min-height:100vh;}
+  .mono{font-family:'Gaegu','Hi Melody',cursive,sans-serif;}
+  h1,h2,h3{font-family:'Hi Melody','Gaegu',cursive,sans-serif; margin:0; font-weight:400;}
+  button{font-family:inherit; cursor:pointer;}
+  input,select,button,textarea{font-size:15px; font-family:inherit;}
+  :focus-visible{outline:3px solid var(--brand); outline-offset:2px;}
+
+  /* ---------- 레이아웃 ---------- */
+  .app{display:flex; min-height:100vh;}
+  .sidebar{
+    width:224px; flex-shrink:0;
+    background:linear-gradient(180deg,var(--brand),var(--brand-dark));
+    color:#FFF7EF; padding:28px 0; display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+  }
+  .brand{padding:0 22px 22px 22px; border-bottom:1px solid rgba(255,247,239,0.22); margin-bottom:18px;}
+  .brand-eyebrow{font-size:11px; letter-spacing:2px; color:rgba(255,247,239,0.75); text-transform:uppercase;}
+  .brand-title{
+    font-size:20px; font-weight:900; margin-top:6px; line-height:1.3; outline:none;
+    border-bottom:1px dashed transparent; padding-bottom:2px;
+  }
+  .brand-title:hover, .brand-title:focus{border-bottom-color:rgba(255,247,239,0.5);}
+  .brand-title:empty:before{content:attr(data-placeholder); color:rgba(255,247,239,0.6);}
+
+  .nav{display:flex; flex-direction:column; gap:2px; padding:0 12px;}
+  .nav-btn{
+    display:flex; align-items:center; gap:10px; background:transparent; border:none;
+    color:rgba(255,247,239,0.78); text-align:left; padding:12px 12px; border-radius:8px;
+    font-size:14px; font-weight:500; transition:background .15s, color .15s;
+  }
+  .nav-btn .dot{width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.5;}
+  .nav-btn:hover{background:rgba(255,247,239,0.12); color:#FFF7EF;}
+  .nav-btn.active{background:rgba(255,247,239,0.2); color:#FFF7EF; font-weight:700;}
+  .nav-btn.active .dot{background:var(--ribbon); opacity:1; box-shadow:0 0 0 3px rgba(91,58,41,0.35);}
+
+  .sidebar-foot{margin-top:auto; padding:16px 22px 4px; font-size:11px; color:rgba(255,247,239,0.65); line-height:1.6;}
+
+  .main{flex:1; min-width:0; padding:26px 34px 60px;}
+  .topbar{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:26px; flex-wrap:wrap; gap:8px;}
+  .topbar h2{font-size:24px; font-weight:900;}
+  .topbar .today{font-size:13px; color:var(--ink-soft);}
+
+  .panel{display:none;}
+  .panel.active{display:block; animation:fadein .25s ease;}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  /* ---------- 카드 ---------- */
+  .card{background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px; margin-bottom:22px;}
+  .card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;}
+  .card-head h3{font-size:16.5px; font-weight:700;}
+  .card-head .sub{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+
+  .grid-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:22px;}
+  .stat{background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow);}
+  .stat .label{font-size:12px; color:var(--ink-soft);}
+  .stat .value{font-size:24px; font-weight:700; margin-top:6px; color:var(--brand);}
+  .stat .value.small{font-size:16px;}
+
+  form.inline-form{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:12.5px; color:var(--ink-soft); font-weight:500;}
+  .field input, .field select, .field textarea{
+    border:1px solid var(--line); border-radius:7px; padding:9px 11px; background:var(--cream); color:var(--ink); min-width:120px;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{background:#fff;}
+  .btn{border:none; border-radius:7px; padding:10px 18px; font-weight:700; font-size:14px; background:var(--brand); color:#fff; transition:transform .1s, background .15s;}
+  .btn:hover{background:var(--brand-dark);}
+  .btn:active{transform:scale(.97);}
+  .btn.ribbon{background:var(--ribbon);}
+  .btn.ribbon:hover{background:#452c20;}
+  .btn.ghost{background:transparent; border:1px solid var(--line); color:var(--ink-soft);}
+  .btn.ghost:hover{border-color:var(--ink-soft); color:var(--ink);}
+  .btn.danger{background:var(--danger);}
+  .btn.danger:hover{background:#9c2e21;}
+  .btn.small{padding:6px 12px; font-size:12.5px; border-radius:6px;}
+  .btn.danger-text{background:transparent; color:var(--danger); border:1px solid transparent;}
+  .btn.danger-text:hover{background:var(--danger-soft);}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+  .btn:disabled:hover{background:var(--brand);}
+
+  table{width:100%; border-collapse:collapse; font-size:13.6px;}
+  thead th{text-align:left; font-size:11.5px; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-soft); border-bottom:2px solid var(--line); padding:8px 10px; font-weight:700;}
+  tbody td{padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  tbody tr:hover{background:var(--cream-alt);}
+  .empty-row td{text-align:center; padding:34px 10px; color:var(--ink-soft);}
+  .empty-row .empty-icon{font-size:26px; display:block; margin-bottom:8px;}
+
+  .badge{display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700;}
+  .badge.gray{background:rgba(110,93,76,0.1); color:var(--ink-soft);}
+  .warn-badge{
+    display:inline-flex; align-items:center; gap:4px; background:var(--danger-soft); color:var(--danger);
+    border:1px solid rgba(194,59,43,0.35); padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:800;
+    margin-left:8px; letter-spacing:.2px;
+  }
+
+  .filter-bar{display:flex; gap:10px; align-items:flex-end; margin-bottom:14px; flex-wrap:wrap;}
+
+  /* ---------- 취약 단원 순위 목록 ---------- */
+  .rank-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px;}
+  .rank-item{display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--cream-alt); border-radius:8px;}
+  .rank-num{
+    width:26px; height:26px; border-radius:50%; background:var(--brand); color:#fff; font-family:'Space Mono',monospace;
+    font-weight:700; font-size:12.5px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .rank-item:nth-child(1) .rank-num{background:var(--brand);}
+  .rank-item:nth-child(2) .rank-num{background:var(--ribbon);}
+  .rank-item:nth-child(3) .rank-num{background:var(--ink-soft);}
+  .rank-name{font-weight:700; flex:1;}
+  .rank-count{font-family:'Space Mono',monospace; font-size:13px; color:var(--ink-soft);}
+  .bar-track{background:var(--line); border-radius:6px; height:8px; margin-top:6px; overflow:hidden;}
+  .bar-fill{height:100%; background:var(--brand); border-radius:6px;}
+
+  .chip-row{display:flex; gap:10px; flex-wrap:wrap;}
+  .chip{border:1px solid var(--line); border-radius:20px; padding:6px 14px; font-size:12.5px; display:flex; gap:6px; align-items:center;}
+  .chip .n{font-family:'Space Mono',monospace; font-weight:700;}
+
+  .two-col{display:grid; grid-template-columns:1.2fr 1fr; gap:20px;}
+  @media (max-width:980px){ .two-col{grid-template-columns:1fr;} }
+
+  .recent-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px;}
+  .recent-list li{display:flex; justify-content:space-between; align-items:center; padding:9px 12px; background:var(--cream-alt); border-radius:8px; font-size:13px; gap:10px;}
+
+  /* ---------- 진단서 카드 ---------- */
+  .diagnosis-card{
+    border:1.5px solid var(--brand); border-radius:12px; padding:24px; background:linear-gradient(180deg,#fff,#FFF9F4);
+    position:relative; overflow:hidden;
+  }
+  .diagnosis-card:before{
+    content:''; position:absolute; top:-40px; right:-40px; width:140px; height:140px; border-radius:50%;
+    background:var(--brand-soft);
+  }
+  .diagnosis-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; position:relative;}
+  .diagnosis-head h3{font-size:19px;}
+  .diagnosis-head .stamp{
+    border:2px solid var(--ribbon); color:var(--ribbon); border-radius:8px; padding:4px 12px; font-size:11px;
+    font-weight:800; letter-spacing:1px; transform:rotate(-4deg);
+  }
+  .diagnosis-sentence{
+    background:#fff; border:1px dashed var(--brand); border-radius:8px; padding:18px 20px; font-size:15.5px;
+    line-height:1.75; margin-bottom:16px; position:relative; font-weight:500;
+  }
+  .diagnosis-sentence strong{color:var(--brand);}
+  .diagnosis-meta{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:18px; position:relative;}
+  .diagnosis-meta .m{background:var(--cream-alt); border-radius:8px; padding:10px 12px;}
+  .diagnosis-meta .m .label{font-size:11px; color:var(--ink-soft);}
+  .diagnosis-meta .m .val{font-weight:700; margin-top:4px; font-size:14px;}
+  .diagnosis-actions{display:flex; gap:10px; position:relative;}
+
+  /* ---------- 백업/복원 ---------- */
+  .backup-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  @media (max-width:820px){ .backup-grid{grid-template-columns:1fr;} }
+  .backup-box{border:1px dashed var(--line); border-radius:10px; padding:20px; text-align:center; background:var(--cream-alt);}
+  .backup-box .icon{font-size:30px; margin-bottom:8px;}
+  .backup-box p{font-size:12.5px; color:var(--ink-soft); margin:8px 0 14px; line-height:1.6;}
+  .file-label{display:inline-block;}
+  .file-label input[type=file]{display:none;}
+
+  /* ---------- 모바일 ---------- */
+  @media (max-width:760px){
+    .app{flex-direction:column;}
+    .sidebar{width:100%; height:auto; position:relative; padding:16px 0;}
+    .brand{padding:0 16px 14px;}
+    .nav{flex-direction:row; overflow-x:auto; padding:0 12px 4px;}
+    .nav-btn{flex-shrink:0;}
+    .sidebar-foot{display:none;}
+    .main{padding:20px 16px 50px;}
+    form.inline-form{flex-direction:column; align-items:stretch;}
+    .field input, .field select, .field textarea{min-width:0; width:100%;}
+    table{font-size:12.3px;}
+  }
+
+  /* ---------- 인쇄 ---------- */
+  @media print{
+    body *{visibility:hidden;}
+    #diagnosisCard, #diagnosisCard *{visibility:visible;}
+    #diagnosisCard{position:absolute; top:0; left:0; width:100%; border:none; box-shadow:none;}
+    #diagnosisCard:before{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ===== 사이드바 ===== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-eyebrow">MODE 오답노트 · 취약개념 분석기</div>
+      <h1 class="brand-title" contenteditable="true" data-placeholder="학원명을 입력하세요">아임수학학원</h1>
+    </div>
+    <nav class="nav" id="navButtons">
+      <button class="nav-btn active" data-tab="dashboard" onclick="switchTab('dashboard')"><span class="dot"></span> 대시보드</button>
+      <button class="nav-btn" data-tab="records" onclick="switchTab('records')"><span class="dot"></span> 오답 기록</button>
+      <button class="nav-btn" data-tab="units" onclick="switchTab('units')"><span class="dot"></span> 취약 단원 분석</button>
+      <button class="nav-btn" data-tab="report" onclick="switchTab('report')"><span class="dot"></span> 학생 리포트</button>
+      <button class="nav-btn" data-tab="backup" onclick="switchTab('backup')"><span class="dot"></span> 데이터 관리</button>
+    </nav>
+    <div class="sidebar-foot">
+      데이터는 브라우저 메모리에만 저장되며 새로고침 시 초기화됩니다. <strong>데이터 관리</strong> 탭에서 CSV로 내보내 안전하게 백업하세요.
+    </div>
+  </aside>
+
+  <!-- ===== 메인 ===== -->
+  <main class="main">
+    <div class="topbar">
+      <h2 id="pageTitle">대시보드</h2>
+      <div class="today mono" id="todayLabel"></div>
+    </div>
+
+    <!-- ---------- 대시보드 ---------- -->
+    <section class="panel active" id="panel-dashboard">
+      <div class="grid-stats">
+        <div class="stat"><div class="label">전체 오답 건수</div><div class="value mono" id="statTotalMistakes">0</div></div>
+        <div class="stat"><div class="label">등록 학생 수</div><div class="value mono" id="statTotalStudents">0</div></div>
+        <div class="stat"><div class="label">최다 오답 단원</div><div class="value small" id="statTopUnit">-</div></div>
+        <div class="stat"><div class="label">최다 오답 원인</div><div class="value small" id="statTopCause">-</div></div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head">
+            <div><h3>취약 단원 TOP 3 (전체)</h3><div class="sub">오답 3회 이상 단원에는 경고 배지가 표시됩니다</div></div>
+          </div>
+          <ul class="rank-list" id="dashboardTop3"></ul>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h3>최근 오답 기록</h3><div class="sub">가장 최근 등록 순</div></div></div>
+          <ul class="recent-list" id="recentMistakesList"></ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>오답 원인 분포</h3><div class="sub">전체 기록 기준</div></div></div>
+        <div class="chip-row" id="causeChipsDashboard"></div>
+      </div>
+    </section>
+
+    <!-- ---------- 오답 기록 ---------- -->
+    <section class="panel" id="panel-records">
+      <div class="card">
+        <div class="card-head"><div><h3>오답 등록</h3><div class="sub">학생명, 단원명, 오답 원인, 날짜를 입력하세요</div></div></div>
+        <form class="inline-form" id="mistakeForm" onsubmit="addMistake(event)">
+          <div class="field">
+            <label for="m-student">학생명</label>
+            <input type="text" id="m-student" list="studentNameList" placeholder="예: 김민준" required>
+            <datalist id="studentNameList"></datalist>
+          </div>
+          <div class="field">
+            <label for="m-grade">학년</label>
+            <select id="m-grade">
+              <option value="">선택 안함</option>
+              <optgroup label="초등학교"><option>초1</option><option>초2</option><option>초3</option><option>초4</option><option>초5</option><option>초6</option></optgroup>
+              <optgroup label="중학교"><option>중1</option><option>중2</option><option>중3</option></optgroup>
+              <optgroup label="고등학교"><option>고1</option><option>고2</option><option>고3</option></optgroup>
+            </select>
+          </div>
+          <div class="field">
+            <label for="m-unit">단원명</label>
+            <input type="text" id="m-unit" placeholder="예: 이차함수" required>
+          </div>
+          <div class="field">
+            <label for="m-cause">오답 원인</label>
+            <select id="m-cause" required>
+              <option value="">선택</option>
+              <option>개념 부족</option><option>조건 오독</option><option>계산 실수</option><option>시간 부족</option><option>기타</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="m-date">날짜</label>
+            <input type="date" id="m-date" required>
+          </div>
+          <div class="field">
+            <label for="m-memo">메모 (선택)</label>
+            <input type="text" id="m-memo" placeholder="예: 3번 문항">
+          </div>
+          <button type="submit" class="btn">오답 등록</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>전체 오답 목록</h3><div class="sub" id="recordCountSub">등록된 오답 0건</div></div></div>
+        <div class="filter-bar">
+          <div class="field">
+            <label for="filterStudent">학생 필터</label>
+            <select id="filterStudent" onchange="renderRecordsTable()"><option value="all">전체 학생</option></select>
+          </div>
+          <div class="field">
+            <label for="filterCause">원인 필터</label>
+            <select id="filterCause" onchange="renderRecordsTable()">
+              <option value="all">전체 원인</option>
+              <option>개념 부족</option><option>조건 오독</option><option>계산 실수</option><option>시간 부족</option><option>기타</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="filterUnit">단원 검색</label>
+            <input type="text" id="filterUnit" placeholder="단원명 검색" oninput="renderRecordsTable()">
+          </div>
+        </div>
+        <table>
+          <thead><tr><th style="width:12%">날짜</th><th style="width:14%">학생</th><th style="width:9%">학년</th><th style="width:18%">단원</th><th style="width:13%">원인</th><th>메모</th><th style="width:110px">관리</th></tr></thead>
+          <tbody id="recordsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---------- 취약 단원 분석 ---------- -->
+    <section class="panel" id="panel-units">
+      <div class="card">
+        <div class="card-head"><div><h3>취약 단원 TOP 3</h3><div class="sub">전체 학생 기준 · 오답 3회 이상 시 경고 배지 표시</div></div></div>
+        <ul class="rank-list" id="unitsTop3"></ul>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><div><h3>단원별 오답 순위 (전체)</h3></div></div>
+          <div id="unitFullList"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>원인별 오답 순위 (전체)</h3></div></div>
+          <div id="causeFullList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 학생 리포트 ---------- -->
+    <section class="panel" id="panel-report">
+      <div class="card">
+        <div class="card-head">
+          <div><h3>학생 선택</h3><div class="sub">학생을 선택하면 개인별 취약 분석과 진단서를 생성할 수 있습니다</div></div>
+          <div class="field">
+            <label for="reportStudentSelect">학생</label>
+            <select id="reportStudentSelect" onchange="onReportStudentChange(this.value)"><option value="">학생을 선택하세요</option></select>
+          </div>
+        </div>
+        <div id="reportEmptyState" style="text-align:center; padding:30px 10px; color:var(--ink-soft);">
+          <span style="font-size:26px; display:block; margin-bottom:8px;">🧑‍🎓</span>
+          위에서 학생을 선택하면 취약 단원과 진단서를 확인할 수 있습니다.
+        </div>
+        <div id="reportContent" style="display:none;">
+          <div class="grid-stats" style="margin-top:6px;">
+            <div class="stat"><div class="label">총 오답 건수</div><div class="value mono" id="reportTotal">0</div></div>
+            <div class="stat"><div class="label">가장 취약한 단원</div><div class="value small" id="reportTopUnit">-</div></div>
+            <div class="stat"><div class="label">가장 높은 오답 원인</div><div class="value small" id="reportTopCause">-</div></div>
+            <div class="stat"><div class="label">최근 오답일</div><div class="value small" id="reportLastDate">-</div></div>
+          </div>
+          <div class="two-col">
+            <div>
+              <h3 style="font-size:14px; margin-bottom:10px;">취약 단원 TOP 3</h3>
+              <ul class="rank-list" id="reportTop3"></ul>
+            </div>
+            <div>
+              <h3 style="font-size:14px; margin-bottom:10px;">오답 원인 분포</h3>
+              <div class="chip-row" id="reportCauseChips"></div>
+            </div>
+          </div>
+          <div style="margin-top:20px;">
+            <button class="btn ribbon" id="genDiagnosisBtn" onclick="generateDiagnosis()">📋 상담용 진단서 출력</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="diagnosisWrap" style="display:none;">
+        <div class="diagnosis-card" id="diagnosisCard">
+          <div class="diagnosis-head">
+            <div>
+              <div style="font-size:11px; color:var(--ink-soft); letter-spacing:1px; text-transform:uppercase;">상담용 진단서</div>
+              <h3 id="diagnosisStudentName">-</h3>
+            </div>
+            <div class="stamp">CONFIDENTIAL</div>
+          </div>
+          <div class="diagnosis-sentence" id="diagnosisSentence"></div>
+          <div class="diagnosis-meta" id="diagnosisMeta"></div>
+          <div class="diagnosis-actions">
+            <button class="btn small" onclick="copyDiagnosis()">복사하기</button>
+            <button class="btn small ghost" onclick="window.print()">인쇄하기</button>
+            <button class="btn small ghost" onclick="closeDiagnosis()">닫기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 데이터 관리 (백업/복원) ---------- -->
+    <section class="panel" id="panel-backup">
+      <div class="card">
+        <div class="card-head"><div><h3>데이터 백업 및 복원</h3><div class="sub" id="backupCountSub">현재 저장된 오답 데이터 0건</div></div></div>
+        <div class="backup-grid">
+          <div class="backup-box">
+            <div class="icon">⬇️</div>
+            <h3 style="font-size:15px;">엑셀(CSV)로 내보내기</h3>
+            <p>현재까지 누적된 모든 오답 데이터를 CSV 파일로 저장합니다.<br>엑셀에서 바로 열어 확인할 수 있습니다.</p>
+            <button class="btn" onclick="exportCSV()">CSV로 데이터 내보내기</button>
+          </div>
+          <div class="backup-box">
+            <div class="icon">⬆️</div>
+            <h3 style="font-size:15px;">CSV 파일 불러오기</h3>
+            <p>내보내기로 저장했던 CSV 파일을 불러와 데이터를 복원합니다.<br>기존 데이터에 추가되는 방식입니다.</p>
+            <label class="file-label btn ribbon">
+              CSV 파일 불러오기
+              <input type="file" accept=".csv" onchange="handleCSVImport(event)">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h3>전체 데이터 초기화</h3><div class="sub">모든 오답 기록을 삭제합니다. 초기화 전 반드시 CSV로 백업하세요.</div></div></div>
+        <button class="btn danger" onclick="clearAllData()">전체 데이터 초기화</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   상태 (데이터는 메모리에만 저장되며 새로고침 시 초기화됩니다.
+   CSV 내보내기/불러오기가 실질적인 백업·복원 수단입니다.)
+========================================================= */
+let mistakes = []; // {id, student, grade, unit, cause, date, memo}
+let nextMistakeId = 1;
+let editingMistakeId = null;
+let selectedReportStudent = '';
+let currentDiagnosisText = '';
+
+const CAUSES = ['개념 부족','조건 오독','계산 실수','시간 부족','기타'];
+const CAUSE_COLOR = {
+  '개념 부족':'#E2631B',
+  '조건 오독':'#2E5D86',
+  '계산 실수':'#C9902E',
+  '시간 부족':'#5B3A29',
+  '기타':'#6E5D4C'
+};
+const WEAK_THRESHOLD = 3;
+
+/* =========================================================
+   유틸리티
+========================================================= */
+function todayISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatDateLabel(iso){ const [y,m,d] = iso.split('-'); return `${y}.${m}.${d}`; }
+function hexToRgba(hex, alpha){
+  const bigint = parseInt(hex.slice(1),16);
+  const r=(bigint>>16)&255, g=(bigint>>8)&255, b=bigint&255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function causeBadge(cause){
+  const color = CAUSE_COLOR[cause] || '#6E5D4C';
+  return `<span class="badge" style="background:${hexToRgba(color,0.13)}; color:${color};">${escapeHtml(cause)}</span>`;
+}
+function hasBatchim(char){
+  const code = char.charCodeAt(0) - 0xAC00;
+  if(code < 0 || code > 11171) return false;
+  return (code % 28) !== 0;
+}
+function josaEulReul(word){
+  const last = word[word.length-1];
+  return hasBatchim(last) ? '을' : '를';
+}
+function uniqueStudents(){ return [...new Set(mistakes.map(m => m.student))].sort((a,b)=>a.localeCompare(b,'ko')); }
+
+/* =========================================================
+   탭 전환
+========================================================= */
+const TAB_TITLES = { dashboard:'대시보드', records:'오답 기록', units:'취약 단원 분석', report:'학생 리포트', backup:'데이터 관리' };
+
+function switchTab(tab){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('pageTitle').textContent = TAB_TITLES[tab];
+  renderAll();
+}
+
+function renderAll(){
+  refreshStudentDependentSelects();
+  renderDashboard();
+  renderRecordsTable();
+  renderUnitsPanel();
+  renderReportPanel();
+  renderBackupTab();
+}
+
+/* =========================================================
+   통계 계산 헬퍼
+========================================================= */
+function computeUnitCounts(filterStudent){
+  const list = filterStudent ? mistakes.filter(m => m.student === filterStudent) : mistakes;
+  const map = {};
+  list.forEach(m => { map[m.unit] = (map[m.unit] || 0) + 1; });
+  return Object.entries(map).map(([unit,count]) => ({unit,count})).sort((a,b) => b.count - a.count);
+}
+function computeCauseCounts(filterStudent){
+  const list = filterStudent ? mistakes.filter(m => m.student === filterStudent) : mistakes;
+  const map = {};
+  list.forEach(m => { map[m.cause] = (map[m.cause] || 0) + 1; });
+  return Object.entries(map).map(([cause,count]) => ({cause,count})).sort((a,b) => b.count - a.count);
+}
+function renderRankList(container, stats, maxCount){
+  if(stats.length === 0){
+    container.innerHTML = `<li style="text-align:center; color:var(--ink-soft); padding:20px;">데이터가 없습니다.</li>`;
+    return;
+  }
+  container.innerHTML = stats.map((item, idx) => {
+    const warn = item.count >= WEAK_THRESHOLD ? `<span class="warn-badge">⚠ 개념 재학습 필요</span>` : '';
+    const pct = maxCount ? Math.round((item.count / maxCount) * 100) : 0;
+    return `
+      <li class="rank-item">
+        <div class="rank-num">${idx+1}</div>
+        <div style="flex:1;">
+          <div style="display:flex; align-items:center;">
+            <span class="rank-name">${escapeHtml(item.unit)}</span>${warn}
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;"></div></div>
+        </div>
+        <div class="rank-count">${item.count}회</div>
+      </li>`;
+  }).join('');
+}
+function renderFullBarList(container, stats, colorFn){
+  if(stats.length === 0){
+    container.innerHTML = `<div style="text-align:center; color:var(--ink-soft); padding:20px;">데이터가 없습니다.</div>`;
+    return;
+  }
+  const max = stats[0].count;
+  container.innerHTML = `<ul class="rank-list">` + stats.map((item,idx) => {
+    const key = item.unit ?? item.cause;
+    const color = colorFn ? colorFn(key) : '#E2631B';
+    const pct = Math.round((item.count / max) * 100);
+    const warn = item.count >= WEAK_THRESHOLD ? `<span class="warn-badge">⚠ 개념 재학습 필요</span>` : '';
+    return `
+      <li class="rank-item">
+        <div class="rank-num" style="background:${color};">${idx+1}</div>
+        <div style="flex:1;">
+          <div style="display:flex; align-items:center;"><span class="rank-name">${escapeHtml(key)}</span>${warn}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${color};"></div></div>
+        </div>
+        <div class="rank-count">${item.count}회</div>
+      </li>`;
+  }).join('') + `</ul>`;
+}
+
+/* =========================================================
+   학생 셀렉트 갱신
+========================================================= */
+function refreshStudentDependentSelects(){
+  const names = uniqueStudents();
+
+  const datalist = document.getElementById('studentNameList');
+  datalist.innerHTML = names.map(n => `<option value="${escapeHtml(n)}">`).join('');
+
+  const filterSel = document.getElementById('filterStudent');
+  const prevFilter = filterSel.value;
+  filterSel.innerHTML = `<option value="all">전체 학생</option>` + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  filterSel.value = names.includes(prevFilter) ? prevFilter : 'all';
+
+  const reportSel = document.getElementById('reportStudentSelect');
+  const prevReport = reportSel.value;
+  reportSel.innerHTML = `<option value="">학생을 선택하세요</option>` + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  if(names.includes(prevReport)){
+    reportSel.value = prevReport;
+    selectedReportStudent = prevReport;
+  } else {
+    reportSel.value = '';
+    selectedReportStudent = '';
+  }
+}
+
+/* =========================================================
+   오답 기록 CRUD
+========================================================= */
+function addMistake(e){
+  e.preventDefault();
+  const student = document.getElementById('m-student').value.trim();
+  const grade = document.getElementById('m-grade').value;
+  const unit = document.getElementById('m-unit').value.trim();
+  const cause = document.getElementById('m-cause').value;
+  const date = document.getElementById('m-date').value || todayISO();
+  const memo = document.getElementById('m-memo').value.trim();
+
+  if(!student || !unit || !cause){
+    alert('학생명, 단원명, 오답 원인은 필수 입력 항목입니다.');
+    return;
+  }
+
+  mistakes.push({ id: nextMistakeId++, student, grade, unit, cause, date, memo });
+
+  document.getElementById('m-unit').value = '';
+  document.getElementById('m-cause').value = '';
+  document.getElementById('m-memo').value = '';
+  document.getElementById('m-student').focus();
+
+  renderAll();
+}
+
+function startEditMistake(id){ editingMistakeId = id; renderRecordsTable(); }
+function cancelEditMistake(){ editingMistakeId = null; renderRecordsTable(); }
+function saveEditMistake(id){
+  const student = document.getElementById(`e-student-${id}`).value.trim();
+  const unit = document.getElementById(`e-unit-${id}`).value.trim();
+  const cause = document.getElementById(`e-cause-${id}`).value;
+  const date = document.getElementById(`e-date-${id}`).value;
+  const memo = document.getElementById(`e-memo-${id}`).value.trim();
+  if(!student || !unit || !cause || !date){
+    alert('학생명, 단원명, 오답 원인, 날짜는 필수 입력 항목입니다.');
+    return;
+  }
+  const m = mistakes.find(x => x.id === id);
+  Object.assign(m, { student, unit, cause, date, memo });
+  editingMistakeId = null;
+  renderAll();
+}
+function deleteMistake(id){
+  const m = mistakes.find(x => x.id === id);
+  if(!m) return;
+  if(!confirm(`'${m.student}' 학생의 '${m.unit}' 오답 기록을 삭제하시겠습니까?`)) return;
+  mistakes = mistakes.filter(x => x.id !== id);
+  renderAll();
+}
+
+function renderRecordsTable(){
+  const tbody = document.getElementById('recordsTableBody');
+  const filterStudent = document.getElementById('filterStudent').value;
+  const filterCause = document.getElementById('filterCause').value;
+  const filterUnit = document.getElementById('filterUnit').value.trim().toLowerCase();
+
+  let list = mistakes.slice();
+  if(filterStudent !== 'all') list = list.filter(m => m.student === filterStudent);
+  if(filterCause !== 'all') list = list.filter(m => m.cause === filterCause);
+  if(filterUnit) list = list.filter(m => m.unit.toLowerCase().includes(filterUnit));
+  list.sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+  document.getElementById('recordCountSub').textContent = `등록된 오답 ${mistakes.length}건 (표시 중 ${list.length}건)`;
+
+  if(list.length === 0){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="7"><span class="empty-icon">📝</span>표시할 오답 기록이 없습니다.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(m => {
+    if(editingMistakeId === m.id){
+      return `
+        <tr>
+          <td><input type="date" id="e-date-${m.id}" value="${m.date}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;"></td>
+          <td><input type="text" id="e-student-${m.id}" value="${escapeHtml(m.student)}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;"></td>
+          <td><span class="badge gray">${escapeHtml(m.grade) || '-'}</span></td>
+          <td><input type="text" id="e-unit-${m.id}" value="${escapeHtml(m.unit)}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;"></td>
+          <td>
+            <select id="e-cause-${m.id}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">
+              ${CAUSES.map(c => `<option ${c===m.cause?'selected':''}>${c}</option>`).join('')}
+            </select>
+          </td>
+          <td><input type="text" id="e-memo-${m.id}" value="${escapeHtml(m.memo)}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;"></td>
+          <td>
+            <button class="btn small" onclick="saveEditMistake(${m.id})">저장</button>
+            <button class="btn small ghost" onclick="cancelEditMistake()">취소</button>
+          </td>
+        </tr>`;
+    }
+    return `
+      <tr>
+        <td class="mono">${formatDateLabel(m.date)}</td>
+        <td><strong>${escapeHtml(m.student)}</strong></td>
+        <td><span class="badge gray">${escapeHtml(m.grade) || '-'}</span></td>
+        <td>${escapeHtml(m.unit)}</td>
+        <td>${causeBadge(m.cause)}</td>
+        <td style="color:var(--ink-soft);">${escapeHtml(m.memo) || '-'}</td>
+        <td>
+          <button class="btn small ghost" onclick="startEditMistake(${m.id})">수정</button>
+          <button class="btn small danger-text" onclick="deleteMistake(${m.id})">삭제</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+/* =========================================================
+   대시보드
+========================================================= */
+function renderDashboard(){
+  document.getElementById('statTotalMistakes').textContent = mistakes.length;
+  document.getElementById('statTotalStudents').textContent = uniqueStudents().length;
+
+  const unitStats = computeUnitCounts(null);
+  const causeStats = computeCauseCounts(null);
+
+  document.getElementById('statTopUnit').textContent = unitStats.length ? unitStats[0].unit : '-';
+  document.getElementById('statTopCause').textContent = causeStats.length ? causeStats[0].cause : '-';
+
+  renderRankList(document.getElementById('dashboardTop3'), unitStats.slice(0,3), unitStats.length ? unitStats[0].count : 0);
+
+  const recent = mistakes.slice().sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0,5);
+  const recentList = document.getElementById('recentMistakesList');
+  recentList.innerHTML = recent.length === 0
+    ? `<li style="justify-content:center; color:var(--ink-soft);">등록된 오답 기록이 없습니다</li>`
+    : recent.map(m => `
+        <li>
+          <span>${escapeHtml(m.student)} · ${escapeHtml(m.unit)}</span>
+          ${causeBadge(m.cause)}
+        </li>`).join('');
+
+  const chipWrap = document.getElementById('causeChipsDashboard');
+  chipWrap.innerHTML = causeStats.length === 0
+    ? `<span style="color:var(--ink-soft); font-size:13px;">데이터가 없습니다</span>`
+    : causeStats.map(c => `<span class="chip" style="border-color:${CAUSE_COLOR[c.cause]}55;">${escapeHtml(c.cause)} <span class="n">${c.count}</span></span>`).join('');
+}
+
+/* =========================================================
+   취약 단원 분석 탭
+========================================================= */
+function renderUnitsPanel(){
+  const unitStats = computeUnitCounts(null);
+  const causeStats = computeCauseCounts(null);
+
+  renderRankList(document.getElementById('unitsTop3'), unitStats.slice(0,3), unitStats.length ? unitStats[0].count : 0);
+  renderFullBarList(document.getElementById('unitFullList'), unitStats, () => 'var(--brand)'.startsWith('var') ? '#E2631B' : '#E2631B');
+  renderFullBarList(document.getElementById('causeFullList'), causeStats.map(c => ({unit:c.cause, count:c.count})), (key) => CAUSE_COLOR[key] || '#6E5D4C');
+}
+
+/* =========================================================
+   학생 리포트 탭
+========================================================= */
+function onReportStudentChange(name){
+  selectedReportStudent = name;
+  closeDiagnosis();
+  renderReportPanel();
+}
+
+function renderReportPanel(){
+  const empty = document.getElementById('reportEmptyState');
+  const content = document.getElementById('reportContent');
+
+  if(!selectedReportStudent){
+    empty.style.display = 'block';
+    content.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  content.style.display = 'block';
+
+  const list = mistakes.filter(m => m.student === selectedReportStudent);
+  const unitStats = computeUnitCounts(selectedReportStudent);
+  const causeStats = computeCauseCounts(selectedReportStudent);
+  const lastDate = list.length ? list.slice().sort((a,b)=>b.date.localeCompare(a.date))[0].date : null;
+
+  document.getElementById('reportTotal').textContent = list.length;
+  document.getElementById('reportTopUnit').textContent = unitStats.length ? unitStats[0].unit : '-';
+  document.getElementById('reportTopCause').textContent = causeStats.length ? causeStats[0].cause : '-';
+  document.getElementById('reportLastDate').textContent = lastDate ? formatDateLabel(lastDate) : '-';
+
+  renderRankList(document.getElementById('reportTop3'), unitStats.slice(0,3), unitStats.length ? unitStats[0].count : 0);
+
+  const chipWrap = document.getElementById('reportCauseChips');
+  chipWrap.innerHTML = causeStats.length === 0
+    ? `<span style="color:var(--ink-soft); font-size:13px;">데이터가 없습니다</span>`
+    : causeStats.map(c => `<span class="chip" style="border-color:${CAUSE_COLOR[c.cause]}55;">${escapeHtml(c.cause)} <span class="n">${c.count}</span></span>`).join('');
+
+  document.getElementById('genDiagnosisBtn').disabled = unitStats.length === 0;
+}
+
+/* =========================================================
+   상담용 진단서 생성
+========================================================= */
+function generateDiagnosis(){
+  if(!selectedReportStudent) return;
+  const unitStats = computeUnitCounts(selectedReportStudent);
+  const causeStats = computeCauseCounts(selectedReportStudent);
+  if(unitStats.length === 0){ alert('해당 학생의 오답 데이터가 없습니다.'); return; }
+
+  const topUnit = unitStats[0];
+  const topCause = causeStats[0];
+  const causePhrase = `${topCause.cause}${josaEulReul(topCause.cause)} 줄이는 훈련`;
+
+  const sentence = `${selectedReportStudent} 학생은 현재 <strong>'${escapeHtml(topUnit.unit)}'</strong> 단원의 개념 보완이 시급하며, 문제 풀이 시 <strong>${escapeHtml(causePhrase)}</strong>이 필요합니다.`;
+  currentDiagnosisText = `[${selectedReportStudent} 학생 상담용 진단서]\n\n${selectedReportStudent} 학생은 현재 '${topUnit.unit}' 단원의 개념 보완이 시급하며, 문제 풀이 시 ${causePhrase}이 필요합니다.\n\n- 가장 취약한 단원: ${topUnit.unit} (오답 ${topUnit.count}회)\n- 가장 높은 오답 원인: ${topCause.cause} (${topCause.count}회)\n- 총 오답 건수: ${mistakes.filter(m=>m.student===selectedReportStudent).length}건\n- 진단서 생성일: ${formatDateLabel(todayISO())}`;
+
+  document.getElementById('diagnosisStudentName').textContent = `${selectedReportStudent} 학생`;
+  document.getElementById('diagnosisSentence').innerHTML = sentence;
+
+  const total = mistakes.filter(m => m.student === selectedReportStudent).length;
+  document.getElementById('diagnosisMeta').innerHTML = `
+    <div class="m"><div class="label">취약 단원</div><div class="val">${escapeHtml(topUnit.unit)} ${topUnit.count>=WEAK_THRESHOLD?'<span class="warn-badge" style="margin-left:4px;">⚠ 재학습 필요</span>':''}</div></div>
+    <div class="m"><div class="label">취약 원인</div><div class="val">${escapeHtml(topCause.cause)} (${topCause.count}회)</div></div>
+    <div class="m"><div class="label">총 오답 건수</div><div class="val">${total}건</div></div>
+    <div class="m"><div class="label">생성일</div><div class="val">${formatDateLabel(todayISO())}</div></div>
+  `;
+
+  document.getElementById('diagnosisWrap').style.display = 'block';
+  document.getElementById('diagnosisWrap').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+function closeDiagnosis(){
+  document.getElementById('diagnosisWrap').style.display = 'none';
+  currentDiagnosisText = '';
+}
+function copyDiagnosis(){
+  if(!currentDiagnosisText){ return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(currentDiagnosisText)
+      .then(() => alert('진단서 내용이 클립보드에 복사되었습니다.'))
+      .catch(() => alert('복사에 실패했습니다. 텍스트를 직접 선택해 복사해주세요.'));
+  } else {
+    alert('이 브라우저에서는 자동 복사를 지원하지 않습니다. 텍스트를 직접 선택해 복사해주세요.');
+  }
+}
+
+/* =========================================================
+   CSV 백업 (내보내기)
+========================================================= */
+function csvEscape(field){
+  const str = String(field ?? '');
+  if(/[",\r\n]/.test(str)) return '"' + str.replace(/"/g,'""') + '"';
+  return str;
+}
+function exportCSV(){
+  if(mistakes.length === 0){ alert('내보낼 데이터가 없습니다.'); return; }
+  const headers = ['아이디','학생명','학년','단원명','오답원인','날짜','메모'];
+  const rows = mistakes.map(m => [m.id, m.student, m.grade, m.unit, m.cause, m.date, m.memo]);
+  const csvContent = [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF' + csvContent], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `오답노트_백업_${todayISO().replace(/-/g,'')}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* =========================================================
+   CSV 복원 (불러오기)
+========================================================= */
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0; i<text.length; i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; }
+        else { inQuotes = false; }
+      } else { field += c; }
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ row.push(field); field=''; }
+      else if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(c === '\r'){ /* skip */ }
+      else field += c;
+    }
+  }
+  if(field.length > 0 || row.length > 0){ row.push(field); rows.push(row); }
+  if(rows.length && rows[0].length) rows[0][0] = rows[0][0].replace(/^\uFEFF/, '');
+  return rows.filter(r => r.length > 1 || (r.length === 1 && r[0] !== ''));
+}
+
+function handleCSVImport(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const parsed = parseCSV(e.target.result);
+      if(parsed.length < 2){ alert('가져올 데이터가 없습니다. 파일 내용을 확인해주세요.'); event.target.value=''; return; }
+      const dataRows = parsed.slice(1);
+      let importedCount = 0;
+      dataRows.forEach(cols => {
+        if(cols.length < 6) return;
+        const student = (cols[1] || '').trim();
+        const grade = (cols[2] || '').trim();
+        const unit = (cols[3] || '').trim();
+        const cause = (cols[4] || '').trim();
+        const date = (cols[5] || '').trim();
+        const memo = (cols[6] || '').trim();
+        if(!student || !unit || !cause || !date) return;
+        mistakes.push({ id: nextMistakeId++, student, grade, unit, cause, date, memo });
+        importedCount++;
+      });
+      event.target.value = '';
+      if(importedCount === 0){
+        alert('불러올 수 있는 유효한 데이터가 없었습니다. CSV 형식을 확인해주세요.');
+      } else {
+        alert(`${importedCount}건의 오답 데이터를 불러왔습니다.`);
+      }
+      renderAll();
+    } catch(err){
+      alert('CSV 파일을 읽는 중 오류가 발생했습니다. 파일 형식을 확인해주세요.');
+      event.target.value = '';
+    }
+  };
+  reader.onerror = function(){
+    alert('파일을 읽을 수 없습니다. 다시 시도해주세요.');
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+/* =========================================================
+   전체 초기화
+========================================================= */
+function clearAllData(){
+  if(mistakes.length === 0){ alert('삭제할 데이터가 없습니다.'); return; }
+  const ok = confirm('정말로 모든 오답 데이터를 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다. 먼저 CSV로 백업하는 것을 권장합니다.');
+  if(!ok) return;
+  mistakes = [];
+  editingMistakeId = null;
+  selectedReportStudent = '';
+  closeDiagnosis();
+  renderAll();
+}
+
+function renderBackupTab(){
+  document.getElementById('backupCountSub').textContent = `현재 저장된 오답 데이터 ${mistakes.length}건`;
+}
+
+/* =========================================================
+   초기화
+========================================================= */
+function init(){
+  const now = new Date();
+  document.getElementById('todayLabel').textContent =
+    now.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+  document.getElementById('m-date').value = todayISO();
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>
