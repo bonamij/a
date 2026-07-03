@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>아임수학학원 관리 시스템</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&family=Space+Mono:wght@400;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
 <style>
   :root{
     --brand:#F2701C;
@@ -49,14 +50,14 @@
   }
   .home-hero::after{content:''; position:absolute; inset:0; pointer-events:none;
     background:radial-gradient(circle at 82% -10%, rgba(255,255,255,0.20), transparent 55%);}
-  .home-hero-eyebrow{font-size:11px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,243,232,0.82); font-family:'Noto Sans KR',sans-serif; position:relative;}
+  .home-hero-eyebrow{font-size:12px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,243,232,0.92); font-family:'Pretendard',sans-serif; font-weight:800; position:relative;}
   .home-hero .brand-title{
     font-size:28px; color:#fff; margin-top:8px; outline:none; display:inline-block; position:relative;
     border-bottom:1px dashed transparent; padding-bottom:3px;
   }
   .home-hero .brand-title:hover, .home-hero .brand-title:focus{border-bottom-color:rgba(255,255,255,0.5);}
   .home-hero .brand-title:empty:before{content:attr(data-placeholder); color:rgba(255,255,255,0.65);}
-  .home-hero-tagline{margin-top:10px; font-size:13.5px; color:rgba(255,243,232,0.94); font-family:'Noto Sans KR',sans-serif; font-weight:500; position:relative;}
+  .home-hero-tagline{margin-top:10px; font-size:15px; line-height:1.5; color:rgba(255,243,232,0.96); font-family:'Pretendard',sans-serif; font-weight:600; position:relative;}
   .home-hero-date{
     margin-top:16px; display:inline-block; background:rgba(255,255,255,0.18); padding:6px 18px;
     border-radius:20px; font-size:12px; font-family:'Space Mono',monospace; position:relative;
@@ -264,9 +265,9 @@
     <!-- ---------- 홈 (완성) ---------- -->
     <section class="panel active" id="panel-home">
       <div class="home-hero">
-        <div class="home-hero-eyebrow">학원 통합 관리 시스템</div>
+        <div class="home-hero-eyebrow">FIND YOUR GREATNESS</div>
         <h1 class="brand-title" contenteditable="true" data-placeholder="학원명을 입력하세요">아임수학학원</h1>
-        <div class="home-hero-tagline">오늘의 목표: 틀리기, 웃기, 그리고 다시 풀기 😄</div>
+        <div class="home-hero-tagline">We are the one,<br>We are the number one.</div>
         <div class="home-hero-date mono" id="heroDateLabel"></div>
       </div>
 
@@ -389,6 +390,10 @@
           </div>
           <button type="submit" class="btn">학생 등록</button>
         </form>
+        <div style="margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);">
+          <div class="sub" style="margin-bottom:8px;">구글시트에 미리 적어두셨던 학생 10명을 한 번에 등록할 수 있어요.</div>
+          <button type="button" class="btn small ghost" onclick="bulkImportStudents()">📥 기존 학생 10명 한번에 추가</button>
+        </div>
       </div>
 
       <div class="card">
@@ -1138,6 +1143,31 @@ function deleteStudent(id){
   students = students.filter(x => x.id !== id);
   renderStudents();
   scheduleSync();
+}
+
+function bulkImportStudents(){
+  const list = [
+    { name:'유선웅', grade:'중2', school:'왕선중학교' },
+    { name:'김주원', grade:'중2', school:'심인중학교' },
+    { name:'김찬욱', grade:'중1', school:'왕선중학교' },
+    { name:'권민창', grade:'중1', school:'다사중학교' },
+    { name:'김지원', grade:'중2', school:'왕선중학교' },
+    { name:'김근영', grade:'중2', school:'왕선중학교' },
+    { name:'김강민', grade:'중2', school:'다사중학교' },
+    { name:'김민준', grade:'초5', school:'대실초등학교' },
+    { name:'김근우', grade:'초5', school:'대실초등학교' },
+    { name:'김민아', grade:'초6', school:'대실초등학교' }
+  ];
+
+  if(!confirm(`학생 ${list.length}명을 한 번에 등록할까요?`)) return;
+
+  list.forEach(s => {
+    students.push({ id: nextStudentId++, name: s.name, grade: s.grade, school: s.school, concept:'', sen:'', topS:false, topSProgress:'' });
+  });
+
+  renderStudents();
+  scheduleSync();
+  alert(`${list.length}명이 등록됐어요! 구글시트에도 곧 자동 저장돼요.`);
 }
 
 const gradeOptionsHTML = `
@@ -2291,11 +2321,11 @@ function renderDashboard(){
     }).join('');
   }
 
-  // 5. 최근 7일 오답 알림
+  // 5. 최근 7일 오답 알림 (삭제된 학생 기록은 화면에서 제외, 데이터는 그대로 보존)
   const weekAgo = new Date(now);
   weekAgo.setDate(now.getDate() - 6);
   const weekAgoIso = `${weekAgo.getFullYear()}-${String(weekAgo.getMonth()+1).padStart(2,'0')}-${String(weekAgo.getDate()).padStart(2,'0')}`;
-  const recentMistakes = mistakeRecords.filter(m => m.date >= weekAgoIso)
+  const recentMistakes = mistakeRecords.filter(m => m.date >= weekAgoIso && students.some(s => s.id === m.studentId))
     .slice().sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
 
   const recentListEl = document.getElementById('dashRecentMistakeList');
@@ -2308,7 +2338,7 @@ function renderDashboard(){
         <li>
           <div class="left">
             <span class="date">${m.date.replace(/-/g,'.')}</span>
-            <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
+            <strong>${escapeHtml(s.name)}</strong>
             <span class="book-badge">${escapeHtml(m.unit)}</span>
             <span style="font-size:12px; color:var(--ink-soft);">${escapeHtml(m.cause)}</span>
           </div>
