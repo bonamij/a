@@ -392,6 +392,10 @@
             <label for="s-school">학교</label>
             <input type="text" id="s-school" placeholder="예: 대구중앙초등학교">
           </div>
+          <div class="field">
+            <label for="s-pin">비밀번호(핸드폰끝뒷4자리) <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(학부모 포털 로그인용)</span></label>
+            <input type="text" id="s-pin" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="예: 1234">
+          </div>
           <div class="field checkbox">
             <input type="checkbox" id="s-tops">
             <label for="s-tops" style="padding-bottom:0;">최상위S 진행</label>
@@ -1111,18 +1115,24 @@ function addStudent(e){
   const name = document.getElementById('s-name').value.trim();
   const grade = document.getElementById('s-grade').value;
   const school = document.getElementById('s-school').value.trim();
+  const pin = document.getElementById('s-pin').value.trim();
   const topS = document.getElementById('s-tops').checked;
 
   if(!name || !grade){
     alert('이름과 학년은 필수 입력 항목입니다.');
     return;
   }
+  if(pin && !/^\d{4}$/.test(pin)){
+    alert('비밀번호는 숫자 4자리로 입력해주세요.');
+    return;
+  }
 
-  students.push({ id: nextStudentId++, name, grade, school, concept:'', sen:'', topS, topSProgress:'' });
+  students.push({ id: nextStudentId++, name, grade, school, pin, concept:'', sen:'', topS, topSProgress:'' });
 
   document.getElementById('s-name').value = '';
   document.getElementById('s-grade').value = '';
   document.getElementById('s-school').value = '';
+  document.getElementById('s-pin').value = '';
   document.getElementById('s-tops').checked = false;
   document.getElementById('s-name').focus();
 
@@ -1136,10 +1146,12 @@ function saveEditStudent(id){
   const name = document.getElementById(`e-name-${id}`).value.trim();
   const grade = document.getElementById(`e-grade-${id}`).value;
   const school = document.getElementById(`e-school-${id}`).value.trim();
+  const pin = document.getElementById(`e-pin-${id}`).value.trim();
   const topS = document.getElementById(`e-tops-${id}`).checked;
   if(!name || !grade){ alert('이름과 학년은 필수 입력 항목입니다.'); return; }
+  if(pin && !/^\d{4}$/.test(pin)){ alert('비밀번호는 숫자 4자리로 입력해주세요.'); return; }
   const s = students.find(x => x.id === id);
-  Object.assign(s, { name, grade, school, topS });
+  Object.assign(s, { name, grade, school, pin, topS });
   editingStudentId = null;
   renderStudents();
   scheduleSync();
@@ -1194,7 +1206,10 @@ function renderStudentRow(s){
       <tr>
         <td><input type="text" id="e-name-${s.id}" value="${escapeHtml(s.name)}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;"></td>
         <td><select id="e-grade-${s.id}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">${gradeOptionsHTML}</select></td>
-        <td><input type="text" id="e-school-${s.id}" value="${escapeHtml(s.school)}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;"></td>
+        <td>
+          <input type="text" id="e-school-${s.id}" value="${escapeHtml(s.school)}" placeholder="학교" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
+          <input type="text" id="e-pin-${s.id}" value="${escapeHtml(s.pin || '')}" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="비밀번호(4자리)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">
+        </td>
         <td>
           <label style="display:flex; align-items:center; gap:5px; font-size:12px; margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;">
             <input type="checkbox" id="e-tops-${s.id}" ${s.topS ? 'checked' : ''} style="width:15px; height:15px;"> 최상위S
@@ -1209,6 +1224,7 @@ function renderStudentRow(s){
       <td>
         <strong>${escapeHtml(s.name)}</strong>${s.topS ? '<span class="badge top-s">⭐ 최상위S</span>' : ''}
         ${s.topS && s.topSProgress ? `<div style="font-size:11.5px; color:var(--gold); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">최상위S ${escapeHtml(s.topSProgress)}</div>` : ''}
+        ${!s.pin ? `<div style="font-size:11px; color:#B8391F; font-family:'Noto Sans KR',sans-serif; margin-top:3px;">🔑 비밀번호 미입력 (포털 로그인 불가)</div>` : ''}
       </td>
       <td><span class="badge gray">${escapeHtml(s.grade)}</span></td>
       <td>${s.school ? `${escapeHtml(s.school)} <button type="button" class="btn small ghost" data-school="${escapeHtml(s.school)}" onclick="openSchoolInfo(this.dataset.school)" style="margin-left:6px; padding:2px 9px; font-size:11px;">🔍 학교알리미</button>` : '<span style="color:var(--ink-soft)">-</span>'}</td>
