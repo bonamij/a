@@ -1016,30 +1016,16 @@ function getDataSheet() {
    상태 (데이터는 메모리에만 저장되며 새로고침 시 초기화됩니다.
    추후 STEP 7에서 CSV 백업/복원 기능이 추가될 예정입니다.)
 ========================================================= */
-let students = [
-  { id: 1, name: '김민준', grade: '초4', school: '대구중앙초등학교', concept: '62p까지', sen: '48p까지', topS: true, topSProgress: '20p까지' },
-  { id: 2, name: '이서연', grade: '초6', school: '대구서초등학교', concept: '90p까지', sen: '', topS: false, topSProgress: '' },
-  { id: 3, name: '박지호', grade: '중1', school: '대구중학교', concept: '', sen: '', topS: false, topSProgress: '' }
-];
-let nextStudentId = 4;
+let students = [];
+let nextStudentId = 1;
 let editingStudentId = null;
 
-let progressLogs = [
-  { id: 1, studentId: 1, book: '개념+유형', page: '62p까지', date: '2026-06-28' },
-  { id: 2, studentId: 1, book: '쎈', page: '48p까지', date: '2026-06-30' },
-  { id: 3, studentId: 2, book: '개념+유형', page: '90p까지', date: '2026-06-29' }
-];
-let nextProgressId = 4;
+let progressLogs = [];
+let nextProgressId = 1;
 const BOOKS = ['개념+유형','쎈','최상위S'];
 
-let attendanceRecords = [
-  { id: 1, studentId: 1, date: '2026-07-01', status: '출석' },
-  { id: 2, studentId: 2, date: '2026-07-01', status: '지각' },
-  { id: 3, studentId: 3, date: '2026-07-01', status: '결석', makeupDate: null, makeupDone: false },
-  { id: 4, studentId: 1, date: '2026-06-25', status: '결석', makeupDate: '2026-06-29', makeupDone: false },
-  { id: 5, studentId: 2, date: '2026-06-20', status: '결석', makeupDate: '2026-06-22', makeupDone: true }
-];
-let nextAttendanceId = 6;
+let attendanceRecords = [];
+let nextAttendanceId = 1;
 const ATT_STATUSES = [
   { key:'출석', cls:'present' },
   { key:'지각', cls:'late' },
@@ -1049,46 +1035,24 @@ const ATT_STATUSES = [
 const ATT_CLASS_MAP = { 출석:'present', 지각:'late', 결석:'absent', 조퇴:'early' };
 let attCalYear, attCalMonth; // attCalMonth is 0-indexed
 
-let dailyTests = [
-  { id: 1, studentId: 1, date: '2026-06-20', unit: '2단원 분수의 곱셈', mode:'count', total: 20, correct: 17, score: 85 },
-  { id: 2, studentId: 1, date: '2026-06-27', unit: '3단원 분수의 나눗셈', mode:'count', total: 20, correct: 19, score: 95 },
-  { id: 3, studentId: 1, date: '2026-07-02', unit: '3단원 분수의 나눗셈', mode:'score', total: null, correct: null, score: 78 },
-  { id: 4, studentId: 2, date: '2026-06-22', unit: '5단원 원의 넓이', mode:'count', total: 15, correct: 9, score: 60 },
-  { id: 5, studentId: 2, date: '2026-06-29', unit: '5단원 원의 넓이', mode:'count', total: 15, correct: 12, score: 80 }
-];
-let nextDailyId = 6;
+let dailyTests = [];
+let nextDailyId = 1;
 let currentDailyMode = 'count';
 
-let homeworkRecords = [
-  { id: 1, studentId: 1, date: '2026-06-30', range: '쎈 62p~68p', total: 15, correct: 13, wrongNumbers: [4, 11], score: 87 },
-  { id: 2, studentId: 2, date: '2026-06-29', range: '개념+유형 90p~95p', total: 12, correct: 9, wrongNumbers: [2, 7, 10], score: 75 }
-];
-let nextHomeworkId = 3;
+let homeworkRecords = [];
+let nextHomeworkId = 1;
 
-let mistakeRecords = [
-  { id: 1, studentId: 1, date: '2026-06-21', unit: '3단원 분수의 나눗셈', cause: '통분 실수', note: '12번 문제' },
-  { id: 2, studentId: 1, date: '2026-06-27', unit: '3단원 분수의 나눗셈', cause: '개념 이해 부족', note: '' },
-  { id: 3, studentId: 1, date: '2026-07-02', unit: '3단원 분수의 나눗셈', cause: '계산 실수', note: '18번 문제' },
-  { id: 4, studentId: 2, date: '2026-06-24', unit: '5단원 원의 넓이', cause: '공식 암기 부족', note: '' }
-];
-let nextMistakeId = 5;
+let mistakeRecords = [];
+let nextMistakeId = 1;
 const MISTAKE_WARNING_THRESHOLD = 3;
 
-let teacherComments = {
-  1: '민준이는 요즘 집중력이 부쩍 좋아졌어요! 분수 나눗셈에서 실수만 조금 줄이면 훨씬 안정적일 것 같습니다 :)',
-  2: '서연이는 성실하게 잘 따라오고 있어요. 원의 넓이 단원만 한 번 더 다지면 좋겠습니다.'
-};
+let teacherComments = {};
 
-let schoolInfos = [
-  { id: 1, school: '대구중학교', examName: '1학기 기말고사', examDate: '2026-07-10', examRange: '2단원~4단원 (방정식, 부등식)', note: '서술형 비중 높음' }
-];
-let nextSchoolInfoId = 2;
+let schoolInfos = [];
+let nextSchoolInfoId = 1;
 
-let examAnalysis = [
-  { id: 1, studentId: 3, school: '대구중학교', examName: '1학기 중간고사', unit: '문자와 식', total: 20, correct: 18, score: 90, date: '2026-05-15' },
-  { id: 2, studentId: 3, school: '대구중학교', examName: '1학기 중간고사', unit: '방정식', total: 20, correct: 12, score: 60, date: '2026-05-15' }
-];
-let nextExamId = 3;
+let examAnalysis = [];
+let nextExamId = 1;
 
 const TAB_TITLES = {
   home:'홈', dashboard:'대시보드', students:'학생 명단', progress:'진도 관리', attendance:'출결 관리', daily:'데일리 테스트',
