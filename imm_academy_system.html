@@ -429,6 +429,10 @@
             <input type="text" id="s-school" placeholder="예: 대구중앙초등학교">
           </div>
           <div class="field">
+            <label for="s-class">반 이름 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(같은 반은 진도 한번에 입력 가능)</span></label>
+            <input type="text" id="s-class" placeholder="예: 화금중1">
+          </div>
+          <div class="field">
             <label for="s-pin">비밀번호(핸드폰끝뒷4자리) <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(학부모 포털 로그인용)</span></label>
             <input type="text" id="s-pin" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="예: 1234">
           </div>
@@ -484,8 +488,19 @@
         </div>
         <form class="inline-form" id="progressForm" onsubmit="addProgressLog(event)">
           <div class="field">
+            <label>입력 방식</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="btn small ghost active" id="p-mode-individual" onclick="setProgressMode('individual')">개별 학생</button>
+              <button type="button" class="btn small ghost" id="p-mode-class" onclick="setProgressMode('class')">반 전체</button>
+            </div>
+          </div>
+          <div class="field" id="p-individual-wrap">
             <label for="p-student">학생</label>
             <select id="p-student" onchange="refreshProgressBookOptions()" required><option value="">선택</option></select>
+          </div>
+          <div class="field" id="p-class-wrap" style="display:none;">
+            <label for="p-class-select">반 선택</label>
+            <select id="p-class-select"><option value="">반을 선택하세요</option></select>
           </div>
           <div class="field">
             <label for="p-book">교재</label>
@@ -1161,6 +1176,7 @@ function addStudent(e){
   const name = document.getElementById('s-name').value.trim();
   const grade = document.getElementById('s-grade').value;
   const school = document.getElementById('s-school').value.trim();
+  const className = document.getElementById('s-class').value.trim();
   const pin = document.getElementById('s-pin').value.trim();
   const topS = document.getElementById('s-tops').checked;
 
@@ -1173,11 +1189,12 @@ function addStudent(e){
     return;
   }
 
-  students.push({ id: nextStudentId++, name, grade, school, pin, concept:'', sen:'', topS, topSProgress:'' });
+  students.push({ id: nextStudentId++, name, grade, school, className, pin, concept:'', sen:'', topS, topSProgress:'' });
 
   document.getElementById('s-name').value = '';
   document.getElementById('s-grade').value = '';
   document.getElementById('s-school').value = '';
+  document.getElementById('s-class').value = '';
   document.getElementById('s-pin').value = '';
   document.getElementById('s-tops').checked = false;
   document.getElementById('s-name').focus();
@@ -1192,12 +1209,13 @@ function saveEditStudent(id){
   const name = document.getElementById(`e-name-${id}`).value.trim();
   const grade = document.getElementById(`e-grade-${id}`).value;
   const school = document.getElementById(`e-school-${id}`).value.trim();
+  const className = document.getElementById(`e-class-${id}`).value.trim();
   const pin = document.getElementById(`e-pin-${id}`).value.trim();
   const topS = document.getElementById(`e-tops-${id}`).checked;
   if(!name || !grade){ alert('이름과 학년은 필수 입력 항목입니다.'); return; }
   if(pin && !/^\d{4}$/.test(pin)){ alert('비밀번호는 숫자 4자리로 입력해주세요.'); return; }
   const s = students.find(x => x.id === id);
-  Object.assign(s, { name, grade, school, pin, topS });
+  Object.assign(s, { name, grade, school, className, pin, topS });
   editingStudentId = null;
   renderStudents();
   scheduleSync();
@@ -1213,22 +1231,22 @@ function deleteStudent(id){
 
 function bulkImportStudents(){
   const list = [
-    { name:'유선웅', grade:'중2', school:'왕선중학교' },
-    { name:'김주원', grade:'중2', school:'심인중학교' },
-    { name:'김찬욱', grade:'중1', school:'왕선중학교' },
-    { name:'권민창', grade:'중1', school:'다사중학교' },
-    { name:'김지원', grade:'중2', school:'왕선중학교' },
-    { name:'김근영', grade:'중2', school:'왕선중학교' },
-    { name:'김강민', grade:'중2', school:'다사중학교' },
-    { name:'김민준', grade:'초5', school:'대실초등학교' },
-    { name:'김근우', grade:'초5', school:'대실초등학교' },
-    { name:'김민아', grade:'초6', school:'대실초등학교' }
+    { name:'유선웅', grade:'중2', school:'왕선중학교', className:'월목중2' },
+    { name:'김주원', grade:'중2', school:'심인중학교', className:'월목중2' },
+    { name:'김찬욱', grade:'중1', school:'왕선중학교', className:'화금중1' },
+    { name:'권민창', grade:'중1', school:'다사중학교', className:'화금중1' },
+    { name:'김지원', grade:'중2', school:'왕선중학교', className:'화금중2' },
+    { name:'김근영', grade:'중2', school:'왕선중학교', className:'화금중2' },
+    { name:'김강민', grade:'중2', school:'다사중학교', className:'화금중2' },
+    { name:'김민준', grade:'초5', school:'대실초등학교', className:'' },
+    { name:'김근우', grade:'초5', school:'대실초등학교', className:'' },
+    { name:'김민아', grade:'초6', school:'대실초등학교', className:'' }
   ];
 
   if(!confirm(`학생 ${list.length}명을 한 번에 등록할까요?`)) return;
 
   list.forEach(s => {
-    students.push({ id: nextStudentId++, name: s.name, grade: s.grade, school: s.school, concept:'', sen:'', topS:false, topSProgress:'' });
+    students.push({ id: nextStudentId++, name: s.name, grade: s.grade, school: s.school, className: s.className, concept:'', sen:'', topS:false, topSProgress:'' });
   });
 
   renderStudents();
@@ -1254,6 +1272,7 @@ function renderStudentRow(s){
         <td><select id="e-grade-${s.id}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">${gradeOptionsHTML}</select></td>
         <td>
           <input type="text" id="e-school-${s.id}" value="${escapeHtml(s.school)}" placeholder="학교" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
+          <input type="text" id="e-class-${s.id}" value="${escapeHtml(s.className || '')}" placeholder="반 이름 (예: 화금중1)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
           <input type="text" id="e-pin-${s.id}" value="${escapeHtml(s.pin || '')}" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="비밀번호(4자리)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">
         </td>
         <td>
@@ -1269,6 +1288,7 @@ function renderStudentRow(s){
     <tr>
       <td>
         <strong>${escapeHtml(s.name)}</strong>${s.topS ? '<span class="badge top-s">⭐ 최상위S</span>' : ''}
+        ${s.className ? `<div style="font-size:11.5px; color:var(--brand-dark); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">🏷️ ${escapeHtml(s.className)}</div>` : ''}
         ${s.topS && s.topSProgress ? `<div style="font-size:11.5px; color:var(--gold); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">최상위S ${escapeHtml(s.topSProgress)}</div>` : ''}
         ${!s.pin ? `<div style="font-size:11px; color:#B8391F; font-family:'Noto Sans KR',sans-serif; margin-top:3px;">🔑 비밀번호 미입력 (포털 로그인 불가)</div>` : ''}
       </td>
@@ -1365,22 +1385,48 @@ function renderStudents(){
 function refreshProgressStudentSelects(){
   const pStudent = document.getElementById('p-student');
   const filterStudent = document.getElementById('progressFilterStudent');
+  const pClass = document.getElementById('p-class-select');
   const prevP = pStudent.value;
   const prevFilter = filterStudent.value;
+  const prevClass = pClass.value;
 
   const optionsHtml = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
   pStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
   filterStudent.innerHTML = `<option value="all">전체 학생</option>` + optionsHtml;
 
+  const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
+  pClass.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => {
+    const count = students.filter(s => s.className === c).length;
+    return `<option value="${escapeHtml(c)}">${escapeHtml(c)} (${count}명)</option>`;
+  }).join('');
+
   if(students.some(s => String(s.id) === prevP)) pStudent.value = prevP;
   if(prevFilter === 'all' || students.some(s => String(s.id) === prevFilter)) filterStudent.value = prevFilter;
+  if(classNames.includes(prevClass)) pClass.value = prevClass;
 
   refreshProgressBookOptions();
 }
 
+function setProgressMode(mode){
+  document.getElementById('p-mode-individual').classList.toggle('active', mode === 'individual');
+  document.getElementById('p-mode-class').classList.toggle('active', mode === 'class');
+  document.getElementById('p-individual-wrap').style.display = mode === 'individual' ? 'flex' : 'none';
+  document.getElementById('p-class-wrap').style.display = mode === 'class' ? 'flex' : 'none';
+  document.getElementById('p-student').required = mode === 'individual';
+  document.getElementById('p-class-select').required = mode === 'class';
+  refreshProgressBookOptions();
+}
+
 function refreshProgressBookOptions(){
-  const pStudent = document.getElementById('p-student');
   const pBook = document.getElementById('p-book');
+  const isClassMode = document.getElementById('p-mode-class').classList.contains('active');
+
+  if(isClassMode){
+    pBook.innerHTML = BOOKS.filter(b => b !== '최상위S').map(b => `<option value="${b}">${b}</option>`).join('');
+    return;
+  }
+
+  const pStudent = document.getElementById('p-student');
   const studentId = Number(pStudent.value);
   const student = students.find(s => s.id === studentId);
 
@@ -1402,18 +1448,41 @@ function updateStudentQuickField(studentId, book, page){
 
 function addProgressLog(e){
   e.preventDefault();
-  const studentId = Number(document.getElementById('p-student').value);
+  const isClassMode = document.getElementById('p-mode-class').classList.contains('active');
   const book = document.getElementById('p-book').value;
   const page = document.getElementById('p-page').value.trim();
   const date = document.getElementById('p-date').value;
 
-  if(!studentId || !book || !page || !date){
-    alert('학생, 교재, 진도, 날짜를 모두 입력해주세요.');
+  if(!book || !page || !date){
+    alert('교재, 진도, 날짜를 모두 입력해주세요.');
     return;
   }
 
-  progressLogs.push({ id: nextProgressId++, studentId, book, page, date });
-  updateStudentQuickField(studentId, book, page);
+  if(isClassMode){
+    const className = document.getElementById('p-class-select').value;
+    if(!className){
+      alert('반을 선택해주세요.');
+      return;
+    }
+    const classStudents = students.filter(s => s.className === className);
+    if(classStudents.length === 0){
+      alert('이 반에 속한 학생이 없어요.');
+      return;
+    }
+    classStudents.forEach(s => {
+      progressLogs.push({ id: nextProgressId++, studentId: s.id, book, page, date });
+      updateStudentQuickField(s.id, book, page);
+    });
+    alert(`"${className}" 반 학생 ${classStudents.length}명에게 진도가 한번에 입력됐어요.`);
+  } else {
+    const studentId = Number(document.getElementById('p-student').value);
+    if(!studentId){
+      alert('학생을 선택해주세요.');
+      return;
+    }
+    progressLogs.push({ id: nextProgressId++, studentId, book, page, date });
+    updateStudentQuickField(studentId, book, page);
+  }
 
   document.getElementById('p-page').value = '';
   document.getElementById('p-page').focus();
@@ -3037,6 +3106,7 @@ function init(){
   attCalYear = now.getFullYear();
   attCalMonth = now.getMonth();
   setDailyMode('count');
+  setProgressMode('individual');
   renderStudents();
   refreshProgressStudentSelects();
   renderProgressList();
