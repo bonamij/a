@@ -648,8 +648,8 @@
             <select id="dt-photo-student" required><option value="">선택</option></select>
           </div>
           <div class="field">
-            <label for="dt-photo-file">테스트 결과지 사진</label>
-            <input type="file" id="dt-photo-file" accept="image/*">
+            <label for="dt-photo-file">테스트 결과지 사진 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(여러 장 선택 가능)</span></label>
+            <input type="file" id="dt-photo-file" accept="image/*" multiple>
           </div>
         </div>
         <button type="button" class="btn" style="margin-top:12px;" onclick="analyzeDailyTestPhoto()">🔍 AI 분석하기</button>
@@ -1939,18 +1939,27 @@ function refreshDailyStudentSelects(){
 
 let lastDailyPhotoAnalysis = null;
 
-function analyzeDailyTestPhoto(){
+function readFileAsDataURL(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('파일을 읽는 데 실패했어요.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function analyzeDailyTestPhoto(){
   const studentId = Number(document.getElementById('dt-photo-student').value);
   const fileInput = document.getElementById('dt-photo-file');
   const resultEl = document.getElementById('dtPhotoAnalysisResult');
-  const file = fileInput.files[0];
+  const files = Array.from(fileInput.files || []);
 
   if(!studentId){
     alert('학생을 먼저 선택해주세요.');
     return;
   }
-  if(!file){
-    alert('사진을 먼저 선택해주세요.');
+  if(files.length === 0){
+    alert('사진을 먼저 선택해주세요 (여러 장 선택 가능해요).');
     return;
   }
   if(!sheetSyncUrl){
@@ -1958,45 +1967,57 @@ function analyzeDailyTestPhoto(){
     return;
   }
 
-  resultEl.innerHTML = `<div class="report-empty">🔍 AI가 사진을 분석하고 있어요... (몇 초 걸릴 수 있어요)</div>`;
+  resultEl.innerHTML = `<div class="report-empty">🔍 AI가 사진 ${files.length}장을 분석하고 있어요... (몇 초~1분 정도 걸릴 수 있어요)</div>`;
 
-  const reader = new FileReader();
-  reader.onload = async function(e){
-    const dataUrl = e.target.result;
-    const base64 = dataUrl.split(',')[1];
+  try {
+    const dataUrls = await Promise.all(files.map(readFileAsDataURL));
+    const images = dataUrls.map((dataUrl, i) => ({
+      data: dataUrl.split(',')[1],
+      mimeType: files[i].type
+    }));
 
+    let res;
     try {
-      const res = await fetch(sheetSyncUrl, {
+      res = await fetch(sheetSyncUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'analyzeExam', image: base64, mimeType: file.type })
+        body: JSON.stringify({ action: 'analyzeExam', images })
       });
-      const result = await res.json();
-
-      if(result.error){
-        resultEl.innerHTML = `<div class="report-empty">❌ ${escapeHtml(result.error)}</div>`;
-        return;
-      }
-
-      lastDailyPhotoAnalysis = { studentId, ...result };
-
-      resultEl.innerHTML = `
-        <div class="photo-result-card">
-          <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:600;">✅ AI 분석 결과예요. 내용을 확인하고 아래 버튼을 눌러 반영해주세요.</p>
-          <div class="photo-result-grid">
-            <div><span class="label">점수</span>${result.score != null ? result.score + '점' : '-'}</div>
-            <div><span class="label">전체 문항 / 정답</span>${result.totalQuestions || '-'} / ${result.correctCount != null ? result.correctCount : '-'}</div>
-            <div style="grid-column:1/-1;"><span class="label">단원</span>${escapeHtml(result.unit || '-')}</div>
-            <div style="grid-column:1/-1;"><span class="label">틀린 문항 번호</span>${(result.wrongNumbers && result.wrongNumbers.length) ? result.wrongNumbers.join(', ') + '번' : '없음'}</div>
-            <div style="grid-column:1/-1;"><span class="label">예상 오답 원인</span>${escapeHtml(result.causeGuess || '-')}</div>
-          </div>
-          <button type="button" class="btn small" onclick="applyDailyPhotoAnalysis()">📥 이 결과를 아래 입력폼에 반영하기</button>
-        </div>`;
-    } catch(err){
-      resultEl.innerHTML = `<div class="report-empty">❌ 분석 요청에 실패했어요. 인터넷 연결을 확인하고 다시 시도해주세요.</div>`;
+    } catch(networkErr){
+      resultEl.innerHTML = `<div class="report-empty">❌ 서버에 연결하지 못했어요.<br><span style="font-size:11px;">오류 내용: ${escapeHtml(networkErr.message || String(networkErr))}<br>인터넷 연결을 확인하시거나, 사진 용량이 너무 크면(각 5MB 이하 권장) 줄여서 다시 시도해주세요.</span></div>`;
+      return;
     }
-  };
-  reader.readAsDataURL(file);
+
+    if(!res.ok){
+      const bodyText = await res.text().catch(() => '');
+      resultEl.innerHTML = `<div class="report-empty">❌ 서버에서 오류 응답을 보냈어요 (상태 코드 ${res.status}).<br><span style="font-size:11px;">${escapeHtml(bodyText.slice(0, 200))}</span></div>`;
+      return;
+    }
+
+    const result = await res.json();
+
+    if(result.error){
+      resultEl.innerHTML = `<div class="report-empty">❌ ${escapeHtml(result.error)}</div>`;
+      return;
+    }
+
+    lastDailyPhotoAnalysis = { studentId, ...result };
+
+    resultEl.innerHTML = `
+      <div class="photo-result-card">
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:600;">✅ AI 분석 결과예요 (사진 ${files.length}장 종합). 내용을 확인하고 아래 버튼을 눌러 반영해주세요.</p>
+        <div class="photo-result-grid">
+          <div><span class="label">점수</span>${result.score != null ? result.score + '점' : '-'}</div>
+          <div><span class="label">전체 문항 / 정답</span>${result.totalQuestions || '-'} / ${result.correctCount != null ? result.correctCount : '-'}</div>
+          <div style="grid-column:1/-1;"><span class="label">단원</span>${escapeHtml(result.unit || '-')}</div>
+          <div style="grid-column:1/-1;"><span class="label">틀린 문항 번호</span>${(result.wrongNumbers && result.wrongNumbers.length) ? result.wrongNumbers.join(', ') + '번' : '없음'}</div>
+          <div style="grid-column:1/-1;"><span class="label">예상 오답 원인</span>${escapeHtml(result.causeGuess || '-')}</div>
+        </div>
+        <button type="button" class="btn small" onclick="applyDailyPhotoAnalysis()">📥 이 결과를 아래 입력폼에 반영하기</button>
+      </div>`;
+  } catch(err){
+    resultEl.innerHTML = `<div class="report-empty">❌ 분석 요청에 실패했어요.<br><span style="font-size:11px;">오류 내용: ${escapeHtml(err.message || String(err))}</span></div>`;
+  }
 }
 
 function applyDailyPhotoAnalysis(){
