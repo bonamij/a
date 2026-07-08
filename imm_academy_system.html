@@ -145,6 +145,12 @@
 
   .btn.ghost.active{background:var(--brand-soft); border-color:var(--brand); color:var(--brand-dark);}
 
+  .photo-result-card{
+    background:var(--cream-alt); border:1px solid var(--line); border-radius:10px; padding:16px;
+  }
+  .photo-result-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px 16px; font-size:13px; font-family:'Noto Sans KR',sans-serif; font-weight:500; margin-bottom:12px;}
+  .photo-result-grid .label{color:var(--ink-soft); font-size:11px; display:block; margin-bottom:2px;}
+
   .group-header-row td{
     background:var(--cream-alt); font-weight:800; font-size:13px; padding:10px 14px;
     color:var(--ink); font-family:'Noto Sans KR',sans-serif; border-top:2px solid var(--line);
@@ -614,6 +620,27 @@
       </div>
     </section>
     <section class="panel" id="panel-daily">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>📷 사진으로 자동 분석</h3>
+            <div class="sub">매쓰프로 채점 결과지 사진을 올리면 AI가 점수·틀린 문항·단원을 자동으로 읽어드려요. 결과는 검토 후 직접 반영해주세요.</div>
+          </div>
+        </div>
+        <div class="inline-form">
+          <div class="field">
+            <label for="dt-photo-student">학생</label>
+            <select id="dt-photo-student" required><option value="">선택</option></select>
+          </div>
+          <div class="field">
+            <label for="dt-photo-file">테스트 결과지 사진</label>
+            <input type="file" id="dt-photo-file" accept="image/*">
+          </div>
+        </div>
+        <button type="button" class="btn" style="margin-top:12px;" onclick="analyzeDailyTestPhoto()">🔍 AI 분석하기</button>
+        <div id="dtPhotoAnalysisResult" style="margin-top:16px;"></div>
+      </div>
+
       <div class="card">
         <div class="card-head">
           <div>
@@ -1825,16 +1852,97 @@ function refreshDailyStudentSelects(){
   const dtStudent = document.getElementById('dt-student');
   const filterStudent = document.getElementById('dailyFilterStudent');
   const chartStudent = document.getElementById('score-chart-student');
+  const photoStudent = document.getElementById('dt-photo-student');
   const prevDt = dtStudent.value, prevFilter = filterStudent.value, prevChart = chartStudent.value;
+  const prevPhoto = photoStudent ? photoStudent.value : '';
 
   const optionsHtml = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
   dtStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
   filterStudent.innerHTML = `<option value="all">전체 학생</option>` + optionsHtml;
   chartStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
+  if(photoStudent) photoStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
 
   if(students.some(s => String(s.id) === prevDt)) dtStudent.value = prevDt;
   if(prevFilter === 'all' || students.some(s => String(s.id) === prevFilter)) filterStudent.value = prevFilter;
   if(students.some(s => String(s.id) === prevChart)) chartStudent.value = prevChart;
+  if(photoStudent && students.some(s => String(s.id) === prevPhoto)) photoStudent.value = prevPhoto;
+}
+
+let lastDailyPhotoAnalysis = null;
+
+function analyzeDailyTestPhoto(){
+  const studentId = Number(document.getElementById('dt-photo-student').value);
+  const fileInput = document.getElementById('dt-photo-file');
+  const resultEl = document.getElementById('dtPhotoAnalysisResult');
+  const file = fileInput.files[0];
+
+  if(!studentId){
+    alert('학생을 먼저 선택해주세요.');
+    return;
+  }
+  if(!file){
+    alert('사진을 먼저 선택해주세요.');
+    return;
+  }
+  if(!sheetSyncUrl){
+    alert('구글시트 연동이 꺼져 있어요. "데이터 관리" 탭에서 먼저 연동해주세요.');
+    return;
+  }
+
+  resultEl.innerHTML = `<div class="report-empty">🔍 AI가 사진을 분석하고 있어요... (몇 초 걸릴 수 있어요)</div>`;
+
+  const reader = new FileReader();
+  reader.onload = async function(e){
+    const dataUrl = e.target.result;
+    const base64 = dataUrl.split(',')[1];
+
+    try {
+      const res = await fetch(sheetSyncUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'analyzeExam', image: base64, mimeType: file.type })
+      });
+      const result = await res.json();
+
+      if(result.error){
+        resultEl.innerHTML = `<div class="report-empty">❌ ${escapeHtml(result.error)}</div>`;
+        return;
+      }
+
+      lastDailyPhotoAnalysis = { studentId, ...result };
+
+      resultEl.innerHTML = `
+        <div class="photo-result-card">
+          <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:600;">✅ AI 분석 결과예요. 내용을 확인하고 아래 버튼을 눌러 반영해주세요.</p>
+          <div class="photo-result-grid">
+            <div><span class="label">점수</span>${result.score != null ? result.score + '점' : '-'}</div>
+            <div><span class="label">전체 문항 / 정답</span>${result.totalQuestions || '-'} / ${result.correctCount != null ? result.correctCount : '-'}</div>
+            <div style="grid-column:1/-1;"><span class="label">단원</span>${escapeHtml(result.unit || '-')}</div>
+            <div style="grid-column:1/-1;"><span class="label">틀린 문항 번호</span>${(result.wrongNumbers && result.wrongNumbers.length) ? result.wrongNumbers.join(', ') + '번' : '없음'}</div>
+            <div style="grid-column:1/-1;"><span class="label">예상 오답 원인</span>${escapeHtml(result.causeGuess || '-')}</div>
+          </div>
+          <button type="button" class="btn small" onclick="applyDailyPhotoAnalysis()">📥 이 결과를 아래 입력폼에 반영하기</button>
+        </div>`;
+    } catch(err){
+      resultEl.innerHTML = `<div class="report-empty">❌ 분석 요청에 실패했어요. 인터넷 연결을 확인하고 다시 시도해주세요.</div>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyDailyPhotoAnalysis(){
+  if(!lastDailyPhotoAnalysis) return;
+  const r = lastDailyPhotoAnalysis;
+
+  setDailyMode('count');
+  document.getElementById('dt-student').value = r.studentId;
+  document.getElementById('dt-unit').value = r.unit || '';
+  document.getElementById('dt-total').value = r.totalQuestions || '';
+  document.getElementById('dt-correct').value = r.correctCount != null ? r.correctCount : '';
+  updateDailyPreview();
+
+  document.getElementById('dailyTestForm').scrollIntoView({ behavior:'smooth', block:'center' });
+  alert('입력폼에 반영했어요. 내용을 확인하시고 "기록 추가" 버튼을 눌러 저장해주세요.\n(틀린 문항 번호까지 기록하고 싶으면 "틀린 번호 탭하기" 모드로 바꿔서 직접 탭해주세요: ' + ((r.wrongNumbers && r.wrongNumbers.length) ? r.wrongNumbers.join(', ') + '번' : '없음') + ')');
 }
 
 function renderDailyList(){
