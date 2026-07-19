@@ -157,6 +157,10 @@
   }
   .group-header-row.elem td{background:var(--brand-soft); color:var(--brand-dark);}
   .group-header-row.middle td{background:var(--gold-soft); color:var(--gold);}
+  .group-header-row.sub td{
+    background:transparent; font-weight:700; font-size:12px; padding:8px 14px 8px 26px;
+    color:var(--ink-soft); border-top:1px solid var(--line);
+  }
   .group-count{font-weight:500; font-size:12px; margin-left:6px; opacity:.8;}
 
   .tap-grid{display:flex; flex-wrap:wrap; gap:6px;}
@@ -435,10 +439,6 @@
           <div class="field">
             <label for="s-pin">비밀번호(핸드폰끝뒷4자리) <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(학부모 포털 로그인용)</span></label>
             <input type="text" id="s-pin" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="예: 1234">
-          </div>
-          <div class="field checkbox">
-            <input type="checkbox" id="s-tops">
-            <label for="s-tops" style="padding-bottom:0;">최상위S 진행</label>
           </div>
           <button type="submit" class="btn">학생 등록</button>
         </form>
@@ -1216,7 +1216,6 @@ function addStudent(e){
   const school = document.getElementById('s-school').value.trim();
   const className = document.getElementById('s-class').value.trim();
   const pin = document.getElementById('s-pin').value.trim();
-  const topS = document.getElementById('s-tops').checked;
 
   if(!name || !grade){
     alert('이름과 학년은 필수 입력 항목입니다.');
@@ -1227,14 +1226,13 @@ function addStudent(e){
     return;
   }
 
-  students.push({ id: nextStudentId++, name, grade, school, className, pin, concept:'', sen:'', topS, topSProgress:'' });
+  students.push({ id: nextStudentId++, name, grade, school, className, pin, concept:'', sen:'', topSProgress:'', bookProgress:{} });
 
   document.getElementById('s-name').value = '';
   document.getElementById('s-grade').value = '';
   document.getElementById('s-school').value = '';
   document.getElementById('s-class').value = '';
   document.getElementById('s-pin').value = '';
-  document.getElementById('s-tops').checked = false;
   document.getElementById('s-name').focus();
 
   renderStudents();
@@ -1249,11 +1247,10 @@ function saveEditStudent(id){
   const school = document.getElementById(`e-school-${id}`).value.trim();
   const className = document.getElementById(`e-class-${id}`).value.trim();
   const pin = document.getElementById(`e-pin-${id}`).value.trim();
-  const topS = document.getElementById(`e-tops-${id}`).checked;
   if(!name || !grade){ alert('이름과 학년은 필수 입력 항목입니다.'); return; }
   if(pin && !/^\d{4}$/.test(pin)){ alert('비밀번호는 숫자 4자리로 입력해주세요.'); return; }
   const s = students.find(x => x.id === id);
-  Object.assign(s, { name, grade, school, className, pin, topS });
+  Object.assign(s, { name, grade, school, className, pin });
   editingStudentId = null;
   renderStudents();
   scheduleSync();
@@ -1314,9 +1311,6 @@ function renderStudentRow(s){
           <input type="text" id="e-pin-${s.id}" value="${escapeHtml(s.pin || '')}" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="비밀번호(4자리)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">
         </td>
         <td>
-          <label style="display:flex; align-items:center; gap:5px; font-size:12px; margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;">
-            <input type="checkbox" id="e-tops-${s.id}" ${s.topS ? 'checked' : ''} style="width:15px; height:15px;"> 최상위S
-          </label>
           <button class="btn small" onclick="saveEditStudent(${s.id})">저장</button>
           <button class="btn small ghost" onclick="cancelEditStudent()">취소</button>
         </td>
@@ -1325,10 +1319,10 @@ function renderStudentRow(s){
   return `
     <tr>
       <td>
-        <strong>${escapeHtml(s.name)}</strong>${s.topS ? '<span class="badge top-s">⭐ 최상위S</span>' : ''}
+        <strong>${escapeHtml(s.name)}</strong>
         ${s.className ? `<div style="font-size:11.5px; color:var(--brand-dark); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">🏷️ ${escapeHtml(s.className)}</div>` : ''}
         ${s.bookProgress && Object.keys(s.bookProgress).length ? `<div style="font-size:11px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">${Object.entries(s.bookProgress).map(([b,p]) => `${escapeHtml(b)} ${escapeHtml(p)}`).join(' · ')}</div>` : ''}
-        ${s.topS && s.topSProgress ? `<div style="font-size:11.5px; color:var(--gold); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">최상위S ${escapeHtml(s.topSProgress)}</div>` : ''}
+        ${s.topSProgress ? `<div style="font-size:11.5px; color:var(--gold); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">최상위S ${escapeHtml(s.topSProgress)}</div>` : ''}
         ${!s.pin ? `<div style="font-size:11px; color:#B8391F; font-family:'Noto Sans KR',sans-serif; margin-top:3px;">🔑 비밀번호 미입력 (포털 로그인 불가)</div>` : ''}
       </td>
       <td><span class="badge gray">${escapeHtml(s.grade)}</span></td>
@@ -1367,7 +1361,17 @@ function renderStudents(){
     }
     if(middle.length){
       html += `<tr class="group-header-row middle"><td colspan="4">📚 중등부 <span class="group-count">${middle.length}명</span></td></tr>`;
-      html += middle.map(renderStudentRow).join('');
+      const classNames = Array.from(new Set(middle.map(s => s.className).filter(Boolean))).sort();
+      classNames.forEach(cn => {
+        const classStudents = middle.filter(s => s.className === cn);
+        html += `<tr class="group-header-row sub"><td colspan="4">🏷️ ${escapeHtml(cn)} <span class="group-count">${classStudents.length}명</span></td></tr>`;
+        html += classStudents.map(renderStudentRow).join('');
+      });
+      const noClass = middle.filter(s => !s.className);
+      if(noClass.length){
+        html += `<tr class="group-header-row sub"><td colspan="4">반 미배정 <span class="group-count">${noClass.length}명</span></td></tr>`;
+        html += noClass.map(renderStudentRow).join('');
+      }
     }
     if(etc.length){
       html += `<tr class="group-header-row"><td colspan="4">기타 <span class="group-count">${etc.length}명</span></td></tr>`;
@@ -1479,10 +1483,7 @@ function refreshProgressBookOptions(){
     return;
   }
   const level = levelOf(student.grade);
-  let books = booksForLevel(level);
-  if(level !== '중등부' && !student.topS){
-    books = books.filter(b => b !== '최상위S');
-  }
+  const books = booksForLevel(level);
   pBook.innerHTML = books.map(b => `<option value="${b}">${b}</option>`).join('');
 }
 
@@ -1644,7 +1645,7 @@ function renderAttendanceRoster(){
     `).join('');
     return `
       <tr>
-        <td><strong>${escapeHtml(s.name)}</strong>${s.topS ? '<span class="badge top-s">⭐</span>' : ''}</td>
+        <td><strong>${escapeHtml(s.name)}</strong></td>
         <td><span class="badge gray">${escapeHtml(s.grade)}</span></td>
         <td><div class="att-btn-group">${btns}</div></td>
       </tr>`;
@@ -2691,11 +2692,18 @@ function renderReport(){
     return;
   }
 
-  const progressRows = [
-    { label:'개념+유형', value: student.concept || '기록 없음' },
-    { label:'쎈', value: student.sen || '기록 없음' }
-  ];
-  if(student.topS) progressRows.push({ label:'최상위S', value: student.topSProgress || '기록 없음' });
+  const level = levelOf(student.grade);
+  let progressRows;
+  if(level === '중등부'){
+    const bp = student.bookProgress || {};
+    progressRows = BOOKS_MIDDLE.map(b => ({ label:b, value: bp[b] || '기록 없음' }));
+  } else {
+    progressRows = [
+      { label:'개념+유형', value: student.concept || '기록 없음' },
+      { label:'쎈', value: student.sen || '기록 없음' },
+      { label:'최상위S', value: student.topSProgress || '기록 없음' }
+    ];
+  }
 
   const now = new Date();
   const y = now.getFullYear(), mo = now.getMonth();
@@ -2726,7 +2734,7 @@ function renderReport(){
       <div class="report-head">
         <div class="academy">${escapeHtml(academyName)}</div>
         <h2>${escapeHtml(student.name)} 학생 학습 리포트</h2>
-        <div class="meta">${escapeHtml(student.grade)} · ${escapeHtml(student.school) || '학교 정보 없음'}${student.topS ? ' · ⭐ 최상위S' : ''} · 발급일 ${todayStr}</div>
+        <div class="meta">${escapeHtml(student.grade)} · ${escapeHtml(student.school) || '학교 정보 없음'} · 발급일 ${todayStr}</div>
       </div>
 
       <div class="report-section">
