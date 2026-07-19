@@ -767,6 +767,14 @@
             <input type="number" id="ak-total" min="1" style="width:100px;" oninput="renderAnswerKeyInputs()">
           </div>
         </div>
+
+        <div style="background:var(--cream-alt); border-radius:10px; padding:14px; margin-top:14px;">
+          <label for="ak-bulk-paste" style="display:block; font-size:12.5px; font-weight:700; color:var(--brand-dark); margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;">⚡ 빠른 입력 (한 번에 붙여넣기)</label>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 8px; font-family:'Noto Sans KR',sans-serif;">한 줄에 하나씩, "번호 정답" 형식으로 입력하고 "채우기"를 누르면 아래 칸에 자동으로 나눠서 들어가요. 예:<br><span class="mono" style="font-size:11px;">1 ③<br>2 5<br>3 x=10, y=90</span></p>
+          <textarea id="ak-bulk-paste" rows="4" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-family:'Space Mono',monospace; font-size:12.5px;" placeholder="1 ③&#10;2 5&#10;3 24"></textarea>
+          <button type="button" class="btn small ghost" style="margin-top:8px;" onclick="fillAnswerKeyFromBulkPaste()">↓ 아래 칸에 채우기</button>
+        </div>
+
         <div id="ak-inputs" style="margin-top:12px; display:flex; flex-direction:column; gap:8px;"></div>
         <button type="button" class="btn" style="margin-top:12px;" onclick="saveAnswerKey()">정답 저장</button>
 
@@ -2435,6 +2443,44 @@ function deleteHomework(id){
   homeworkRecords = homeworkRecords.filter(h => h.id !== id);
   renderHomeworkList();
   scheduleSync();
+}
+
+function fillAnswerKeyFromBulkPaste(){
+  const raw = document.getElementById('ak-bulk-paste').value;
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+
+  const parsed = {};
+  let maxNum = 0;
+  const failedLines = [];
+
+  lines.forEach(line => {
+    const m = line.match(/^(\d+)[\s:.\)\-]+(.+)$/);
+    if(m){
+      const num = Number(m[1]);
+      const answer = m[2].trim();
+      parsed[num] = answer;
+      if(num > maxNum) maxNum = num;
+    } else {
+      failedLines.push(line);
+    }
+  });
+
+  if(maxNum === 0){
+    alert('인식된 내용이 없어요. "번호 정답" 형식으로 한 줄에 하나씩 입력해주세요. (예: 1 ③)');
+    return;
+  }
+
+  document.getElementById('ak-total').value = maxNum;
+  renderAnswerKeyInputs();
+
+  Object.entries(parsed).forEach(([num, answer]) => {
+    const inputEl = document.getElementById(`ak-answer-${num}`);
+    if(inputEl) inputEl.value = answer;
+  });
+
+  if(failedLines.length){
+    alert(`${Object.keys(parsed).length}개는 채웠는데, ${failedLines.length}줄은 형식을 못 알아봤어요:\n${failedLines.slice(0, 5).join('\n')}${failedLines.length > 5 ? '\n...' : ''}\n\n해당 번호는 아래에서 직접 입력해주세요.`);
+  }
 }
 
 function renderAnswerKeyInputs(){
