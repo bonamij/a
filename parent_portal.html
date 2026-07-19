@@ -377,7 +377,35 @@ function renderReport(data, student){
     </div>
   ` : '';
 
+  // 알림 배너: 보강 예정(오늘 또는 3일 이내), 다음 학교 시험 임박
+  const alerts = [];
+  const in3Days = new Date(now);
+  in3Days.setDate(in3Days.getDate() + 3);
+  const in3DaysIso = `${in3Days.getFullYear()}-${String(in3Days.getMonth()+1).padStart(2,'0')}-${String(in3Days.getDate()).padStart(2,'0')}`;
+
+  attendanceRecords.forEach(r => {
+    if(r.status === '결석' && r.makeupDate && !r.makeupDone){
+      if(r.makeupDate === todayIso){
+        alerts.push({ icon:'📌', text:`오늘(${r.makeupDate.slice(5).replace('-','/')}) 보강이 있어요!` });
+      } else if(r.makeupDate > todayIso && r.makeupDate <= in3DaysIso){
+        const mm = r.makeupDate.slice(5).replace('-','/');
+        alerts.push({ icon:'🗓️', text:`${mm}에 보강이 예정되어 있어요.` });
+      }
+    }
+  });
+
+  const alertBannerHtml = alerts.length ? `
+    <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+      ${alerts.map(a => `
+        <div style="background:var(--brand); color:#fff; border-radius:10px; padding:12px 14px; font-size:13.5px; font-weight:700; font-family:'Noto Sans KR',sans-serif; display:flex; align-items:center; gap:8px;">
+          <span style="font-size:16px;">${a.icon}</span>${escapeHtml(a.text)}
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
   wrap.innerHTML = `
+    ${alertBannerHtml}
     ${siblingTabsHtml}
     <div class="card">
       <div class="report-head">
