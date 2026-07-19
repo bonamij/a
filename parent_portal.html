@@ -107,6 +107,19 @@
   .msg-history-item{background:var(--cream-alt); border-radius:8px; padding:9px 12px; font-size:12.5px; font-family:'Noto Sans KR',sans-serif; font-weight:500; color:var(--ink);}
   .msg-history-date{font-size:10.5px; color:var(--ink-soft); font-family:'Space Mono',monospace; display:block; margin-bottom:3px;}
 
+  .tap-grid{display:flex; flex-wrap:wrap; gap:6px;}
+  .tap-num-btn{
+    width:36px; height:36px; border-radius:8px; border:1px solid var(--line); background:#fff;
+    color:var(--ink-soft); font-family:'Space Mono',monospace; font-size:13px; font-weight:700;
+    transition:background .15s, border-color .15s, color .15s;
+  }
+  .tap-num-btn:hover{border-color:var(--brand);}
+  .tap-num-btn.wrong{background:#B8391F; border-color:#B8391F; color:#fff;}
+  .hw-self-input{
+    width:100%; box-sizing:border-box; padding:9px 10px; border:1px solid var(--line); border-radius:8px;
+    font-family:'Noto Sans KR',sans-serif; font-size:13.5px; background:var(--cream); color:var(--ink); margin-bottom:8px;
+  }
+
   @media (max-width:480px){
     .report-grid{grid-template-columns:1fr;}
   }
@@ -353,6 +366,7 @@ function renderReport(data, student){
   const comment = teacherComments[student.id] || teacherComments[String(student.id)] || '';
 
   const todayStr = `${y}.${String(mo + 1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+  const todayIsoForInput = `${y}-${String(mo + 1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
   const siblingTabsHtml = siblingList.length > 1 ? `
     <div class="sibling-tabs">
@@ -390,6 +404,19 @@ function renderReport(data, student){
       <div class="report-section">
         <h4>✏️ 데일리 테스트${avgScore !== null ? ` · 평균 ${avgScore}점` : ''}${groupAvgScore !== null ? ` · ${escapeHtml(levelOf(student.grade))} 평균 ${groupAvgScore}점` : ''}</h4>
         ${studentTests.length === 0 ? `<div class="report-empty">기록된 데일리 테스트가 없어요.</div>` : buildScoreChartSVG(studentTests, groupAvgScore)}
+      </div>
+
+      <div class="report-section">
+        <h4>✍️ 숙제 스스로 채점하기</h4>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:500;">오늘 푼 숙제를 직접 채점해서 선생님께 보내보세요!</p>
+        <input type="date" id="hwSelfDate" class="hw-self-input" value="${todayIsoForInput}">
+        <input type="text" id="hwSelfRange" class="hw-self-input" placeholder="숙제 범위 (예: 라이트 62p~68p)">
+        <input type="number" id="hwSelfTotal" class="hw-self-input" min="1" placeholder="전체 문항 수" oninput="renderHwSelfGrid()">
+        <div class="sub" style="margin:6px 0 8px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">틀린 문항 번호를 탭해주세요 (탭하면 빨갛게 표시)</div>
+        <div class="tap-grid" id="hwSelfGrid"></div>
+        <div class="progress-pill" id="hwSelfPreview" style="margin-top:12px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
+        <div><button type="button" class="btn" style="margin-top:12px;" onclick="submitSelfHomework(${student.id})">제출하기</button></div>
+        <div class="msg-status" id="hwSelfStatus"></div>
       </div>
 
       <div class="report-section">
@@ -466,6 +493,80 @@ function renderReport(data, student){
 
     <button type="button" class="btn ghost" onclick="location.reload()">🔒 로그아웃 (다른 학생 조회)</button>
   `;
+}
+
+let hwSelfWrongSet = new Set();
+
+function renderHwSelfGrid(){
+  const total = Number(document.getElementById('hwSelfTotal').value);
+  const gridEl = document.getElementById('hwSelfGrid');
+  hwSelfWrongSet.clear();
+  if(!total || total < 1){
+    gridEl.innerHTML = '';
+    updateHwSelfPreview(0, 0);
+    return;
+  }
+  let html = '';
+  for(let i = 1; i <= total; i++){
+    html += `<button type="button" class="tap-num-btn" data-num="${i}" onclick="toggleHwSelfWrongNum(${i})">${i}</button>`;
+  }
+  gridEl.innerHTML = html;
+  updateHwSelfPreview(total, 0);
+}
+
+function toggleHwSelfWrongNum(num){
+  if(hwSelfWrongSet.has(num)) hwSelfWrongSet.delete(num); else hwSelfWrongSet.add(num);
+  const btn = document.querySelector(`#hwSelfGrid .tap-num-btn[data-num="${num}"]`);
+  if(btn) btn.classList.toggle('wrong', hwSelfWrongSet.has(num));
+  const total = Number(document.getElementById('hwSelfTotal').value);
+  updateHwSelfPreview(total, hwSelfWrongSet.size);
+}
+
+function updateHwSelfPreview(total, wrongCount){
+  const el = document.getElementById('hwSelfPreview');
+  if(!total){ el.textContent = '전체 문항 수를 먼저 입력해주세요.'; return; }
+  const score = Math.round(((total - wrongCount) / total) * 100);
+  el.textContent = `틀린 ${wrongCount}개 · 예상 점수 ${score}점`;
+}
+
+async function submitSelfHomework(studentId){
+  const date = document.getElementById('hwSelfDate').value;
+  const range = document.getElementById('hwSelfRange').value.trim();
+  const total = Number(document.getElementById('hwSelfTotal').value);
+  const statusEl = document.getElementById('hwSelfStatus');
+
+  if(!date || !range || !total){
+    statusEl.textContent = '날짜, 숙제 범위, 전체 문항 수를 모두 입력해주세요.';
+    return;
+  }
+
+  statusEl.textContent = '제출 중...';
+
+  try {
+    const wrongNumbers = Array.from(hwSelfWrongSet).sort((a,b) => a - b);
+    const correct = total - wrongNumbers.length;
+    const score = Math.round((correct / total) * 100);
+
+    const freshRes = await fetch(SHEET_URL, { method:'GET' });
+    const freshData = await freshRes.json();
+
+    freshData.homeworkRecords = freshData.homeworkRecords || [];
+    const nextId = freshData.homeworkRecords.length ? Math.max(...freshData.homeworkRecords.map(h => h.id || 0)) + 1 : 1;
+    freshData.homeworkRecords.push({ id: nextId, studentId, date, range, total, correct, wrongNumbers, score });
+
+    await fetch(SHEET_URL, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    cachedData = freshData;
+    currentData = freshData;
+    statusEl.textContent = `✅ 제출 완료! (${score}점)`;
+    showStudentReport(studentId);
+  } catch(err){
+    statusEl.textContent = '❌ 제출에 실패했어요. 잠시 후 다시 시도해주세요.';
+  }
 }
 
 async function submitParentMessage(studentId){
