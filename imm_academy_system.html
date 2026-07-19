@@ -500,7 +500,7 @@
           </div>
           <div class="field" id="p-class-wrap" style="display:none;">
             <label for="p-class-select">반 선택</label>
-            <select id="p-class-select"><option value="">반을 선택하세요</option></select>
+            <select id="p-class-select" onchange="refreshProgressBookOptions()"><option value="">반을 선택하세요</option></select>
           </div>
           <div class="field">
             <label for="p-book">교재</label>
@@ -754,27 +754,61 @@
           </div>
         </div>
         <form id="homeworkForm" onsubmit="addHomework(event)">
-          <div class="inline-form">
-            <div class="field">
-              <label for="hw-student">학생</label>
-              <select id="hw-student" required><option value="">선택</option></select>
-            </div>
-            <div class="field">
-              <label for="hw-date">날짜</label>
-              <input type="date" id="hw-date" required>
-            </div>
-            <div class="field">
-              <label for="hw-range">숙제 범위</label>
-              <input type="text" id="hw-range" placeholder="예: 쎈 62p~68p" required>
-            </div>
-            <div class="field">
-              <label for="hw-total">전체 문항 수</label>
-              <input type="number" id="hw-total" min="1" style="width:100px;" oninput="renderHwTapGrid()">
+          <div class="field">
+            <label>입력 방식</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="btn small ghost active" id="hw-mode-individual" onclick="setHomeworkMode('individual')">개별 학생</button>
+              <button type="button" class="btn small ghost" id="hw-mode-class" onclick="setHomeworkMode('class')">반 전체</button>
             </div>
           </div>
-          <div class="sub" style="margin:14px 0 8px;">틀린 문항 번호를 탭하세요 (탭하면 빨갛게 표시)</div>
-          <div class="tap-grid" id="hw-tap-grid"></div>
-          <div class="progress-pill" id="hw-preview" style="margin-top:14px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
+
+          <div id="hw-individual-wrap">
+            <div class="inline-form">
+              <div class="field">
+                <label for="hw-student">학생</label>
+                <select id="hw-student" required><option value="">선택</option></select>
+              </div>
+              <div class="field">
+                <label for="hw-date">날짜</label>
+                <input type="date" id="hw-date" required>
+              </div>
+              <div class="field">
+                <label for="hw-range">숙제 범위</label>
+                <input type="text" id="hw-range" placeholder="예: 라이트 62p~68p" required>
+              </div>
+              <div class="field">
+                <label for="hw-total">전체 문항 수</label>
+                <input type="number" id="hw-total" min="1" style="width:100px;" oninput="renderHwTapGrid()">
+              </div>
+            </div>
+            <div class="sub" style="margin:14px 0 8px;">틀린 문항 번호를 탭하세요 (탭하면 빨갛게 표시)</div>
+            <div class="tap-grid" id="hw-tap-grid"></div>
+            <div class="progress-pill" id="hw-preview" style="margin-top:14px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
+          </div>
+
+          <div id="hw-class-wrap" style="display:none;">
+            <div class="inline-form">
+              <div class="field">
+                <label for="hw-class-select">반 선택</label>
+                <select id="hw-class-select" onchange="setupHwClassGrading()"><option value="">반을 선택하세요</option></select>
+              </div>
+              <div class="field">
+                <label for="hw-class-date">날짜</label>
+                <input type="date" id="hw-class-date">
+              </div>
+              <div class="field">
+                <label for="hw-class-range">숙제 범위</label>
+                <input type="text" id="hw-class-range" placeholder="예: 라이트 62p~68p">
+              </div>
+              <div class="field">
+                <label for="hw-class-total">전체 문항 수</label>
+                <input type="number" id="hw-class-total" min="1" style="width:100px;" oninput="setupHwClassGrading()">
+              </div>
+            </div>
+            <div class="sub" style="margin:14px 0 8px;">반을 선택하고 문항 수를 입력하면, 학생별로 채점표가 나와요. 각자 틀린 문항 번호를 탭해주세요.</div>
+            <div id="hw-class-grid-list" style="display:flex; flex-direction:column; gap:14px;"></div>
+          </div>
+
           <div style="margin-top:16px;"><button type="submit" class="btn">숙제 기록 추가</button></div>
         </form>
       </div>
@@ -1107,7 +1141,11 @@ let editingStudentId = null;
 
 let progressLogs = [];
 let nextProgressId = 1;
-const BOOKS = ['개념+유형','쎈','최상위S'];
+const BOOKS_ELEM = ['개념+유형','쎈','최상위S'];
+const BOOKS_MIDDLE = ['개념편','라이트','유형집','기초다지기'];
+function booksForLevel(level){
+  return level === '중등부' ? BOOKS_MIDDLE : BOOKS_ELEM;
+}
 
 let attendanceRecords = [];
 let nextAttendanceId = 1;
@@ -1289,6 +1327,7 @@ function renderStudentRow(s){
       <td>
         <strong>${escapeHtml(s.name)}</strong>${s.topS ? '<span class="badge top-s">⭐ 최상위S</span>' : ''}
         ${s.className ? `<div style="font-size:11.5px; color:var(--brand-dark); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">🏷️ ${escapeHtml(s.className)}</div>` : ''}
+        ${s.bookProgress && Object.keys(s.bookProgress).length ? `<div style="font-size:11px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">${Object.entries(s.bookProgress).map(([b,p]) => `${escapeHtml(b)} ${escapeHtml(p)}`).join(' · ')}</div>` : ''}
         ${s.topS && s.topSProgress ? `<div style="font-size:11.5px; color:var(--gold); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">최상위S ${escapeHtml(s.topSProgress)}</div>` : ''}
         ${!s.pin ? `<div style="font-size:11px; color:#B8391F; font-family:'Noto Sans KR',sans-serif; margin-top:3px;">🔑 비밀번호 미입력 (포털 로그인 불가)</div>` : ''}
       </td>
@@ -1422,7 +1461,12 @@ function refreshProgressBookOptions(){
   const isClassMode = document.getElementById('p-mode-class').classList.contains('active');
 
   if(isClassMode){
-    pBook.innerHTML = BOOKS.filter(b => b !== '최상위S').map(b => `<option value="${b}">${b}</option>`).join('');
+    const pClass = document.getElementById('p-class-select');
+    const className = pClass.value;
+    const classStudents = students.filter(s => s.className === className);
+    const level = classStudents.length ? levelOf(classStudents[0].grade) : '초등부';
+    let books = booksForLevel(level).filter(b => b !== '최상위S');
+    pBook.innerHTML = books.map(b => `<option value="${b}">${b}</option>`).join('');
     return;
   }
 
@@ -1434,13 +1478,22 @@ function refreshProgressBookOptions(){
     pBook.innerHTML = `<option value="">학생을 먼저 선택하세요</option>`;
     return;
   }
-  const books = student.topS ? BOOKS : BOOKS.filter(b => b !== '최상위S');
+  const level = levelOf(student.grade);
+  let books = booksForLevel(level);
+  if(level !== '중등부' && !student.topS){
+    books = books.filter(b => b !== '최상위S');
+  }
   pBook.innerHTML = books.map(b => `<option value="${b}">${b}</option>`).join('');
 }
 
 function updateStudentQuickField(studentId, book, page){
   const s = students.find(x => x.id === studentId);
   if(!s) return;
+  if(BOOKS_MIDDLE.includes(book)){
+    s.bookProgress = s.bookProgress || {};
+    s.bookProgress[book] = page;
+    return;
+  }
   if(book === '개념+유형') s.concept = page;
   else if(book === '쎈') s.sen = page;
   else if(book === '최상위S') s.topSProgress = page;
@@ -2032,11 +2085,33 @@ async function analyzeDailyTestPhoto(){
           <div style="grid-column:1/-1;"><span class="label">틀린 문항 번호</span>${(result.wrongNumbers && result.wrongNumbers.length) ? result.wrongNumbers.join(', ') + '번' : '없음'}</div>
           <div style="grid-column:1/-1;"><span class="label">예상 오답 원인</span>${escapeHtml(result.causeGuess || '-')}</div>
         </div>
-        <button type="button" class="btn small" onclick="applyDailyPhotoAnalysis()">📥 이 결과를 아래 입력폼에 반영하기</button>
+        <div style="margin-bottom:12px;">
+          <span class="label" style="display:block; margin-bottom:4px;">학부모님께 전달할 코멘트 (수정 가능)</span>
+          <textarea id="photoTeacherComment" class="msg-textarea" rows="4">${escapeHtml(result.teacherComment || '')}</textarea>
+          ${!result.teacherComment ? `<p style="font-size:11px; color:#B8391F; margin-top:4px;">⚠️ AI가 이번엔 코멘트를 안 만들었어요. 직접 입력하시거나, 아래 원본 응답을 확인해주세요.</p>` : ''}
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+          <button type="button" class="btn small" onclick="applyDailyPhotoAnalysis()">📥 이 결과를 아래 입력폼에 반영하기</button>
+          <button type="button" class="btn small ghost" onclick="applyPhotoCommentToReport(${studentId})">💬 이 코멘트를 학생 리포트에 반영하기</button>
+        </div>
+        <details style="font-size:11px; color:var(--ink-soft);">
+          <summary style="cursor:pointer;">🔧 AI 원본 응답 보기 (문제 생길 때 확인용)</summary>
+          <pre style="white-space:pre-wrap; word-break:break-all; background:#fff; padding:8px; border-radius:6px; margin-top:6px; font-family:'Space Mono',monospace; font-size:10.5px;">${escapeHtml(JSON.stringify(result, null, 2))}</pre>
+        </details>
       </div>`;
   } catch(err){
     resultEl.innerHTML = `<div class="report-empty">❌ 분석 요청에 실패했어요.<br><span style="font-size:11px;">오류 내용: ${escapeHtml(err.message || String(err))}</span></div>`;
   }
+}
+
+function applyPhotoCommentToReport(studentId){
+  const commentEl = document.getElementById('photoTeacherComment');
+  if(!commentEl) return;
+  const text = commentEl.value.trim();
+  if(!text) return;
+  teacherComments[studentId] = text;
+  scheduleSync();
+  alert('선생님 코멘트로 반영했어요! "학생 리포트" 탭에서 확인하실 수 있고, 학부모 포털에도 자동으로 보여요.');
 }
 
 function applyDailyPhotoAnalysis(){
@@ -2177,6 +2252,53 @@ function renderScoreChart(){
    숙제 자기 채점
 ========================================================= */
 let hwWrongSet = new Set();
+let hwClassWrongMap = {};
+
+function setHomeworkMode(mode){
+  document.getElementById('hw-mode-individual').classList.toggle('active', mode === 'individual');
+  document.getElementById('hw-mode-class').classList.toggle('active', mode === 'class');
+  document.getElementById('hw-individual-wrap').style.display = mode === 'individual' ? 'block' : 'none';
+  document.getElementById('hw-class-wrap').style.display = mode === 'class' ? 'block' : 'none';
+  document.getElementById('hw-student').required = mode === 'individual';
+}
+
+function setupHwClassGrading(){
+  const className = document.getElementById('hw-class-select').value;
+  const total = Number(document.getElementById('hw-class-total').value);
+  const listEl = document.getElementById('hw-class-grid-list');
+
+  if(!className || !total || total < 1){
+    listEl.innerHTML = '';
+    hwClassWrongMap = {};
+    return;
+  }
+
+  const classStudents = students.filter(s => s.className === className);
+  hwClassWrongMap = {};
+  classStudents.forEach(s => { hwClassWrongMap[s.id] = new Set(); });
+
+  listEl.innerHTML = classStudents.map(s => `
+    <div style="background:var(--cream-alt); border-radius:10px; padding:14px;">
+      <p style="font-weight:700; font-size:13px; margin-bottom:8px; font-family:'Noto Sans KR',sans-serif;">${escapeHtml(s.name)}</p>
+      <div class="tap-grid" id="hw-class-grid-${s.id}">
+        ${Array.from({ length: total }, (_, i) => i + 1).map(n => `<button type="button" class="tap-num-btn" data-num="${n}" onclick="toggleHwClassWrongNum(${s.id}, ${n})">${n}</button>`).join('')}
+      </div>
+      <div class="progress-pill" id="hw-class-preview-${s.id}" style="margin-top:8px; display:inline-block;">틀린 0개 · 예상 점수 100점</div>
+    </div>
+  `).join('');
+}
+
+function toggleHwClassWrongNum(studentId, num){
+  const set = hwClassWrongMap[studentId];
+  if(!set) return;
+  if(set.has(num)) set.delete(num); else set.add(num);
+  const btn = document.querySelector(`#hw-class-grid-${studentId} .tap-num-btn[data-num="${num}"]`);
+  if(btn) btn.classList.toggle('wrong', set.has(num));
+  const total = Number(document.getElementById('hw-class-total').value);
+  const score = Math.round(((total - set.size) / total) * 100);
+  const previewEl = document.getElementById(`hw-class-preview-${studentId}`);
+  if(previewEl) previewEl.textContent = `틀린 ${set.size}개 · 예상 점수 ${score}점`;
+}
 
 function renderHwTapGrid(){
   const total = Number(document.getElementById('hw-total').value);
@@ -2213,28 +2335,63 @@ function updateHwPreview(total, wrongCount){
 
 function addHomework(e){
   e.preventDefault();
-  const studentId = Number(document.getElementById('hw-student').value);
-  const date = document.getElementById('hw-date').value;
-  const range = document.getElementById('hw-range').value.trim();
-  const total = Number(document.getElementById('hw-total').value);
+  const isClassMode = document.getElementById('hw-mode-class').classList.contains('active');
 
-  if(!studentId || !date || !range || !total){
-    alert('학생, 날짜, 숙제 범위, 전체 문항 수를 모두 입력해주세요.');
-    return;
+  if(isClassMode){
+    const className = document.getElementById('hw-class-select').value;
+    const date = document.getElementById('hw-class-date').value;
+    const range = document.getElementById('hw-class-range').value.trim();
+    const total = Number(document.getElementById('hw-class-total').value);
+
+    if(!className || !date || !range || !total){
+      alert('반, 날짜, 숙제 범위, 전체 문항 수를 모두 입력해주세요.');
+      return;
+    }
+
+    const classStudents = students.filter(s => s.className === className);
+    if(classStudents.length === 0){
+      alert('이 반에 속한 학생이 없어요.');
+      return;
+    }
+
+    classStudents.forEach(s => {
+      const wrongSet = hwClassWrongMap[s.id] || new Set();
+      const wrongNumbers = Array.from(wrongSet).sort((a,b) => a - b);
+      const correct = total - wrongNumbers.length;
+      const score = Math.round((correct / total) * 100);
+      homeworkRecords.push({ id: nextHomeworkId++, studentId: s.id, date, range, total, correct, wrongNumbers, score });
+    });
+
+    alert(`"${className}" 반 학생 ${classStudents.length}명의 숙제가 한번에 기록됐어요.`);
+
+    document.getElementById('hw-class-range').value = '';
+    document.getElementById('hw-class-total').value = '';
+    document.getElementById('hw-class-grid-list').innerHTML = '';
+    hwClassWrongMap = {};
+  } else {
+    const studentId = Number(document.getElementById('hw-student').value);
+    const date = document.getElementById('hw-date').value;
+    const range = document.getElementById('hw-range').value.trim();
+    const total = Number(document.getElementById('hw-total').value);
+
+    if(!studentId || !date || !range || !total){
+      alert('학생, 날짜, 숙제 범위, 전체 문항 수를 모두 입력해주세요.');
+      return;
+    }
+
+    const wrongNumbers = Array.from(hwWrongSet).sort((a,b) => a - b);
+    const correct = total - wrongNumbers.length;
+    const score = Math.round((correct / total) * 100);
+
+    homeworkRecords.push({ id: nextHomeworkId++, studentId, date, range, total, correct, wrongNumbers, score });
+
+    document.getElementById('hw-range').value = '';
+    document.getElementById('hw-total').value = '';
+    hwWrongSet.clear();
+    document.getElementById('hw-tap-grid').innerHTML = '';
+    updateHwPreview(0, 0);
+    document.getElementById('hw-range').focus();
   }
-
-  const wrongNumbers = Array.from(hwWrongSet).sort((a,b) => a - b);
-  const correct = total - wrongNumbers.length;
-  const score = Math.round((correct / total) * 100);
-
-  homeworkRecords.push({ id: nextHomeworkId++, studentId, date, range, total, correct, wrongNumbers, score });
-
-  document.getElementById('hw-range').value = '';
-  document.getElementById('hw-total').value = '';
-  hwWrongSet.clear();
-  document.getElementById('hw-tap-grid').innerHTML = '';
-  updateHwPreview(0, 0);
-  document.getElementById('hw-range').focus();
 
   renderHomeworkList();
   scheduleSync();
@@ -2250,11 +2407,22 @@ function deleteHomework(id){
 function refreshHomeworkStudentSelects(){
   const hwStudent = document.getElementById('hw-student');
   const filterStudent = document.getElementById('homeworkFilterStudent');
+  const hwClass = document.getElementById('hw-class-select');
   const prevHw = hwStudent.value, prevFilter = filterStudent.value;
+  const prevClass = hwClass ? hwClass.value : '';
 
   const optionsHtml = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
   hwStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
   filterStudent.innerHTML = `<option value="all">전체 학생</option>` + optionsHtml;
+
+  if(hwClass){
+    const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
+    hwClass.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => {
+      const count = students.filter(s => s.className === c).length;
+      return `<option value="${escapeHtml(c)}">${escapeHtml(c)} (${count}명)</option>`;
+    }).join('');
+    if(classNames.includes(prevClass)) hwClass.value = prevClass;
+  }
 
   if(students.some(s => String(s.id) === prevHw)) hwStudent.value = prevHw;
   if(prevFilter === 'all' || students.some(s => String(s.id) === prevFilter)) filterStudent.value = prevFilter;
@@ -3141,12 +3309,14 @@ function init(){
   document.getElementById('att-date').value = iso;
   document.getElementById('dt-date').value = iso;
   document.getElementById('hw-date').value = iso;
+  document.getElementById('hw-class-date').value = iso;
   document.getElementById('m-date').value = iso;
   document.getElementById('ea-date').value = iso;
   attCalYear = now.getFullYear();
   attCalMonth = now.getMonth();
   setDailyMode('count');
   setProgressMode('individual');
+  setHomeworkMode('individual');
   renderStudents();
   refreshProgressStudentSelects();
   renderProgressList();
