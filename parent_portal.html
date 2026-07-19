@@ -394,6 +394,13 @@ function renderReport(data, student){
     }
   });
 
+  const doneRanges = new Set(studentHomework.map(h => h.range));
+  (data.answerKeys || []).forEach(ak => {
+    if(!doneRanges.has(ak.range)){
+      alerts.push({ icon:'✏️', text:`아직 안 한 숙제가 있어요: ${ak.range} — 채점해봐!` });
+    }
+  });
+
   const alertBannerHtml = alerts.length ? `
     <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
       ${alerts.map(a => `
