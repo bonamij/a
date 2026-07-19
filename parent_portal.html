@@ -119,6 +119,9 @@
     width:100%; box-sizing:border-box; padding:9px 10px; border:1px solid var(--line); border-radius:8px;
     font-family:'Noto Sans KR',sans-serif; font-size:13.5px; background:var(--cream); color:var(--ink); margin-bottom:8px;
   }
+  .ak-input-row{display:flex; align-items:center; gap:8px;}
+  .ak-input-row .ak-num{width:32px; font-weight:700; font-family:'Space Mono',monospace; font-size:13px; color:var(--ink-soft); flex-shrink:0;}
+  .ak-input-row input{flex:1;}
 
   @media (max-width:480px){
     .report-grid{grid-template-columns:1fr;}
@@ -410,11 +413,13 @@ function renderReport(data, student){
         <h4>✍️ 숙제 스스로 채점하기</h4>
         <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:500;">오늘 푼 숙제를 직접 채점해서 선생님께 보내보세요!</p>
         <input type="date" id="hwSelfDate" class="hw-self-input" value="${todayIsoForInput}">
-        <input type="text" id="hwSelfRange" class="hw-self-input" placeholder="숙제 범위 (예: 라이트 62p~68p)">
-        <input type="number" id="hwSelfTotal" class="hw-self-input" min="1" placeholder="전체 문항 수" oninput="renderHwSelfGrid()">
-        <div class="sub" style="margin:6px 0 8px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">틀린 문항 번호를 탭해주세요 (탭하면 빨갛게 표시)</div>
-        <div class="tap-grid" id="hwSelfGrid"></div>
-        <div class="progress-pill" id="hwSelfPreview" style="margin-top:12px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
+        <input type="text" id="hwSelfRange" class="hw-self-input" placeholder="숙제 범위 (예: 라이트 62p~68p)" onchange="checkHwSelfAnswerKey()">
+        <div id="hwSelfModeArea">
+          <input type="number" id="hwSelfTotal" class="hw-self-input" min="1" placeholder="전체 문항 수" oninput="renderHwSelfGrid()">
+          <div class="sub" style="margin:6px 0 8px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">틀린 문항 번호를 탭해주세요 (탭하면 빨갛게 표시)</div>
+          <div class="tap-grid" id="hwSelfGrid"></div>
+          <div class="progress-pill" id="hwSelfPreview" style="margin-top:12px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
+        </div>
         <div><button type="button" class="btn" style="margin-top:12px;" onclick="submitSelfHomework(${student.id})">제출하기</button></div>
         <div class="msg-status" id="hwSelfStatus"></div>
       </div>
@@ -496,6 +501,35 @@ function renderReport(data, student){
 }
 
 let hwSelfWrongSet = new Set();
+let hwSelfMatchedKey = null;
+
+function checkHwSelfAnswerKey(){
+  const range = document.getElementById('hwSelfRange').value.trim();
+  const areaEl = document.getElementById('hwSelfModeArea');
+  const keys = (currentData && currentData.answerKeys) || [];
+  const match = keys.find(k => k.range === range);
+
+  if(match){
+    hwSelfMatchedKey = match;
+    areaEl.innerHTML = `
+      <p style="font-size:12px; color:var(--brand-dark); font-weight:700; margin:10px 0 8px; font-family:'Noto Sans KR',sans-serif;">✅ 이 범위는 자동채점이 가능해요! 네가 쓴 답을 번호별로 입력해봐.</p>
+      ${Array.from({ length: match.total }, (_, i) => i + 1).map(n => `
+        <div class="ak-input-row" style="margin-bottom:6px;">
+          <span class="ak-num">${n}번</span>
+          <input type="text" id="hwSelfAnswer-${n}" class="hw-self-input" style="margin-bottom:0;" placeholder="네가 쓴 답">
+        </div>
+      `).join('')}
+    `;
+  } else {
+    hwSelfMatchedKey = null;
+    areaEl.innerHTML = `
+      <input type="number" id="hwSelfTotal" class="hw-self-input" min="1" placeholder="전체 문항 수" oninput="renderHwSelfGrid()">
+      <div class="sub" style="margin:6px 0 8px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">틀린 문항 번호를 탭해주세요 (탭하면 빨갛게 표시)</div>
+      <div class="tap-grid" id="hwSelfGrid"></div>
+      <div class="progress-pill" id="hwSelfPreview" style="margin-top:12px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
+    `;
+  }
+}
 
 function renderHwSelfGrid(){
   const total = Number(document.getElementById('hwSelfTotal').value);
@@ -532,21 +566,43 @@ function updateHwSelfPreview(total, wrongCount){
 async function submitSelfHomework(studentId){
   const date = document.getElementById('hwSelfDate').value;
   const range = document.getElementById('hwSelfRange').value.trim();
-  const total = Number(document.getElementById('hwSelfTotal').value);
   const statusEl = document.getElementById('hwSelfStatus');
 
-  if(!date || !range || !total){
-    statusEl.textContent = '날짜, 숙제 범위, 전체 문항 수를 모두 입력해주세요.';
+  if(!date || !range){
+    statusEl.textContent = '날짜와 숙제 범위를 입력해주세요.';
     return;
+  }
+
+  let total, correct, wrongNumbers, score;
+
+  if(hwSelfMatchedKey && hwSelfMatchedKey.range === range){
+    total = hwSelfMatchedKey.total;
+    const wrong = [];
+    for(let i = 1; i <= total; i++){
+      const inputEl = document.getElementById(`hwSelfAnswer-${i}`);
+      const myAnswer = inputEl ? inputEl.value.trim() : '';
+      const correctAnswer = String(hwSelfMatchedKey.answers[i] || '').trim();
+      if(!myAnswer || myAnswer !== correctAnswer){
+        wrong.push(i);
+      }
+    }
+    wrongNumbers = wrong;
+    correct = total - wrong.length;
+    score = Math.round((correct / total) * 100);
+  } else {
+    total = Number(document.getElementById('hwSelfTotal').value);
+    if(!total){
+      statusEl.textContent = '전체 문항 수를 입력해주세요.';
+      return;
+    }
+    wrongNumbers = Array.from(hwSelfWrongSet).sort((a,b) => a - b);
+    correct = total - wrongNumbers.length;
+    score = Math.round((correct / total) * 100);
   }
 
   statusEl.textContent = '제출 중...';
 
   try {
-    const wrongNumbers = Array.from(hwSelfWrongSet).sort((a,b) => a - b);
-    const correct = total - wrongNumbers.length;
-    const score = Math.round((correct / total) * 100);
-
     const freshRes = await fetch(SHEET_URL, { method:'GET' });
     const freshData = await freshRes.json();
 

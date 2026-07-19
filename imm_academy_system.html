@@ -172,6 +172,10 @@
   .tap-num-btn:hover{border-color:var(--brand);}
   .tap-num-btn.wrong{background:#B8391F; border-color:#B8391F; color:#fff;}
 
+  .ak-input-row{display:flex; align-items:center; gap:8px;}
+  .ak-input-row .ak-num{width:32px; font-weight:700; font-family:'Space Mono',monospace; font-size:13px; color:var(--ink-soft); flex-shrink:0;}
+  .ak-input-row input{flex:1; padding:7px 10px; border:1px solid var(--line); border-radius:6px; font-family:'Noto Sans KR',sans-serif; font-size:13px;}
+
   .progress-pill{font-family:'Space Mono',monospace; font-size:12.5px; background:var(--cream-alt); border-radius:6px; padding:3px 9px; display:inline-block;}
 
   .recent-list{list-style:none; margin:0; padding:0;}
@@ -749,6 +753,30 @@
       <div class="card">
         <div class="card-head">
           <div>
+            <h3>📘 정답 입력 (자동채점용)</h3>
+            <div class="sub">숙제 범위별로 정답을 한 번 입력해두면, 학생이 포털에서 스스로 답을 입력할 때 자동으로 채점돼요. 같은 범위는 나중에 다른 학생도 재사용할 수 있어요.</div>
+          </div>
+        </div>
+        <div class="inline-form">
+          <div class="field">
+            <label for="ak-range">숙제 범위 (숙제 채점 때 입력할 범위와 똑같이 적어주세요)</label>
+            <input type="text" id="ak-range" placeholder="예: 라이트 62p~68p" style="min-width:260px;">
+          </div>
+          <div class="field">
+            <label for="ak-total">문항 수</label>
+            <input type="number" id="ak-total" min="1" style="width:100px;" oninput="renderAnswerKeyInputs()">
+          </div>
+        </div>
+        <div id="ak-inputs" style="margin-top:12px; display:flex; flex-direction:column; gap:8px;"></div>
+        <button type="button" class="btn" style="margin-top:12px;" onclick="saveAnswerKey()">정답 저장</button>
+
+        <div class="sub" style="margin-top:20px;">저장된 정답 세트</div>
+        <ul class="recent-list" id="answerKeyListBody" style="flex-direction:column; display:flex; gap:8px; margin-top:8px;"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
             <h3>숙제 자기 채점</h3>
             <div class="sub">전체 문항 수를 입력하고, 틀린 문제 번호만 탭하면 점수가 자동 계산돼요. 학생이 직접 채점해도 좋아요!</div>
           </div>
@@ -1179,6 +1207,9 @@ let nextExamId = 1;
 
 let parentMessages = [];
 
+let answerKeys = [];
+let nextAnswerKeyId = 1;
+
 const TAB_TITLES = {
   home:'홈', dashboard:'대시보드', students:'학생 명단', progress:'진도 관리', attendance:'출결 관리', daily:'데일리 테스트',
   homework:'숙제 채점', mistakes:'오답노트', report:'학생 리포트', middle:'중등부 정보', backup:'데이터 관리'
@@ -1405,6 +1436,7 @@ function renderStudents(){
   if(document.getElementById('hw-student')){
     refreshHomeworkStudentSelects();
     renderHomeworkList();
+    renderAnswerKeyList();
   }
   if(document.getElementById('m-student')){
     refreshMistakeStudentSelects();
@@ -2405,6 +2437,79 @@ function deleteHomework(id){
   scheduleSync();
 }
 
+function renderAnswerKeyInputs(){
+  const total = Number(document.getElementById('ak-total').value);
+  const wrap = document.getElementById('ak-inputs');
+  if(!total || total < 1){
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.innerHTML = Array.from({ length: total }, (_, i) => i + 1).map(n => `
+    <div class="ak-input-row">
+      <span class="ak-num">${n}번</span>
+      <input type="text" id="ak-answer-${n}" placeholder="정답 입력 (예: ③ 또는 24)">
+    </div>
+  `).join('');
+}
+
+function saveAnswerKey(){
+  const range = document.getElementById('ak-range').value.trim();
+  const total = Number(document.getElementById('ak-total').value);
+
+  if(!range || !total){
+    alert('숙제 범위와 문항 수를 입력해주세요.');
+    return;
+  }
+
+  const answers = {};
+  for(let i = 1; i <= total; i++){
+    const val = document.getElementById(`ak-answer-${i}`).value.trim();
+    if(!val){
+      alert(`${i}번 정답이 비어있어요. 모든 문항의 정답을 입력해주세요.`);
+      return;
+    }
+    answers[i] = val;
+  }
+
+  const existing = answerKeys.find(a => a.range === range);
+  if(existing){
+    existing.total = total;
+    existing.answers = answers;
+  } else {
+    answerKeys.push({ id: nextAnswerKeyId++, range, total, answers });
+  }
+
+  document.getElementById('ak-range').value = '';
+  document.getElementById('ak-total').value = '';
+  document.getElementById('ak-inputs').innerHTML = '';
+
+  renderAnswerKeyList();
+  scheduleSync();
+  alert(`"${range}" 정답이 저장됐어요! 학생이 포털에서 이 범위로 숙제를 입력하면 자동채점돼요.`);
+}
+
+function deleteAnswerKey(id){
+  if(!confirm('이 정답 세트를 삭제하시겠습니까?')) return;
+  answerKeys = answerKeys.filter(a => a.id !== id);
+  renderAnswerKeyList();
+  scheduleSync();
+}
+
+function renderAnswerKeyList(){
+  const listEl = document.getElementById('answerKeyListBody');
+  if(!listEl) return;
+  if(answerKeys.length === 0){
+    listEl.innerHTML = `<li class="report-empty">저장된 정답 세트가 없어요.</li>`;
+    return;
+  }
+  listEl.innerHTML = answerKeys.slice().reverse().map(a => `
+    <li style="display:flex; justify-content:space-between; align-items:center;">
+      <span>${escapeHtml(a.range)} <span style="color:var(--ink-soft); font-size:12px;">· ${a.total}문항</span></span>
+      <button type="button" class="btn small danger-text" onclick="deleteAnswerKey(${a.id})">삭제</button>
+    </li>
+  `).join('');
+}
+
 function refreshHomeworkStudentSelects(){
   const hwStudent = document.getElementById('hw-student');
   const filterStudent = document.getElementById('homeworkFilterStudent');
@@ -3121,7 +3226,8 @@ function collectAllData(){
     teacherComments,
     schoolInfos, nextSchoolInfoId,
     examAnalysis, nextExamId,
-    parentMessages
+    parentMessages,
+    answerKeys, nextAnswerKeyId
   };
 }
 
@@ -3146,6 +3252,8 @@ function applyAllData(data){
   examAnalysis = data.examAnalysis || [];
   nextExamId = data.nextExamId || maxId(examAnalysis);
   parentMessages = data.parentMessages || [];
+  answerKeys = data.answerKeys || [];
+  nextAnswerKeyId = data.nextAnswerKeyId || (answerKeys.length ? Math.max(...answerKeys.map(a => a.id || 0)) + 1 : 1);
 
   if(data.academyName){
     const brandEl = document.querySelector('.brand-title');
@@ -3338,6 +3446,7 @@ function init(){
   renderScoreChart();
   refreshHomeworkStudentSelects();
   renderHomeworkList();
+  renderAnswerKeyList();
   refreshMistakeStudentSelects();
   renderMistakeList();
   renderMistakeChart();
