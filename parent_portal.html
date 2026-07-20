@@ -469,17 +469,6 @@ function renderReport(data, student){
         <div class="msg-status" id="hwChecklistStatus"></div>
       </div>
 
-
-      <div class="report-section">
-        <h4>📔 숙제 채점 결과</h4>
-        ${studentHomework.length === 0
-          ? `<div class="report-empty">기록된 숙제가 없어요.</div>`
-          : `<ul class="report-list">${studentHomework.map(h => {
-              const wrongText = (h.wrongNumbers && h.wrongNumbers.length) ? `틀림: ${h.wrongNumbers.join(', ')}번` : '틀린 문제 없음';
-              return `<li>${h.date.replace(/-/g,'.')} · ${escapeHtml(h.range)} · <strong>${h.score}점</strong> <span style="color:var(--ink-soft); font-size:12px;">(${wrongText})</span></li>`;
-            }).join('')}</ul>`}
-      </div>
-
       <div class="report-section">
         <h4>💪 강점 단원</h4>
         ${strongUnits.length === 0
