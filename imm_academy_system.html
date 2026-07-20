@@ -608,12 +608,26 @@
             <label for="s-family">가족 연결 코드 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(형제자매만! 같은 코드끼리 포털에서 서로 전환돼요. 비워두면 본인 정보만 보여요)</span></label>
             <input type="text" id="s-family" placeholder="예: kim-family (형제자매끼리 동일하게)">
           </div>
+          <div class="field">
+            <label for="s-enroll">등록일</label>
+            <input type="date" id="s-enroll">
+          </div>
           <button type="submit" class="btn">학생 등록</button>
         </form>
         <div style="margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);">
           <div class="sub" style="margin-bottom:8px;">구글시트에 미리 적어두셨던 학생 10명을 한 번에 등록할 수 있어요.</div>
           <button type="button" class="btn small ghost" onclick="bulkImportStudents()">📥 기존 학생 10명 한번에 추가</button>
         </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>📊 이번 달 학생 변동</h3>
+            <div class="sub" id="monthlyChangeSub"></div>
+          </div>
+        </div>
+        <div id="monthlyChangeBody" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;"></div>
       </div>
 
       <div class="card">
@@ -637,11 +651,29 @@
               <th style="width:22%">이름</th>
               <th style="width:12%">학년</th>
               <th>학교</th>
-              <th style="width:150px">관리</th>
+              <th style="width:190px">관리</th>
             </tr>
           </thead>
           <tbody id="studentsTableBody"></tbody>
         </table>
+      </div>
+
+      <div class="card">
+        <details>
+          <summary style="cursor:pointer; font-size:14px; font-weight:700; color:var(--brand-dark); font-family:'Gowun Dodum','Noto Sans KR',sans-serif;">👋 퇴원생 목록 보기 (<span id="withdrawnCount">0</span>명)</summary>
+          <table style="margin-top:14px;">
+            <thead>
+              <tr>
+                <th style="width:20%">이름</th>
+                <th style="width:12%">학년</th>
+                <th style="width:16%">등록일</th>
+                <th style="width:16%">퇴원일</th>
+                <th style="width:140px">관리</th>
+              </tr>
+            </thead>
+            <tbody id="withdrawnTableBody"></tbody>
+          </table>
+        </details>
       </div>
     </section>
 
@@ -1296,6 +1328,8 @@ function getDataSheet() {
 let students = [];
 let nextStudentId = 1;
 let editingStudentId = null;
+let withdrawnStudents = [];
+let withdrawingStudentId = null;
 
 let progressLogs = [];
 let nextProgressId = 1;
@@ -1447,6 +1481,8 @@ function addStudent(e){
   const className = document.getElementById('s-class').value.trim();
   const pin = document.getElementById('s-pin').value.trim();
   const familyCode = document.getElementById('s-family').value.trim();
+  const now = new Date();
+  const enrollDate = document.getElementById('s-enroll').value || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
   if(!name || !grade){
     alert('이름과 학년은 필수 입력 항목입니다.');
@@ -1457,7 +1493,7 @@ function addStudent(e){
     return;
   }
 
-  students.push({ id: nextStudentId++, name, grade, school, className, pin, familyCode, concept:'', sen:'', topSProgress:'', bookProgress:{} });
+  students.push({ id: nextStudentId++, name, grade, school, className, pin, familyCode, enrollDate, concept:'', sen:'', topSProgress:'', bookProgress:{} });
 
   document.getElementById('s-name').value = '';
   document.getElementById('s-grade').value = '';
@@ -1465,13 +1501,14 @@ function addStudent(e){
   document.getElementById('s-class').value = '';
   document.getElementById('s-pin').value = '';
   document.getElementById('s-family').value = '';
+  document.getElementById('s-enroll').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   document.getElementById('s-name').focus();
 
   renderStudents();
   scheduleSync();
 }
 
-function startEditStudent(id){ editingStudentId = id; renderStudents(); }
+function startEditStudent(id){ editingStudentId = id; withdrawingStudentId = null; renderStudents(); }
 function cancelEditStudent(){ editingStudentId = null; renderStudents(); }
 function saveEditStudent(id){
   const name = document.getElementById(`e-name-${id}`).value.trim();
@@ -1480,10 +1517,11 @@ function saveEditStudent(id){
   const className = document.getElementById(`e-class-${id}`).value.trim();
   const pin = document.getElementById(`e-pin-${id}`).value.trim();
   const familyCode = document.getElementById(`e-family-${id}`).value.trim();
+  const enrollDate = document.getElementById(`e-enroll-${id}`).value;
   if(!name || !grade){ alert('이름과 학년은 필수 입력 항목입니다.'); return; }
   if(pin && !/^\d{4}$/.test(pin)){ alert('비밀번호는 숫자 4자리로 입력해주세요.'); return; }
   const s = students.find(x => x.id === id);
-  Object.assign(s, { name, grade, school, className, pin, familyCode });
+  Object.assign(s, { name, grade, school, className, pin, familyCode, enrollDate });
   editingStudentId = null;
   renderStudents();
   scheduleSync();
@@ -1491,8 +1529,42 @@ function saveEditStudent(id){
 function deleteStudent(id){
   const s = students.find(x => x.id === id);
   if(!s) return;
-  if(!confirm(`'${s.name}' 학생을 명단에서 삭제하시겠습니까?`)) return;
+  if(!confirm(`'${s.name}' 학생을 명단에서 완전히 삭제하시겠습니까?\n(잘못 등록한 경우에만 사용하세요. 진짜 퇴원생은 '퇴원 처리'를 이용하면 기록이 남아요.)`)) return;
   students = students.filter(x => x.id !== id);
+  renderStudents();
+  scheduleSync();
+}
+
+function startWithdrawStudent(id){ withdrawingStudentId = id; editingStudentId = null; renderStudents(); }
+function cancelWithdrawStudent(){ withdrawingStudentId = null; renderStudents(); }
+function confirmWithdrawStudent(id){
+  const s = students.find(x => x.id === id);
+  if(!s) return;
+  const withdrawDate = document.getElementById(`w-date-${id}`).value;
+  if(!withdrawDate){ alert('퇴원일을 입력해주세요.'); return; }
+  if(!confirm(`'${s.name}' 학생을 퇴원 처리할까요? 명단에서는 빠지지만 기록은 퇴원생 목록에 남아요.`)) return;
+
+  students = students.filter(x => x.id !== id);
+  withdrawnStudents.push({ ...s, withdrawDate });
+  withdrawingStudentId = null;
+  renderStudents();
+  scheduleSync();
+}
+function restoreWithdrawnStudent(id){
+  const s = withdrawnStudents.find(x => x.id === id);
+  if(!s) return;
+  if(!confirm(`'${s.name}' 학생을 다시 재원생 명단으로 복귀시킬까요?`)) return;
+  withdrawnStudents = withdrawnStudents.filter(x => x.id !== id);
+  const { withdrawDate, ...restored } = s;
+  students.push(restored);
+  renderStudents();
+  scheduleSync();
+}
+function permanentlyDeleteWithdrawn(id){
+  const s = withdrawnStudents.find(x => x.id === id);
+  if(!s) return;
+  if(!confirm(`'${s.name}' 학생의 퇴원 기록을 영구 삭제하시겠습니까? 복구할 수 없어요.`)) return;
+  withdrawnStudents = withdrawnStudents.filter(x => x.id !== id);
   renderStudents();
   scheduleSync();
 }
@@ -1542,11 +1614,29 @@ function renderStudentRow(s){
           <input type="text" id="e-school-${s.id}" value="${escapeHtml(s.school)}" placeholder="학교" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
           <input type="text" id="e-class-${s.id}" value="${escapeHtml(s.className || '')}" placeholder="반 이름 (예: 화금중1)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
           <input type="text" id="e-pin-${s.id}" value="${escapeHtml(s.pin || '')}" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="비밀번호(4자리)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
-          <input type="text" id="e-family-${s.id}" value="${escapeHtml(s.familyCode || '')}" placeholder="가족 연결 코드 (형제자매만)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">
+          <input type="text" id="e-family-${s.id}" value="${escapeHtml(s.familyCode || '')}" placeholder="가족 연결 코드 (형제자매만)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
+          <label style="font-size:11px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">등록일</label>
+          <input type="date" id="e-enroll-${s.id}" value="${escapeHtml(s.enrollDate || '')}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">
         </td>
         <td>
           <button class="btn small" onclick="saveEditStudent(${s.id})">저장</button>
           <button class="btn small ghost" onclick="cancelEditStudent()">취소</button>
+        </td>
+      </tr>`;
+  }
+  if(withdrawingStudentId === s.id){
+    const now = new Date();
+    const todayIso = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    return `
+      <tr>
+        <td colspan="4" style="background:var(--cream-alt);">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <strong>${escapeHtml(s.name)}</strong> 학생을 퇴원 처리할게요.
+            <label for="w-date-${s.id}" style="font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">퇴원일</label>
+            <input type="date" id="w-date-${s.id}" value="${todayIso}" style="padding:6px 8px; border:1px solid var(--line); border-radius:6px;">
+            <button class="btn small" onclick="confirmWithdrawStudent(${s.id})">퇴원 확정</button>
+            <button class="btn small ghost" onclick="cancelWithdrawStudent()">취소</button>
+          </div>
         </td>
       </tr>`;
   }
@@ -1559,11 +1649,13 @@ function renderStudentRow(s){
         ${s.topSProgress ? `<div style="font-size:11.5px; color:var(--gold); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">최상위S ${escapeHtml(s.topSProgress)}</div>` : ''}
         ${!s.pin ? `<div style="font-size:11px; color:#B8391F; font-family:'Noto Sans KR',sans-serif; margin-top:3px;">🔑 비밀번호 미입력 (포털 로그인 불가)</div>` : ''}
         ${s.familyCode ? `<div style="font-size:11px; color:var(--brand-dark); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">👨‍👩‍👧 가족코드: ${escapeHtml(s.familyCode)}</div>` : ''}
+        ${s.enrollDate ? `<div style="font-size:11px; color:var(--ink-soft); font-family:'Space Mono',monospace; margin-top:3px;">📅 등록일 ${escapeHtml(s.enrollDate)}</div>` : ''}
       </td>
       <td><span class="badge gray">${escapeHtml(s.grade)}</span></td>
       <td>${s.school ? `${escapeHtml(s.school)} <button type="button" class="btn small ghost" data-school="${escapeHtml(s.school)}" onclick="openSchoolInfo(this.dataset.school)" style="margin-left:6px; padding:2px 9px; font-size:11px;">🔍 학교알리미</button>` : '<span style="color:var(--ink-soft)">-</span>'}</td>
       <td>
         <button class="btn small ghost" onclick="startEditStudent(${s.id})">수정</button>
+        <button class="btn small ghost" onclick="startWithdrawStudent(${s.id})">퇴원 처리</button>
         <button class="btn small danger-text" onclick="deleteStudent(${s.id})">삭제</button>
       </td>
     </tr>`;
@@ -1624,6 +1716,9 @@ function renderStudents(){
     if(s && sel) sel.value = s.grade;
   }
 
+  renderMonthlyStudentChanges();
+  renderWithdrawnStudents();
+
   if(document.getElementById('p-student')) refreshProgressStudentSelects();
   if(document.getElementById('att-cal-student')){
     refreshAttendanceStudentSelect();
@@ -1655,6 +1750,73 @@ function renderStudents(){
     renderExamList();
     renderExamWeakSummary();
   }
+}
+
+function renderMonthlyStudentChanges(){
+  const bodyEl = document.getElementById('monthlyChangeBody');
+  const subEl = document.getElementById('monthlyChangeSub');
+  if(!bodyEl) return;
+
+  const now = new Date();
+  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthLabel = `${now.getFullYear()}년 ${now.getMonth()+1}월`;
+
+  const newThisMonth = students.filter(s => s.enrollDate && s.enrollDate.startsWith(monthPrefix))
+    .slice().sort((a,b) => a.enrollDate.localeCompare(b.enrollDate));
+  const withdrawnThisMonth = withdrawnStudents.filter(s => s.withdrawDate && s.withdrawDate.startsWith(monthPrefix))
+    .slice().sort((a,b) => a.withdrawDate.localeCompare(b.withdrawDate));
+
+  subEl.textContent = `${monthLabel} · 신규 ${newThisMonth.length}명 · 퇴원 ${withdrawnThisMonth.length}명`;
+
+  const listHtml = (list, emptyText, dateKey, dateIcon) => {
+    if(list.length === 0) return `<div class="report-empty" style="font-size:12.5px;">${emptyText}</div>`;
+    return `<ul class="recent-list" style="flex-direction:column; display:flex; gap:6px;">${list.map(s => `
+      <li>
+        <div class="left">
+          <span class="date">${dateIcon} ${s[dateKey].slice(5).replace('-','/')}</span>
+          <strong>${escapeHtml(s.name)}</strong>
+          <span style="font-size:12px; color:var(--ink-soft);">${escapeHtml(s.grade)}${s.className ? ` · ${escapeHtml(s.className)}` : ''}</span>
+        </div>
+      </li>`).join('')}</ul>`;
+  };
+
+  bodyEl.innerHTML = `
+    <div>
+      <div style="font-weight:700; font-size:13px; color:var(--brand-dark); margin-bottom:8px; font-family:'Noto Sans KR',sans-serif;">🆕 이번 달 신규 (${newThisMonth.length}명)</div>
+      ${listHtml(newThisMonth, '이번 달 신규 등록 학생이 없어요.', 'enrollDate', '📅')}
+    </div>
+    <div>
+      <div style="font-weight:700; font-size:13px; color:var(--ink-soft); margin-bottom:8px; font-family:'Noto Sans KR',sans-serif;">👋 이번 달 퇴원 (${withdrawnThisMonth.length}명)</div>
+      ${listHtml(withdrawnThisMonth, '이번 달 퇴원한 학생이 없어요.', 'withdrawDate', '📅')}
+    </div>
+  `;
+}
+
+function renderWithdrawnStudents(){
+  const tbody = document.getElementById('withdrawnTableBody');
+  const countEl = document.getElementById('withdrawnCount');
+  if(!tbody) return;
+
+  countEl.textContent = withdrawnStudents.length;
+
+  if(withdrawnStudents.length === 0){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="5"><span class="empty-icon">👋</span>퇴원생이 없어요.</td></tr>`;
+    return;
+  }
+
+  const list = withdrawnStudents.slice().sort((a,b) => (b.withdrawDate || '').localeCompare(a.withdrawDate || ''));
+  tbody.innerHTML = list.map(s => `
+    <tr>
+      <td><strong>${escapeHtml(s.name)}</strong></td>
+      <td><span class="badge gray">${escapeHtml(s.grade)}</span></td>
+      <td>${escapeHtml(s.enrollDate || '-')}</td>
+      <td>${escapeHtml(s.withdrawDate || '-')}</td>
+      <td>
+        <button class="btn small ghost" onclick="restoreWithdrawnStudent(${s.id})">복귀</button>
+        <button class="btn small danger-text" onclick="permanentlyDeleteWithdrawn(${s.id})">영구삭제</button>
+      </td>
+    </tr>
+  `).join('');
 }
 
 /* =========================================================
@@ -3289,7 +3451,7 @@ function collectAllData(){
     version: 2,
     savedAt: new Date().toISOString(),
     academyName: (academyEl && academyEl.textContent.trim()) || '',
-    students, nextStudentId,
+    students, nextStudentId, withdrawnStudents,
     progressLogs, nextProgressId,
     attendanceRecords, nextAttendanceId,
     dailyTests, nextDailyId,
@@ -3308,6 +3470,7 @@ function applyAllData(data){
 
   students = data.students || [];
   nextStudentId = data.nextStudentId || maxId(students);
+  withdrawnStudents = data.withdrawnStudents || [];
   progressLogs = data.progressLogs || [];
   nextProgressId = data.nextProgressId || maxId(progressLogs);
   attendanceRecords = data.attendanceRecords || [];
@@ -3394,7 +3557,7 @@ function resetAllData(){
   if(!confirm('정말 모든 데이터를 지우시겠습니까? 이 작업은 되돌릴 수 없어요.')) return;
   if(!confirm('한 번 더 확인할게요. 백업 파일 없이 지우면 복구할 수 없어요. 정말 초기화할까요?')) return;
 
-  students = []; nextStudentId = 1;
+  students = []; nextStudentId = 1; withdrawnStudents = [];
   progressLogs = []; nextProgressId = 1;
   attendanceRecords = []; nextAttendanceId = 1;
   dailyTests = []; nextDailyId = 1;
@@ -3497,6 +3660,7 @@ function init(){
   document.getElementById('att-date').value = iso;
   document.getElementById('dt-date').value = iso;
   document.getElementById('hwa-date').value = iso;
+  document.getElementById('s-enroll').value = iso;
   document.getElementById('m-date').value = iso;
   document.getElementById('ea-date').value = iso;
   attCalYear = now.getFullYear();
