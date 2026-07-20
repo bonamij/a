@@ -603,6 +603,10 @@
             <label for="s-pin">비밀번호(핸드폰끝뒷4자리) <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(학부모 포털 로그인용)</span></label>
             <input type="text" id="s-pin" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="예: 1234">
           </div>
+          <div class="field">
+            <label for="s-family">가족 연결 코드 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(형제자매만! 같은 코드끼리 포털에서 서로 전환돼요. 비워두면 본인 정보만 보여요)</span></label>
+            <input type="text" id="s-family" placeholder="예: kim-family (형제자매끼리 동일하게)">
+          </div>
           <button type="submit" class="btn">학생 등록</button>
         </form>
         <div style="margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);">
@@ -1497,6 +1501,7 @@ function addStudent(e){
   const school = document.getElementById('s-school').value.trim();
   const className = document.getElementById('s-class').value.trim();
   const pin = document.getElementById('s-pin').value.trim();
+  const familyCode = document.getElementById('s-family').value.trim();
 
   if(!name || !grade){
     alert('이름과 학년은 필수 입력 항목입니다.');
@@ -1507,13 +1512,14 @@ function addStudent(e){
     return;
   }
 
-  students.push({ id: nextStudentId++, name, grade, school, className, pin, concept:'', sen:'', topSProgress:'', bookProgress:{} });
+  students.push({ id: nextStudentId++, name, grade, school, className, pin, familyCode, concept:'', sen:'', topSProgress:'', bookProgress:{} });
 
   document.getElementById('s-name').value = '';
   document.getElementById('s-grade').value = '';
   document.getElementById('s-school').value = '';
   document.getElementById('s-class').value = '';
   document.getElementById('s-pin').value = '';
+  document.getElementById('s-family').value = '';
   document.getElementById('s-name').focus();
 
   renderStudents();
@@ -1528,10 +1534,11 @@ function saveEditStudent(id){
   const school = document.getElementById(`e-school-${id}`).value.trim();
   const className = document.getElementById(`e-class-${id}`).value.trim();
   const pin = document.getElementById(`e-pin-${id}`).value.trim();
+  const familyCode = document.getElementById(`e-family-${id}`).value.trim();
   if(!name || !grade){ alert('이름과 학년은 필수 입력 항목입니다.'); return; }
   if(pin && !/^\d{4}$/.test(pin)){ alert('비밀번호는 숫자 4자리로 입력해주세요.'); return; }
   const s = students.find(x => x.id === id);
-  Object.assign(s, { name, grade, school, className, pin });
+  Object.assign(s, { name, grade, school, className, pin, familyCode });
   editingStudentId = null;
   renderStudents();
   scheduleSync();
@@ -1589,7 +1596,8 @@ function renderStudentRow(s){
         <td>
           <input type="text" id="e-school-${s.id}" value="${escapeHtml(s.school)}" placeholder="학교" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
           <input type="text" id="e-class-${s.id}" value="${escapeHtml(s.className || '')}" placeholder="반 이름 (예: 화금중1)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
-          <input type="text" id="e-pin-${s.id}" value="${escapeHtml(s.pin || '')}" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="비밀번호(4자리)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">
+          <input type="text" id="e-pin-${s.id}" value="${escapeHtml(s.pin || '')}" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="비밀번호(4자리)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
+          <input type="text" id="e-family-${s.id}" value="${escapeHtml(s.familyCode || '')}" placeholder="가족 연결 코드 (형제자매만)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">
         </td>
         <td>
           <button class="btn small" onclick="saveEditStudent(${s.id})">저장</button>
@@ -1605,6 +1613,7 @@ function renderStudentRow(s){
         ${s.bookProgress && Object.keys(s.bookProgress).length ? `<div style="font-size:11px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">${Object.entries(s.bookProgress).map(([b,p]) => `${escapeHtml(b)} ${escapeHtml(p)}`).join(' · ')}</div>` : ''}
         ${s.topSProgress ? `<div style="font-size:11.5px; color:var(--gold); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">최상위S ${escapeHtml(s.topSProgress)}</div>` : ''}
         ${!s.pin ? `<div style="font-size:11px; color:#B8391F; font-family:'Noto Sans KR',sans-serif; margin-top:3px;">🔑 비밀번호 미입력 (포털 로그인 불가)</div>` : ''}
+        ${s.familyCode ? `<div style="font-size:11px; color:var(--brand-dark); font-family:'Noto Sans KR',sans-serif; margin-top:3px;">👨‍👩‍👧 가족코드: ${escapeHtml(s.familyCode)}</div>` : ''}
       </td>
       <td><span class="badge gray">${escapeHtml(s.grade)}</span></td>
       <td>${s.school ? `${escapeHtml(s.school)} <button type="button" class="btn small ghost" data-school="${escapeHtml(s.school)}" onclick="openSchoolInfo(this.dataset.school)" style="margin-left:6px; padding:2px 9px; font-size:11px;">🔍 학교알리미</button>` : '<span style="color:var(--ink-soft)">-</span>'}</td>

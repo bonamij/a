@@ -213,7 +213,12 @@ async function login(e){
     }
 
     currentData = data;
-    siblingList = students.filter(s => s.pin && s.pin === pin);
+    // 가족 연결 코드가 명시적으로 설정된 학생끼리만 형제자매로 묶어요.
+    // (예전에는 비밀번호가 같으면 형제자매로 취급했는데, 서로 다른 가족이 우연히
+    //  같은 비밀번호를 쓰면 다른 학생 정보가 보이는 문제가 있어서 수정했어요.)
+    siblingList = student.familyCode
+      ? students.filter(s => s.familyCode && s.familyCode === student.familyCode)
+      : [student];
     showStudentReport(student.id);
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('reportView').style.display = 'block';
@@ -448,16 +453,19 @@ function renderReport(data, student){
         <h4>✍️ 숙제 스스로 채점하기</h4>
         <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:500;">오늘 푼 숙제를 직접 채점해서 선생님께 보내보세요!</p>
         <input type="date" id="hwSelfDate" class="hw-self-input" value="${todayIsoForInput}">
-        <input type="text" id="hwSelfRange" class="hw-self-input" placeholder="숙제 범위 (예: 라이트 62p~68p)" onchange="checkHwSelfAnswerKey()">
+        <select id="hwSelfRange" class="hw-self-input" onchange="checkHwSelfAnswerKey()">
+          <option value="">숙제 범위를 선택해주세요</option>
+          ${(data.answerKeys || []).map(ak => `<option value="${escapeHtml(ak.range)}">${escapeHtml(ak.range)} (자동채점 가능)</option>`).join('')}
+          <option value="__manual__">목록에 없어요 (직접 입력할게요)</option>
+        </select>
+        <input type="text" id="hwSelfRangeManual" class="hw-self-input" placeholder="숙제 범위 직접 입력 (예: 라이트 62p~68p)" style="display:none;" oninput="onHwSelfManualRangeInput()">
         <div id="hwSelfModeArea">
-          <input type="number" id="hwSelfTotal" class="hw-self-input" min="1" placeholder="전체 문항 수" oninput="renderHwSelfGrid()">
-          <div class="sub" style="margin:6px 0 8px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">틀린 문항 번호를 탭해주세요 (탭하면 빨갛게 표시)</div>
-          <div class="tap-grid" id="hwSelfGrid"></div>
-          <div class="progress-pill" id="hwSelfPreview" style="margin-top:12px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
+          <div class="report-empty" style="margin-top:4px;">먼저 위에서 숙제 범위를 선택해주세요.</div>
         </div>
         <div><button type="button" class="btn" style="margin-top:12px;" onclick="submitSelfHomework(${student.id})">제출하기</button></div>
         <div class="msg-status" id="hwSelfStatus"></div>
       </div>
+
 
       <div class="report-section">
         <h4>📔 숙제 채점 결과</h4>
@@ -538,11 +546,45 @@ function renderReport(data, student){
 let hwSelfWrongSet = new Set();
 let hwSelfMatchedKey = null;
 
-function checkHwSelfAnswerKey(){
-  const range = document.getElementById('hwSelfRange').value.trim();
+function tapModeHtml(){
+  return `
+    <input type="number" id="hwSelfTotal" class="hw-self-input" min="1" placeholder="전체 문항 수" oninput="renderHwSelfGrid()">
+    <div class="sub" style="margin:6px 0 8px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">틀린 문항 번호를 탭해주세요 (탭하면 빨갛게 표시)</div>
+    <div class="tap-grid" id="hwSelfGrid"></div>
+    <div class="progress-pill" id="hwSelfPreview" style="margin-top:12px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
+  `;
+}
+
+function onHwSelfManualRangeInput(){
+  hwSelfMatchedKey = null;
   const areaEl = document.getElementById('hwSelfModeArea');
+  areaEl.innerHTML = tapModeHtml();
+}
+
+function checkHwSelfAnswerKey(){
+  const sel = document.getElementById('hwSelfRange');
+  const manualInput = document.getElementById('hwSelfRangeManual');
+  const areaEl = document.getElementById('hwSelfModeArea');
+  const value = sel.value;
+
+  if(value === '__manual__'){
+    manualInput.style.display = 'block';
+    manualInput.value = '';
+    manualInput.focus();
+    hwSelfMatchedKey = null;
+    areaEl.innerHTML = tapModeHtml();
+    return;
+  }
+  manualInput.style.display = 'none';
+
+  if(!value){
+    hwSelfMatchedKey = null;
+    areaEl.innerHTML = `<div class="report-empty" style="margin-top:4px;">먼저 위에서 숙제 범위를 선택해주세요.</div>`;
+    return;
+  }
+
   const keys = (currentData && currentData.answerKeys) || [];
-  const match = keys.find(k => k.range === range);
+  const match = keys.find(k => k.range === value);
 
   if(match){
     hwSelfMatchedKey = match;
@@ -557,12 +599,7 @@ function checkHwSelfAnswerKey(){
     `;
   } else {
     hwSelfMatchedKey = null;
-    areaEl.innerHTML = `
-      <input type="number" id="hwSelfTotal" class="hw-self-input" min="1" placeholder="전체 문항 수" oninput="renderHwSelfGrid()">
-      <div class="sub" style="margin:6px 0 8px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">틀린 문항 번호를 탭해주세요 (탭하면 빨갛게 표시)</div>
-      <div class="tap-grid" id="hwSelfGrid"></div>
-      <div class="progress-pill" id="hwSelfPreview" style="margin-top:12px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
-    `;
+    areaEl.innerHTML = tapModeHtml();
   }
 }
 
@@ -600,7 +637,9 @@ function updateHwSelfPreview(total, wrongCount){
 
 async function submitSelfHomework(studentId){
   const date = document.getElementById('hwSelfDate').value;
-  const range = document.getElementById('hwSelfRange').value.trim();
+  const rangeSelectEl = document.getElementById('hwSelfRange');
+  const manualInputEl = document.getElementById('hwSelfRangeManual');
+  const range = rangeSelectEl.value === '__manual__' ? manualInputEl.value.trim() : rangeSelectEl.value;
   const statusEl = document.getElementById('hwSelfStatus');
 
   if(!date || !range){
