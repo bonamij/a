@@ -1004,6 +1004,54 @@
         </div>
         <div id="hwaListBody" style="display:flex; flex-direction:column; gap:14px;"></div>
       </div>
+
+      <div style="text-align:center; margin:8px 0; color:var(--ink-soft); font-size:12px; font-family:'Noto Sans KR',sans-serif;">── 아래는 자가채점(정답 자동채점) 기능이에요 ──</div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>📘 정답 입력 (자동채점용)</h3>
+            <div class="sub">숙제 범위별로 정답을 한 번 입력해두면, 학생이 포털에서 스스로 답을 입력할 때 자동으로 채점돼요. 같은 범위는 나중에 다른 학생도 재사용할 수 있어요.</div>
+          </div>
+        </div>
+        <div class="inline-form">
+          <div class="field">
+            <label for="ak-range">숙제 범위 (학생이 포털에서 선택할 범위예요)</label>
+            <input type="text" id="ak-range" placeholder="예: 라이트 62p~68p" style="min-width:260px;">
+          </div>
+          <div class="field">
+            <label for="ak-total">문항 수</label>
+            <input type="number" id="ak-total" min="1" style="width:100px;" oninput="renderAnswerKeyInputs()">
+          </div>
+        </div>
+
+        <div style="background:var(--cream-alt); border-radius:10px; padding:14px; margin-top:14px;">
+          <label for="ak-bulk-paste" style="display:block; font-size:12.5px; font-weight:700; color:var(--brand-dark); margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;">⚡ 빠른 입력 (한 번에 붙여넣기)</label>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 8px; font-family:'Noto Sans KR',sans-serif;">한 줄에 하나씩, "번호 정답" 형식으로 입력하고 "채우기"를 누르면 아래 칸에 자동으로 나눠서 들어가요. 예:<br><span class="mono" style="font-size:11px;">1 ③<br>2 5<br>3 x=10, y=90</span></p>
+          <textarea id="ak-bulk-paste" rows="4" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-family:'Space Mono',monospace; font-size:12.5px;" placeholder="1 ③&#10;2 5&#10;3 24"></textarea>
+          <button type="button" class="btn small ghost" style="margin-top:8px;" onclick="fillAnswerKeyFromBulkPaste()">↓ 아래 칸에 채우기</button>
+        </div>
+
+        <div id="ak-inputs" style="margin-top:12px; display:flex; flex-direction:column; gap:8px;"></div>
+        <button type="button" class="btn" style="margin-top:12px;" onclick="saveAnswerKey()">정답 저장</button>
+
+        <div class="sub" style="margin-top:20px;">저장된 정답 세트</div>
+        <ul class="recent-list" id="answerKeyListBody" style="flex-direction:column; display:flex; gap:8px; margin-top:8px;"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>자가채점 기록 이력</h3>
+            <div class="sub" id="homeworkCountSub">기록된 숙제 0건</div>
+          </div>
+          <div class="field">
+            <label for="homeworkFilterStudent">학생 필터</label>
+            <select id="homeworkFilterStudent" onchange="renderHomeworkList()"><option value="all">전체 학생</option></select>
+          </div>
+        </div>
+        <ul class="recent-list" id="homeworkListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
     </section>
 
 
@@ -1356,6 +1404,11 @@ let currentDailyMode = 'count';
 
 let homeworkAssignments = [];
 let nextHomeworkAssignmentId = 1;
+
+let answerKeys = [];
+let nextAnswerKeyId = 1;
+let homeworkRecords = [];
+let nextHomeworkId = 1;
 
 let mistakeRecords = [];
 let nextMistakeId = 1;
@@ -1735,6 +1788,11 @@ function renderStudents(){
   if(document.getElementById('hwa-class-select')){
     refreshHwaSelects();
     renderHomeworkAssignments();
+  }
+  if(document.getElementById('homeworkFilterStudent')){
+    refreshHomeworkStudentSelects();
+    renderHomeworkList();
+    renderAnswerKeyList();
   }
   if(document.getElementById('m-student')){
     refreshMistakeStudentSelects();
@@ -2783,6 +2841,172 @@ function renderHomeworkAssignments(){
   }).join('');
 }
 
+/* =========================================================
+   자가채점 (정답 자동채점)
+========================================================= */
+function fillAnswerKeyFromBulkPaste(){
+  const raw = document.getElementById('ak-bulk-paste').value;
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+
+  const parsed = {};
+  let maxNum = 0;
+  const failedLines = [];
+
+  lines.forEach(line => {
+    const m = line.match(/^(\d+)[\s:.\)\-]+(.+)$/);
+    if(m){
+      const num = Number(m[1]);
+      const answer = m[2].trim();
+      parsed[num] = answer;
+      if(num > maxNum) maxNum = num;
+    } else {
+      failedLines.push(line);
+    }
+  });
+
+  if(maxNum === 0){
+    alert('인식된 내용이 없어요. "번호 정답" 형식으로 한 줄에 하나씩 입력해주세요. (예: 1 ③)');
+    return;
+  }
+
+  document.getElementById('ak-total').value = maxNum;
+  renderAnswerKeyInputs();
+
+  Object.entries(parsed).forEach(([num, answer]) => {
+    const inputEl = document.getElementById(`ak-answer-${num}`);
+    if(inputEl) inputEl.value = answer;
+  });
+
+  if(failedLines.length){
+    alert(`${Object.keys(parsed).length}개는 채웠는데, ${failedLines.length}줄은 형식을 못 알아봤어요:\n${failedLines.slice(0, 5).join('\n')}${failedLines.length > 5 ? '\n...' : ''}\n\n해당 번호는 아래에서 직접 입력해주세요.`);
+  }
+}
+
+function renderAnswerKeyInputs(){
+  const total = Number(document.getElementById('ak-total').value);
+  const wrap = document.getElementById('ak-inputs');
+  if(!total || total < 1){
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.innerHTML = Array.from({ length: total }, (_, i) => i + 1).map(n => `
+    <div class="ak-input-row">
+      <span class="ak-num">${n}번</span>
+      <input type="text" id="ak-answer-${n}" placeholder="정답 입력 (예: ③ 또는 24)">
+    </div>
+  `).join('');
+}
+
+function saveAnswerKey(){
+  const range = document.getElementById('ak-range').value.trim();
+  const total = Number(document.getElementById('ak-total').value);
+
+  if(!range || !total){
+    alert('숙제 범위와 문항 수를 입력해주세요.');
+    return;
+  }
+
+  const answers = {};
+  for(let i = 1; i <= total; i++){
+    const val = document.getElementById(`ak-answer-${i}`).value.trim();
+    if(!val){
+      alert(`${i}번 정답이 비어있어요. 모든 문항의 정답을 입력해주세요.`);
+      return;
+    }
+    answers[i] = val;
+  }
+
+  const existing = answerKeys.find(a => a.range === range);
+  if(existing){
+    existing.total = total;
+    existing.answers = answers;
+  } else {
+    answerKeys.push({ id: nextAnswerKeyId++, range, total, answers });
+  }
+
+  document.getElementById('ak-range').value = '';
+  document.getElementById('ak-total').value = '';
+  document.getElementById('ak-inputs').innerHTML = '';
+
+  renderAnswerKeyList();
+  scheduleSync();
+  alert(`"${range}" 정답이 저장됐어요! 학생이 포털에서 이 범위로 숙제를 입력하면 자동채점돼요.`);
+}
+
+function deleteAnswerKey(id){
+  if(!confirm('이 정답 세트를 삭제하시겠습니까?')) return;
+  answerKeys = answerKeys.filter(a => a.id !== id);
+  renderAnswerKeyList();
+  scheduleSync();
+}
+
+function renderAnswerKeyList(){
+  const listEl = document.getElementById('answerKeyListBody');
+  if(!listEl) return;
+  if(answerKeys.length === 0){
+    listEl.innerHTML = `<li class="report-empty">저장된 정답 세트가 없어요.</li>`;
+    return;
+  }
+  listEl.innerHTML = answerKeys.slice().reverse().map(a => `
+    <li style="display:flex; justify-content:space-between; align-items:center;">
+      <span>${escapeHtml(a.range)} <span style="color:var(--ink-soft); font-size:12px;">· ${a.total}문항</span></span>
+      <button type="button" class="btn small danger-text" onclick="deleteAnswerKey(${a.id})">삭제</button>
+    </li>
+  `).join('');
+}
+
+function refreshHomeworkStudentSelects(){
+  const filterStudent = document.getElementById('homeworkFilterStudent');
+  if(!filterStudent) return;
+  const prevFilter = filterStudent.value;
+  const optionsHtml = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
+  filterStudent.innerHTML = `<option value="all">전체 학생</option>` + optionsHtml;
+  if(prevFilter === 'all' || students.some(s => String(s.id) === prevFilter)) filterStudent.value = prevFilter;
+}
+
+function renderHomeworkList(){
+  const listEl = document.getElementById('homeworkListBody');
+  if(!listEl) return;
+  const filter = document.getElementById('homeworkFilterStudent').value;
+
+  let list = homeworkRecords.slice();
+  if(filter !== 'all') list = list.filter(h => String(h.studentId) === filter);
+  list.sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+  document.getElementById('homeworkCountSub').textContent =
+    `기록된 숙제 ${homeworkRecords.length}건 (표시 중 ${list.length}건)`;
+
+  if(list.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">기록된 숙제가 없습니다.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(h => {
+    const s = students.find(x => x.id === h.studentId);
+    const wrongText = (h.wrongNumbers && h.wrongNumbers.length) ? h.wrongNumbers.join(', ') : '없음';
+    return `
+      <li>
+        <div class="left">
+          <span class="date">${h.date.replace(/-/g,'.')}</span>
+          <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
+          <span class="book-badge">${escapeHtml(h.range)}</span>
+          <span style="font-size:12px; color:var(--ink-soft);">${h.correct}/${h.total}문제 · 틀림: ${wrongText}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="badge ${scoreBadgeClass(h.score)}">${h.score}점</span>
+          <button class="btn small danger-text" onclick="deleteHomework(${h.id})">삭제</button>
+        </div>
+      </li>`;
+  }).join('');
+}
+
+function deleteHomework(id){
+  if(!confirm('이 숙제 기록을 삭제하시겠습니까?')) return;
+  homeworkRecords = homeworkRecords.filter(h => h.id !== id);
+  renderHomeworkList();
+  scheduleSync();
+}
+
 
 /* =========================================================
    오답노트
@@ -3456,6 +3680,8 @@ function collectAllData(){
     attendanceRecords, nextAttendanceId,
     dailyTests, nextDailyId,
     homeworkAssignments, nextHomeworkAssignmentId,
+    answerKeys, nextAnswerKeyId,
+    homeworkRecords, nextHomeworkId,
     mistakeRecords, nextMistakeId,
     teacherComments,
     schoolInfos, nextSchoolInfoId,
@@ -3479,6 +3705,10 @@ function applyAllData(data){
   nextDailyId = data.nextDailyId || maxId(dailyTests);
   homeworkAssignments = data.homeworkAssignments || [];
   nextHomeworkAssignmentId = data.nextHomeworkAssignmentId || maxId(homeworkAssignments);
+  answerKeys = data.answerKeys || [];
+  nextAnswerKeyId = data.nextAnswerKeyId || maxId(answerKeys);
+  homeworkRecords = data.homeworkRecords || [];
+  nextHomeworkId = data.nextHomeworkId || maxId(homeworkRecords);
   mistakeRecords = data.mistakeRecords || [];
   nextMistakeId = data.nextMistakeId || maxId(mistakeRecords);
   teacherComments = data.teacherComments || {};
@@ -3562,6 +3792,8 @@ function resetAllData(){
   attendanceRecords = []; nextAttendanceId = 1;
   dailyTests = []; nextDailyId = 1;
   homeworkAssignments = []; nextHomeworkAssignmentId = 1;
+  answerKeys = []; nextAnswerKeyId = 1;
+  homeworkRecords = []; nextHomeworkId = 1;
   mistakeRecords = []; nextMistakeId = 1;
   teacherComments = {};
   schoolInfos = []; nextSchoolInfoId = 1;
@@ -3683,6 +3915,9 @@ function init(){
   renderScoreChart();
   refreshHwaSelects();
   renderHomeworkAssignments();
+  refreshHomeworkStudentSelects();
+  renderHomeworkList();
+  renderAnswerKeyList();
   refreshMistakeStudentSelects();
   renderMistakeList();
   renderMistakeChart();

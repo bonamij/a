@@ -361,6 +361,9 @@ function renderReport(data, student){
     (a.target && a.target.type === 'individual' && a.target.studentIds && a.target.studentIds.includes(student.id))
   ).slice().sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
 
+  const studentHomework = (data.homeworkRecords || []).filter(h => h.studentId === student.id)
+    .slice().sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 8);
+
   let nextExamInfo = null;
   const isMiddle = levelOf(student.grade) === '중등부';
   if(isMiddle && student.school){
@@ -471,6 +474,33 @@ function renderReport(data, student){
       </div>
 
       <div class="report-section">
+        <h4>✍️ 숙제 스스로 채점하기</h4>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:500;">오늘 푼 숙제를 직접 채점해서 선생님께 보내보세요!</p>
+        <input type="date" id="hwSelfDate" class="hw-self-input" value="${todayIsoForInput}">
+        <select id="hwSelfRange" class="hw-self-input" onchange="checkHwSelfAnswerKey()">
+          <option value="">숙제 범위를 선택해주세요</option>
+          ${(data.answerKeys || []).map(ak => `<option value="${escapeHtml(ak.range)}">${escapeHtml(ak.range)} (자동채점 가능)</option>`).join('')}
+          <option value="__manual__">목록에 없어요 (직접 입력할게요)</option>
+        </select>
+        <input type="text" id="hwSelfRangeManual" class="hw-self-input" placeholder="숙제 범위 직접 입력 (예: 라이트 62p~68p)" style="display:none;" oninput="onHwSelfManualRangeInput()">
+        <div id="hwSelfModeArea">
+          <div class="report-empty" style="margin-top:4px;">먼저 위에서 숙제 범위를 선택해주세요.</div>
+        </div>
+        <div><button type="button" class="btn" style="margin-top:12px;" onclick="submitSelfHomework(${student.id})">제출하기</button></div>
+        <div class="msg-status" id="hwSelfStatus"></div>
+      </div>
+
+      <div class="report-section">
+        <h4>📔 숙제 채점 결과</h4>
+        ${studentHomework.length === 0
+          ? `<div class="report-empty">기록된 숙제가 없어요.</div>`
+          : `<ul class="report-list">${studentHomework.map(h => {
+              const wrongText = (h.wrongNumbers && h.wrongNumbers.length) ? `틀림: ${h.wrongNumbers.join(', ')}번` : '틀린 문제 없음';
+              return `<li>${h.date.replace(/-/g,'.')} · ${escapeHtml(h.range)} · <strong>${h.score}점</strong> <span style="color:var(--ink-soft); font-size:12px;">(${wrongText})</span></li>`;
+            }).join('')}</ul>`}
+      </div>
+
+      <div class="report-section">
         <h4>💪 강점 단원</h4>
         ${strongUnits.length === 0
           ? `<div class="report-empty">아직 강점으로 뽑을 만큼 데이터가 쌓이지 않았어요.</div>`
@@ -566,6 +596,166 @@ async function toggleHomeworkCheck(assignmentId, studentId, checked){
     if(statusEl) statusEl.textContent = '❌ 저장에 실패했어요. 잠시 후 다시 시도해주세요.';
   }
 }
+
+/* =========================================================
+   숙제 스스로 채점하기 (자가채점)
+========================================================= */
+let hwSelfWrongSet = new Set();
+let hwSelfMatchedKey = null;
+
+function tapModeHtml(){
+  return `
+    <input type="number" id="hwSelfTotal" class="hw-self-input" min="1" placeholder="전체 문항 수" oninput="renderHwSelfGrid()">
+    <div class="sub" style="margin:6px 0 8px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">틀린 문항 번호를 탭해주세요 (탭하면 빨갛게 표시)</div>
+    <div class="tap-grid" id="hwSelfGrid"></div>
+    <div class="progress-pill" id="hwSelfPreview" style="margin-top:12px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
+  `;
+}
+
+function onHwSelfManualRangeInput(){
+  hwSelfMatchedKey = null;
+  const areaEl = document.getElementById('hwSelfModeArea');
+  areaEl.innerHTML = tapModeHtml();
+}
+
+function checkHwSelfAnswerKey(){
+  const sel = document.getElementById('hwSelfRange');
+  const manualInput = document.getElementById('hwSelfRangeManual');
+  const areaEl = document.getElementById('hwSelfModeArea');
+  const value = sel.value;
+
+  if(value === '__manual__'){
+    manualInput.style.display = 'block';
+    manualInput.value = '';
+    manualInput.focus();
+    hwSelfMatchedKey = null;
+    areaEl.innerHTML = tapModeHtml();
+    return;
+  }
+  manualInput.style.display = 'none';
+
+  if(!value){
+    hwSelfMatchedKey = null;
+    areaEl.innerHTML = `<div class="report-empty" style="margin-top:4px;">먼저 위에서 숙제 범위를 선택해주세요.</div>`;
+    return;
+  }
+
+  const keys = (currentData && currentData.answerKeys) || [];
+  const match = keys.find(k => k.range === value);
+
+  if(match){
+    hwSelfMatchedKey = match;
+    areaEl.innerHTML = `
+      <p style="font-size:12px; color:var(--brand-dark); font-weight:700; margin:10px 0 8px; font-family:'Noto Sans KR',sans-serif;">✅ 이 범위는 자동채점이 가능해요! 네가 쓴 답을 번호별로 입력해봐.</p>
+      ${Array.from({ length: match.total }, (_, i) => i + 1).map(n => `
+        <div class="ak-input-row" style="margin-bottom:6px;">
+          <span class="ak-num">${n}번</span>
+          <input type="text" id="hwSelfAnswer-${n}" class="hw-self-input" style="margin-bottom:0;" placeholder="네가 쓴 답">
+        </div>
+      `).join('')}
+    `;
+  } else {
+    hwSelfMatchedKey = null;
+    areaEl.innerHTML = tapModeHtml();
+  }
+}
+
+function renderHwSelfGrid(){
+  const total = Number(document.getElementById('hwSelfTotal').value);
+  const gridEl = document.getElementById('hwSelfGrid');
+  hwSelfWrongSet.clear();
+  if(!total || total < 1){
+    gridEl.innerHTML = '';
+    updateHwSelfPreview(0, 0);
+    return;
+  }
+  let html = '';
+  for(let i = 1; i <= total; i++){
+    html += `<button type="button" class="tap-num-btn" data-num="${i}" onclick="toggleHwSelfWrongNum(${i})">${i}</button>`;
+  }
+  gridEl.innerHTML = html;
+  updateHwSelfPreview(total, 0);
+}
+
+function toggleHwSelfWrongNum(num){
+  if(hwSelfWrongSet.has(num)) hwSelfWrongSet.delete(num); else hwSelfWrongSet.add(num);
+  const btn = document.querySelector(`#hwSelfGrid .tap-num-btn[data-num="${num}"]`);
+  if(btn) btn.classList.toggle('wrong', hwSelfWrongSet.has(num));
+  const total = Number(document.getElementById('hwSelfTotal').value);
+  updateHwSelfPreview(total, hwSelfWrongSet.size);
+}
+
+function updateHwSelfPreview(total, wrongCount){
+  const el = document.getElementById('hwSelfPreview');
+  if(!total){ el.textContent = '전체 문항 수를 먼저 입력해주세요.'; return; }
+  const score = Math.round(((total - wrongCount) / total) * 100);
+  el.textContent = `틀린 ${wrongCount}개 · 예상 점수 ${score}점`;
+}
+
+async function submitSelfHomework(studentId){
+  const date = document.getElementById('hwSelfDate').value;
+  const rangeSelectEl = document.getElementById('hwSelfRange');
+  const manualInputEl = document.getElementById('hwSelfRangeManual');
+  const range = rangeSelectEl.value === '__manual__' ? manualInputEl.value.trim() : rangeSelectEl.value;
+  const statusEl = document.getElementById('hwSelfStatus');
+
+  if(!date || !range){
+    statusEl.textContent = '날짜와 숙제 범위를 입력해주세요.';
+    return;
+  }
+
+  let total, correct, wrongNumbers, score;
+
+  if(hwSelfMatchedKey && hwSelfMatchedKey.range === range){
+    total = hwSelfMatchedKey.total;
+    const wrong = [];
+    for(let i = 1; i <= total; i++){
+      const inputEl = document.getElementById(`hwSelfAnswer-${i}`);
+      const myAnswer = inputEl ? inputEl.value.trim() : '';
+      const correctAnswer = String(hwSelfMatchedKey.answers[i] || '').trim();
+      if(!myAnswer || myAnswer !== correctAnswer){
+        wrong.push(i);
+      }
+    }
+    wrongNumbers = wrong;
+    correct = total - wrong.length;
+    score = Math.round((correct / total) * 100);
+  } else {
+    total = Number(document.getElementById('hwSelfTotal').value);
+    if(!total){
+      statusEl.textContent = '전체 문항 수를 입력해주세요.';
+      return;
+    }
+    wrongNumbers = Array.from(hwSelfWrongSet).sort((a,b) => a - b);
+    correct = total - wrongNumbers.length;
+    score = Math.round((correct / total) * 100);
+  }
+
+  statusEl.textContent = '제출 중...';
+
+  try {
+    const freshRes = await fetch(SHEET_URL, { method:'GET' });
+    const freshData = await freshRes.json();
+
+    freshData.homeworkRecords = freshData.homeworkRecords || [];
+    const nextId = freshData.homeworkRecords.length ? Math.max(...freshData.homeworkRecords.map(h => h.id || 0)) + 1 : 1;
+    freshData.homeworkRecords.push({ id: nextId, studentId, date, range, total, correct, wrongNumbers, score });
+
+    await fetch(SHEET_URL, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    cachedData = freshData;
+    currentData = freshData;
+    statusEl.textContent = `✅ 제출 완료! (${score}점)`;
+    showStudentReport(studentId);
+  } catch(err){
+    statusEl.textContent = '❌ 제출에 실패했어요. 잠시 후 다시 시도해주세요.';
+  }
+}
+
 
 
 async function submitParentMessage(studentId){
