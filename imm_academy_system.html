@@ -106,6 +106,8 @@
     box-shadow:0 2px 8px rgba(34,32,28,0.06);
     display:flex; justify-content:space-between; align-items:flex-start;
   }
+  .dash-clickable{ cursor:pointer; transition:box-shadow .15s, transform .15s; }
+  .dash-clickable:hover{ box-shadow:0 4px 14px rgba(34,32,28,0.12); transform:translateY(-1px); }
   .dash-stat-card .ds-label{ font-size:11.5px; color:var(--ink-soft); font-weight:700; margin-bottom:6px; font-family:'Noto Sans KR',sans-serif; }
   .dash-stat-card .ds-value{ font-size:23px; font-weight:800; }
   .dash-stat-card .ds-value small{ font-size:12px; font-weight:600; color:var(--ink-soft); }
@@ -421,18 +423,18 @@
 
     <!-- ---------- 대시보드 (신규) ---------- -->
     <section class="panel active" id="panel-dashboard">
-      <div id="dashNoticeBanner" class="notice-bar" style="display:none;"></div>
+      <div id="dashNoticeBanner" class="notice-bar dash-clickable" style="display:none;" onclick="goToDashboardAlert()"></div>
 
       <div class="dash-stat-grid">
-        <div class="dash-stat-card"><div><div class="ds-label">전체 학생</div><div class="ds-value" id="dashStat1">0<small> 명</small></div></div><span class="ds-icon">👥</span></div>
-        <div class="dash-stat-card"><div><div class="ds-label">이번 주 출석률</div><div class="ds-value" id="dashStat2">-<small>%</small></div></div><span class="ds-icon">✅</span></div>
-        <div class="dash-stat-card"><div><div class="ds-label">보강 미완료</div><div class="ds-value" id="dashStat3">0<small> 건</small></div></div><span class="ds-icon">🗓️</span></div>
-        <div class="dash-stat-card"><div><div class="ds-label">이번 달 평균</div><div class="ds-value" id="dashStat4">-<small> 점</small></div></div><span class="ds-icon">📊</span></div>
-        <div class="dash-stat-card"><div><div class="ds-label">숙제 체크 미완료</div><div class="ds-value" id="dashStat5">0<small> 명</small></div></div><span class="ds-icon">📔</span></div>
-        <div class="dash-stat-card"><div><div class="ds-label">초등부 / 중등부</div><div class="ds-value" id="dashStat6">-</div></div><span class="ds-icon">🏫</span></div>
+        <div class="dash-stat-card dash-clickable" onclick="switchTab('students')"><div><div class="ds-label">전체 학생</div><div class="ds-value" id="dashStat1">0<small> 명</small></div></div><span class="ds-icon">👥</span></div>
+        <div class="dash-stat-card dash-clickable" onclick="switchTab('attendance')"><div><div class="ds-label">이번 주 출석률</div><div class="ds-value" id="dashStat2">-<small>%</small></div></div><span class="ds-icon">✅</span></div>
+        <div class="dash-stat-card dash-clickable" onclick="switchTab('attendance')"><div><div class="ds-label">보강 미완료</div><div class="ds-value" id="dashStat3">0<small> 건</small></div></div><span class="ds-icon">🗓️</span></div>
+        <div class="dash-stat-card dash-clickable" onclick="switchTab('daily')"><div><div class="ds-label">이번 달 평균</div><div class="ds-value" id="dashStat4">-<small> 점</small></div></div><span class="ds-icon">📊</span></div>
+        <div class="dash-stat-card dash-clickable" onclick="switchTab('homework')"><div><div class="ds-label">숙제 체크 미완료</div><div class="ds-value" id="dashStat5">0<small> 명</small></div></div><span class="ds-icon">📔</span></div>
+        <div class="dash-stat-card dash-clickable" onclick="switchTab('students')"><div><div class="ds-label">초등부 / 중등부</div><div class="ds-value" id="dashStat6">-</div></div><span class="ds-icon">🏫</span></div>
       </div>
 
-      <div class="card" style="margin-bottom:16px;">
+      <div class="card dash-clickable" style="margin-bottom:16px;" onclick="switchTab('backup')">
         <div class="panel-head">
           <h3>🕐 오늘의 수업</h3>
         </div>
@@ -455,15 +457,15 @@
       </div>
 
       <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
-        <div class="card" style="margin-bottom:0;">
+        <div class="card dash-clickable" style="margin-bottom:0;" onclick="switchTab('attendance')">
           <h3 style="font-size:14px; margin:0 0 10px; display:flex; align-items:center; gap:5px;">⚠️ 보강 필요 학생</h3>
           <ul class="recent-list" id="dashMakeupList" style="flex-direction:column; display:flex; gap:8px;"></ul>
         </div>
-        <div class="card" style="margin-bottom:0;">
+        <div class="card dash-clickable" style="margin-bottom:0;" onclick="switchTab('mistakes')">
           <h3 style="font-size:14px; margin:0 0 10px; display:flex; align-items:center; gap:5px;">📌 최근 오답 알림</h3>
           <ul class="recent-list" id="dashRecentMistakeList" style="flex-direction:column; display:flex; gap:8px;"></ul>
         </div>
-        <div class="card" style="margin-bottom:0;">
+        <div class="card dash-clickable" style="margin-bottom:0;" onclick="switchTab('mistakes')">
           <h3 style="font-size:14px; margin:0 0 10px; display:flex; align-items:center; gap:5px;">🕓 취약 단원 TOP 5</h3>
           <div id="dashTopUnitsBars" class="bar-list"></div>
         </div>
@@ -503,65 +505,6 @@
           <div class="home-card" onclick="switchTab('middle')"><span class="home-card-icon">🏫</span><div class="home-card-title">중등부 정보</div><div class="home-card-sub">학교·시험 분석</div></div>
           <div class="home-card" onclick="switchTab('backup')"><span class="home-card-icon">💾</span><div class="home-card-title">데이터 관리</div><div class="home-card-sub">백업·복원</div></div>
         </div>
-      </div>
-    </section>
-
-    <!-- ---------- 대시보드 (완성) ---------- -->
-    <section class="panel" id="panel-dashboard">
-      <div class="dash-grid">
-        <div class="card dash-stat">
-          <div class="dash-stat-label">전체 학생</div>
-          <div class="dash-stat-value" id="dashTotalStudents">0명</div>
-          <div class="dash-stat-sub" id="dashStudentsBreakdown">초등부 0명 · 중등부 0명</div>
-        </div>
-        <div class="card dash-stat">
-          <div class="dash-stat-label">오늘 출석</div>
-          <div class="dash-stat-value" id="dashTodayAttendance">-</div>
-          <div class="dash-stat-sub" id="dashTodayAttendanceSub">기록 없음</div>
-        </div>
-        <div class="card dash-stat">
-          <div class="dash-stat-label">이번 달 평균 점수</div>
-          <div class="dash-stat-value" id="dashAvgScore">-</div>
-          <div class="dash-stat-sub" id="dashAvgScoreSub">데일리 테스트 기준</div>
-        </div>
-        <div class="card dash-stat">
-          <div class="dash-stat-label">보강 필요</div>
-          <div class="dash-stat-value" id="dashMakeupNeeded">0건</div>
-          <div class="dash-stat-sub">아직 완료되지 않은 보강</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <h3>보강이 필요한 학생</h3>
-            <div class="sub" id="dashMakeupSub">보강 예정/필요 0건</div>
-          </div>
-        </div>
-        <ul class="recent-list" id="dashMakeupList" style="flex-direction:column; display:flex; gap:8px;"></ul>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <h3>최근 오답 알림</h3>
-            <div class="sub">최근 7일간 기록된 오답이에요.</div>
-          </div>
-        </div>
-        <ul class="recent-list" id="dashRecentMistakeList" style="flex-direction:column; display:flex; gap:8px;"></ul>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <h3>전체 학생 취약 단원 TOP 5</h3>
-            <div class="sub">모든 학생을 합쳐서 가장 많이 틀리는 단원이에요.</div>
-          </div>
-        </div>
-        <table>
-          <thead><tr><th style="width:60px">순위</th><th>단원</th><th style="width:120px">오답 횟수</th></tr></thead>
-          <tbody id="dashTopUnitsBody"></tbody>
-        </table>
       </div>
     </section>
 
@@ -3345,6 +3288,11 @@ function renderReport(){
 /* =========================================================
    대시보드
 ========================================================= */
+let dashAlertTarget = null;
+function goToDashboardAlert(){
+  if(dashAlertTarget) switchTab(dashAlertTarget);
+}
+
 function renderDashboard(){
   const now = new Date();
   const todayIso = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
@@ -3393,10 +3341,11 @@ function renderDashboard(){
   // === 알림 배너 ===
   const banner = document.getElementById('dashNoticeBanner');
   const alerts = [];
+  dashAlertTarget = null;
   const todayMakeup = attendanceRecords.filter(r => r.status === '결석' && r.makeupDate === todayIso && !r.makeupDone);
-  if(todayMakeup.length) alerts.push(`오늘 보강 ${todayMakeup.length}명`);
-  if(needMakeupAll.length) alerts.push(`보강 미완료 ${needMakeupAll.length}건`);
-  if(pendingHW) alerts.push(`숙제 체크 미완료 ${pendingHW}명`);
+  if(todayMakeup.length){ alerts.push(`오늘 보강 ${todayMakeup.length}명`); dashAlertTarget = dashAlertTarget || 'attendance'; }
+  if(needMakeupAll.length){ alerts.push(`보강 미완료 ${needMakeupAll.length}건`); dashAlertTarget = dashAlertTarget || 'attendance'; }
+  if(pendingHW){ alerts.push(`숙제 체크 미완료 ${pendingHW}명`); dashAlertTarget = dashAlertTarget || 'homework'; }
   if(alerts.length){
     banner.style.display = 'flex';
     banner.className = 'notice-bar';
