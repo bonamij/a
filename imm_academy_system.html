@@ -207,6 +207,7 @@
 
   .badge{display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-family:'Noto Sans KR',sans-serif; font-weight:700;}
   .badge.gray{background:rgba(107,90,71,0.12); color:var(--ink-soft);}
+  .badge.green{background:rgba(58,140,74,0.14); color:#2E7D3E;}
   .badge.top-s{background:var(--gold-soft); color:var(--gold); border:1px solid rgba(138,90,0,0.35); margin-left:6px;}
   .badge.score-high{background:var(--brand-soft); color:var(--brand-dark);}
   .badge.score-mid{background:var(--gold-soft); color:var(--gold);}
@@ -394,7 +395,7 @@
     <div class="sidebar-section-label">학생 관리</div>
     <div class="sidebar-item" data-tab="students" onclick="switchTab('students')"><span class="si">👥</span>학생 목록</div>
     <div class="sidebar-item" data-tab="attendance" onclick="switchTab('attendance')"><span class="si">✅</span>출결 관리</div>
-    <div class="sidebar-item" data-tab="homework" onclick="switchTab('homework')"><span class="si">📔</span>숙제 채점</div>
+    <div class="sidebar-item" data-tab="homework" onclick="switchTab('homework')"><span class="si">📔</span>숙제 체크리스트</div>
     <div class="sidebar-section-label">학습</div>
     <div class="sidebar-item" data-tab="progress" onclick="switchTab('progress')"><span class="si">📘</span>진도 관리</div>
     <div class="sidebar-item" data-tab="daily" onclick="switchTab('daily')"><span class="si">✏️</span>데일리 테스트</div>
@@ -427,7 +428,7 @@
         <div class="dash-stat-card"><div><div class="ds-label">이번 주 출석률</div><div class="ds-value" id="dashStat2">-<small>%</small></div></div><span class="ds-icon">✅</span></div>
         <div class="dash-stat-card"><div><div class="ds-label">보강 미완료</div><div class="ds-value" id="dashStat3">0<small> 건</small></div></div><span class="ds-icon">🗓️</span></div>
         <div class="dash-stat-card"><div><div class="ds-label">이번 달 평균</div><div class="ds-value" id="dashStat4">-<small> 점</small></div></div><span class="ds-icon">📊</span></div>
-        <div class="dash-stat-card"><div><div class="ds-label">숙제 미제출</div><div class="ds-value" id="dashStat5">0<small> 명</small></div></div><span class="ds-icon">📔</span></div>
+        <div class="dash-stat-card"><div><div class="ds-label">숙제 체크 미완료</div><div class="ds-value" id="dashStat5">0<small> 명</small></div></div><span class="ds-icon">📔</span></div>
         <div class="dash-stat-card"><div><div class="ds-label">초등부 / 중등부</div><div class="ds-value" id="dashStat6">-</div></div><span class="ds-icon">🏫</span></div>
       </div>
 
@@ -490,7 +491,7 @@
           <div class="home-card" onclick="switchTab('progress')"><span class="home-card-icon">📘</span><div class="home-card-title">진도 관리</div><div class="home-card-sub">교재별 진도 기록</div></div>
           <div class="home-card" onclick="switchTab('attendance')"><span class="home-card-icon">🗓️</span><div class="home-card-title">출결 관리</div><div class="home-card-sub">출결·보강 관리</div></div>
           <div class="home-card" onclick="switchTab('daily')"><span class="home-card-icon">✏️</span><div class="home-card-title">데일리 테스트</div></div>
-          <div class="home-card" onclick="switchTab('homework')"><span class="home-card-icon">📔</span><div class="home-card-title">숙제 채점</div><div class="home-card-sub">틀린 번호만 탭!</div></div>
+          <div class="home-card" onclick="switchTab('homework')"><span class="home-card-icon">📔</span><div class="home-card-title">숙제 체크리스트</div><div class="home-card-sub">배정하고 완료 체크만!</div></div>
         </div>
       </div>
 
@@ -916,116 +917,63 @@
       <div class="card">
         <div class="card-head">
           <div>
-            <h3>📘 정답 입력 (자동채점용)</h3>
-            <div class="sub">숙제 범위별로 정답을 한 번 입력해두면, 학생이 포털에서 스스로 답을 입력할 때 자동으로 채점돼요. 같은 범위는 나중에 다른 학생도 재사용할 수 있어요.</div>
+            <h3>📋 숙제 배정하기</h3>
+            <div class="sub">숙제 항목을 반 전체나 개별 학생에게 배정하면, 학생이 포털에서 완료 체크를 해요. 점수 채점 없이 완료 여부만 관리해요.</div>
           </div>
         </div>
-        <div class="inline-form">
+        <form id="hwaForm" onsubmit="addHomeworkAssignment(event)">
           <div class="field">
-            <label for="ak-range">숙제 범위 (숙제 채점 때 입력할 범위와 똑같이 적어주세요)</label>
-            <input type="text" id="ak-range" placeholder="예: 라이트 62p~68p" style="min-width:260px;">
-          </div>
-          <div class="field">
-            <label for="ak-total">문항 수</label>
-            <input type="number" id="ak-total" min="1" style="width:100px;" oninput="renderAnswerKeyInputs()">
-          </div>
-        </div>
-
-        <div style="background:var(--cream-alt); border-radius:10px; padding:14px; margin-top:14px;">
-          <label for="ak-bulk-paste" style="display:block; font-size:12.5px; font-weight:700; color:var(--brand-dark); margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;">⚡ 빠른 입력 (한 번에 붙여넣기)</label>
-          <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 8px; font-family:'Noto Sans KR',sans-serif;">한 줄에 하나씩, "번호 정답" 형식으로 입력하고 "채우기"를 누르면 아래 칸에 자동으로 나눠서 들어가요. 예:<br><span class="mono" style="font-size:11px;">1 ③<br>2 5<br>3 x=10, y=90</span></p>
-          <textarea id="ak-bulk-paste" rows="4" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-family:'Space Mono',monospace; font-size:12.5px;" placeholder="1 ③&#10;2 5&#10;3 24"></textarea>
-          <button type="button" class="btn small ghost" style="margin-top:8px;" onclick="fillAnswerKeyFromBulkPaste()">↓ 아래 칸에 채우기</button>
-        </div>
-
-        <div id="ak-inputs" style="margin-top:12px; display:flex; flex-direction:column; gap:8px;"></div>
-        <button type="button" class="btn" style="margin-top:12px;" onclick="saveAnswerKey()">정답 저장</button>
-
-        <div class="sub" style="margin-top:20px;">저장된 정답 세트</div>
-        <ul class="recent-list" id="answerKeyListBody" style="flex-direction:column; display:flex; gap:8px; margin-top:8px;"></ul>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <h3>숙제 자기 채점</h3>
-            <div class="sub">전체 문항 수를 입력하고, 틀린 문제 번호만 탭하면 점수가 자동 계산돼요. 학생이 직접 채점해도 좋아요!</div>
-          </div>
-        </div>
-        <form id="homeworkForm" onsubmit="addHomework(event)">
-          <div class="field">
-            <label>입력 방식</label>
+            <label>배정 대상</label>
             <div style="display:flex; gap:6px;">
-              <button type="button" class="btn small ghost active" id="hw-mode-individual" onclick="setHomeworkMode('individual')">개별 학생</button>
-              <button type="button" class="btn small ghost" id="hw-mode-class" onclick="setHomeworkMode('class')">반 전체</button>
+              <button type="button" class="btn small ghost active" id="hwa-mode-class" onclick="setHwAssignMode('class')">반 전체</button>
+              <button type="button" class="btn small ghost" id="hwa-mode-individual" onclick="setHwAssignMode('individual')">개별 학생</button>
             </div>
           </div>
 
-          <div id="hw-individual-wrap">
-            <div class="inline-form">
-              <div class="field">
-                <label for="hw-student">학생</label>
-                <select id="hw-student" required><option value="">선택</option></select>
-              </div>
-              <div class="field">
-                <label for="hw-date">날짜</label>
-                <input type="date" id="hw-date" required>
-              </div>
-              <div class="field">
-                <label for="hw-range">숙제 범위</label>
-                <input type="text" id="hw-range" placeholder="예: 라이트 62p~68p" required>
-              </div>
-              <div class="field">
-                <label for="hw-total">전체 문항 수</label>
-                <input type="number" id="hw-total" min="1" style="width:100px;" oninput="renderHwTapGrid()">
-              </div>
+          <div id="hwa-class-wrap">
+            <div class="field">
+              <label for="hwa-class-select">반 선택</label>
+              <select id="hwa-class-select"><option value="">반을 선택하세요</option></select>
             </div>
-            <div class="sub" style="margin:14px 0 8px;">틀린 문항 번호를 탭하세요 (탭하면 빨갛게 표시)</div>
-            <div class="tap-grid" id="hw-tap-grid"></div>
-            <div class="progress-pill" id="hw-preview" style="margin-top:14px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
           </div>
 
-          <div id="hw-class-wrap" style="display:none;">
-            <div class="inline-form">
-              <div class="field">
-                <label for="hw-class-select">반 선택</label>
-                <select id="hw-class-select" onchange="setupHwClassGrading()"><option value="">반을 선택하세요</option></select>
-              </div>
-              <div class="field">
-                <label for="hw-class-date">날짜</label>
-                <input type="date" id="hw-class-date">
-              </div>
-              <div class="field">
-                <label for="hw-class-range">숙제 범위</label>
-                <input type="text" id="hw-class-range" placeholder="예: 라이트 62p~68p">
-              </div>
-              <div class="field">
-                <label for="hw-class-total">전체 문항 수</label>
-                <input type="number" id="hw-class-total" min="1" style="width:100px;" oninput="setupHwClassGrading()">
-              </div>
+          <div id="hwa-individual-wrap" style="display:none;">
+            <div class="field">
+              <label>학생 선택 (여러 명 가능)</label>
+              <div id="hwa-student-checks" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
             </div>
-            <div class="sub" style="margin:14px 0 8px;">반을 선택하고 문항 수를 입력하면, 학생별로 채점표가 나와요. 각자 틀린 문항 번호를 탭해주세요.</div>
-            <div id="hw-class-grid-list" style="display:flex; flex-direction:column; gap:14px;"></div>
           </div>
 
-          <div style="margin-top:16px;"><button type="submit" class="btn">숙제 기록 추가</button></div>
+          <div class="inline-form">
+            <div class="field">
+              <label for="hwa-text">숙제 내용</label>
+              <input type="text" id="hwa-text" placeholder="예: 라이트 62p~68p / Only one 공수1 1~40번" style="min-width:280px;" required>
+            </div>
+            <div class="field">
+              <label for="hwa-date">배정일</label>
+              <input type="date" id="hwa-date" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn" style="margin-top:14px;">숙제 배정하기</button>
         </form>
       </div>
 
       <div class="card">
         <div class="card-head">
           <div>
-            <h3>숙제 기록 이력</h3>
-            <div class="sub" id="homeworkCountSub">기록된 숙제 0건</div>
+            <h3>✅ 배정 현황</h3>
+            <div class="sub" id="hwaCountSub">배정된 숙제 0건</div>
           </div>
           <div class="field">
-            <label for="homeworkFilterStudent">학생 필터</label>
-            <select id="homeworkFilterStudent" onchange="renderHomeworkList()"><option value="all">전체 학생</option></select>
+            <label for="hwaFilterClass">반 필터</label>
+            <select id="hwaFilterClass" onchange="renderHomeworkAssignments()"><option value="all">전체</option></select>
           </div>
         </div>
-        <ul class="recent-list" id="homeworkListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
+        <div id="hwaListBody" style="display:flex; flex-direction:column; gap:14px;"></div>
       </div>
     </section>
+
 
     <section class="panel" id="panel-mistakes">
       <div class="card">
@@ -1372,8 +1320,8 @@ let dailyTests = [];
 let nextDailyId = 1;
 let currentDailyMode = 'count';
 
-let homeworkRecords = [];
-let nextHomeworkId = 1;
+let homeworkAssignments = [];
+let nextHomeworkAssignmentId = 1;
 
 let mistakeRecords = [];
 let nextMistakeId = 1;
@@ -1389,12 +1337,9 @@ let nextExamId = 1;
 
 let parentMessages = [];
 
-let answerKeys = [];
-let nextAnswerKeyId = 1;
-
 const TAB_TITLES = {
   home:'홈', dashboard:'대시보드', students:'학생 명단', progress:'진도 관리', attendance:'출결 관리', daily:'데일리 테스트',
-  homework:'숙제 채점', mistakes:'오답노트', report:'학생 리포트', middle:'중등부 정보', backup:'데이터 관리'
+  homework:'숙제 체크리스트', mistakes:'오답노트', report:'학생 리포트', middle:'중등부 정보', backup:'데이터 관리'
 };
 
 function escapeHtml(str){
@@ -1692,10 +1637,9 @@ function renderStudents(){
     renderDailyList();
     renderScoreChart();
   }
-  if(document.getElementById('hw-student')){
-    refreshHomeworkStudentSelects();
-    renderHomeworkList();
-    renderAnswerKeyList();
+  if(document.getElementById('hwa-class-select')){
+    refreshHwaSelects();
+    renderHomeworkAssignments();
   }
   if(document.getElementById('m-student')){
     refreshMistakeStudentSelects();
@@ -2541,330 +2485,142 @@ function renderScoreChart(){
 }
 
 /* =========================================================
-   숙제 자기 채점
+   숙제 체크리스트
 ========================================================= */
-let hwWrongSet = new Set();
-let hwClassWrongMap = {};
-
-function setHomeworkMode(mode){
-  document.getElementById('hw-mode-individual').classList.toggle('active', mode === 'individual');
-  document.getElementById('hw-mode-class').classList.toggle('active', mode === 'class');
-  document.getElementById('hw-individual-wrap').style.display = mode === 'individual' ? 'block' : 'none';
-  document.getElementById('hw-class-wrap').style.display = mode === 'class' ? 'block' : 'none';
-  document.getElementById('hw-student').required = mode === 'individual';
+function setHwAssignMode(mode){
+  document.getElementById('hwa-mode-class').classList.toggle('active', mode === 'class');
+  document.getElementById('hwa-mode-individual').classList.toggle('active', mode === 'individual');
+  document.getElementById('hwa-class-wrap').style.display = mode === 'class' ? 'block' : 'none';
+  document.getElementById('hwa-individual-wrap').style.display = mode === 'individual' ? 'block' : 'none';
 }
 
-function setupHwClassGrading(){
-  const className = document.getElementById('hw-class-select').value;
-  const total = Number(document.getElementById('hw-class-total').value);
-  const listEl = document.getElementById('hw-class-grid-list');
+function refreshHwaSelects(){
+  const classSelect = document.getElementById('hwa-class-select');
+  const filterSelect = document.getElementById('hwaFilterClass');
+  const checksWrap = document.getElementById('hwa-student-checks');
+  if(!classSelect) return;
 
-  if(!className || !total || total < 1){
-    listEl.innerHTML = '';
-    hwClassWrongMap = {};
-    return;
-  }
+  const prevClass = classSelect.value, prevFilter = filterSelect.value;
+  const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
 
-  const classStudents = students.filter(s => s.className === className);
-  hwClassWrongMap = {};
-  classStudents.forEach(s => { hwClassWrongMap[s.id] = new Set(); });
+  classSelect.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => {
+    const count = students.filter(s => s.className === c).length;
+    return `<option value="${escapeHtml(c)}">${escapeHtml(c)} (${count}명)</option>`;
+  }).join('');
+  if(classNames.includes(prevClass)) classSelect.value = prevClass;
 
-  listEl.innerHTML = classStudents.map(s => `
-    <div style="background:var(--cream-alt); border-radius:10px; padding:14px;">
-      <p style="font-weight:700; font-size:13px; margin-bottom:8px; font-family:'Noto Sans KR',sans-serif;">${escapeHtml(s.name)}</p>
-      <div class="tap-grid" id="hw-class-grid-${s.id}">
-        ${Array.from({ length: total }, (_, i) => i + 1).map(n => `<button type="button" class="tap-num-btn" data-num="${n}" onclick="toggleHwClassWrongNum(${s.id}, ${n})">${n}</button>`).join('')}
-      </div>
-      <div class="progress-pill" id="hw-class-preview-${s.id}" style="margin-top:8px; display:inline-block;">틀린 0개 · 예상 점수 100점</div>
-    </div>
+  filterSelect.innerHTML = `<option value="all">전체</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  if(prevFilter === 'all' || classNames.includes(prevFilter)) filterSelect.value = prevFilter;
+
+  checksWrap.innerHTML = students.map(s => `
+    <label style="display:flex; align-items:center; gap:5px; background:var(--cream-alt); border-radius:8px; padding:6px 10px; font-size:12.5px; font-family:'Noto Sans KR',sans-serif; cursor:pointer;">
+      <input type="checkbox" class="hwa-student-check" value="${s.id}"> ${escapeHtml(s.name)}
+    </label>
   `).join('');
 }
 
-function toggleHwClassWrongNum(studentId, num){
-  const set = hwClassWrongMap[studentId];
-  if(!set) return;
-  if(set.has(num)) set.delete(num); else set.add(num);
-  const btn = document.querySelector(`#hw-class-grid-${studentId} .tap-num-btn[data-num="${num}"]`);
-  if(btn) btn.classList.toggle('wrong', set.has(num));
-  const total = Number(document.getElementById('hw-class-total').value);
-  const score = Math.round(((total - set.size) / total) * 100);
-  const previewEl = document.getElementById(`hw-class-preview-${studentId}`);
-  if(previewEl) previewEl.textContent = `틀린 ${set.size}개 · 예상 점수 ${score}점`;
-}
-
-function renderHwTapGrid(){
-  const total = Number(document.getElementById('hw-total').value);
-  const gridEl = document.getElementById('hw-tap-grid');
-  hwWrongSet.clear();
-  if(!total || total < 1){
-    gridEl.innerHTML = '';
-    updateHwPreview(0, 0);
-    return;
-  }
-  let html = '';
-  for(let i = 1; i <= total; i++){
-    html += `<button type="button" class="tap-num-btn" data-num="${i}" onclick="toggleHwWrongNum(${i})">${i}</button>`;
-  }
-  gridEl.innerHTML = html;
-  updateHwPreview(total, 0);
-}
-
-function toggleHwWrongNum(num){
-  if(hwWrongSet.has(num)) hwWrongSet.delete(num); else hwWrongSet.add(num);
-  const btn = document.querySelector(`#hw-tap-grid .tap-num-btn[data-num="${num}"]`);
-  if(btn) btn.classList.toggle('wrong', hwWrongSet.has(num));
-  const total = Number(document.getElementById('hw-total').value);
-  updateHwPreview(total, hwWrongSet.size);
-}
-
-function updateHwPreview(total, wrongCount){
-  const el = document.getElementById('hw-preview');
-  if(!total){ el.textContent = '전체 문항 수를 먼저 입력해주세요.'; return; }
-  const perQuestion = (100 / total).toFixed(1);
-  const score = Math.round(((total - wrongCount) / total) * 100);
-  el.textContent = `문항당 ${perQuestion}점 · 틀린 ${wrongCount}개 · 예상 점수 ${score}점`;
-}
-
-function addHomework(e){
+function addHomeworkAssignment(e){
   e.preventDefault();
-  const isClassMode = document.getElementById('hw-mode-class').classList.contains('active');
+  const isClassMode = document.getElementById('hwa-mode-class').classList.contains('active');
+  const text = document.getElementById('hwa-text').value.trim();
+  const date = document.getElementById('hwa-date').value;
 
+  if(!text || !date){
+    alert('숙제 내용과 배정일을 입력해주세요.');
+    return;
+  }
+
+  let target;
   if(isClassMode){
-    const className = document.getElementById('hw-class-select').value;
-    const date = document.getElementById('hw-class-date').value;
-    const range = document.getElementById('hw-class-range').value.trim();
-    const total = Number(document.getElementById('hw-class-total').value);
-
-    if(!className || !date || !range || !total){
-      alert('반, 날짜, 숙제 범위, 전체 문항 수를 모두 입력해주세요.');
-      return;
-    }
-
-    const classStudents = students.filter(s => s.className === className);
-    if(classStudents.length === 0){
-      alert('이 반에 속한 학생이 없어요.');
-      return;
-    }
-
-    classStudents.forEach(s => {
-      const wrongSet = hwClassWrongMap[s.id] || new Set();
-      const wrongNumbers = Array.from(wrongSet).sort((a,b) => a - b);
-      const correct = total - wrongNumbers.length;
-      const score = Math.round((correct / total) * 100);
-      homeworkRecords.push({ id: nextHomeworkId++, studentId: s.id, date, range, total, correct, wrongNumbers, score });
-    });
-
-    alert(`"${className}" 반 학생 ${classStudents.length}명의 숙제가 한번에 기록됐어요.`);
-
-    document.getElementById('hw-class-range').value = '';
-    document.getElementById('hw-class-total').value = '';
-    document.getElementById('hw-class-grid-list').innerHTML = '';
-    hwClassWrongMap = {};
+    const className = document.getElementById('hwa-class-select').value;
+    if(!className){ alert('반을 선택해주세요.'); return; }
+    if(students.filter(s => s.className === className).length === 0){ alert('이 반에 속한 학생이 없어요.'); return; }
+    target = { type:'class', className };
   } else {
-    const studentId = Number(document.getElementById('hw-student').value);
-    const date = document.getElementById('hw-date').value;
-    const range = document.getElementById('hw-range').value.trim();
-    const total = Number(document.getElementById('hw-total').value);
-
-    if(!studentId || !date || !range || !total){
-      alert('학생, 날짜, 숙제 범위, 전체 문항 수를 모두 입력해주세요.');
-      return;
-    }
-
-    const wrongNumbers = Array.from(hwWrongSet).sort((a,b) => a - b);
-    const correct = total - wrongNumbers.length;
-    const score = Math.round((correct / total) * 100);
-
-    homeworkRecords.push({ id: nextHomeworkId++, studentId, date, range, total, correct, wrongNumbers, score });
-
-    document.getElementById('hw-range').value = '';
-    document.getElementById('hw-total').value = '';
-    hwWrongSet.clear();
-    document.getElementById('hw-tap-grid').innerHTML = '';
-    updateHwPreview(0, 0);
-    document.getElementById('hw-range').focus();
+    const studentIds = Array.from(document.querySelectorAll('.hwa-student-check:checked')).map(el => Number(el.value));
+    if(studentIds.length === 0){ alert('학생을 한 명 이상 선택해주세요.'); return; }
+    target = { type:'individual', studentIds };
   }
 
-  renderHomeworkList();
+  homeworkAssignments.push({ id: nextHomeworkAssignmentId++, text, date, target, doneBy: [] });
+
+  document.getElementById('hwa-text').value = '';
+  document.querySelectorAll('.hwa-student-check:checked').forEach(el => el.checked = false);
+
+  renderHomeworkAssignments();
   scheduleSync();
 }
 
-function deleteHomework(id){
-  if(!confirm('이 숙제 기록을 삭제하시겠습니까?')) return;
-  homeworkRecords = homeworkRecords.filter(h => h.id !== id);
-  renderHomeworkList();
+function deleteHomeworkAssignment(id){
+  if(!confirm('이 숙제 배정을 삭제하시겠습니까?')) return;
+  homeworkAssignments = homeworkAssignments.filter(a => a.id !== id);
+  renderHomeworkAssignments();
   scheduleSync();
 }
 
-function fillAnswerKeyFromBulkPaste(){
-  const raw = document.getElementById('ak-bulk-paste').value;
-  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-
-  const parsed = {};
-  let maxNum = 0;
-  const failedLines = [];
-
-  lines.forEach(line => {
-    const m = line.match(/^(\d+)[\s:.\)\-]+(.+)$/);
-    if(m){
-      const num = Number(m[1]);
-      const answer = m[2].trim();
-      parsed[num] = answer;
-      if(num > maxNum) maxNum = num;
-    } else {
-      failedLines.push(line);
-    }
-  });
-
-  if(maxNum === 0){
-    alert('인식된 내용이 없어요. "번호 정답" 형식으로 한 줄에 하나씩 입력해주세요. (예: 1 ③)');
-    return;
-  }
-
-  document.getElementById('ak-total').value = maxNum;
-  renderAnswerKeyInputs();
-
-  Object.entries(parsed).forEach(([num, answer]) => {
-    const inputEl = document.getElementById(`ak-answer-${num}`);
-    if(inputEl) inputEl.value = answer;
-  });
-
-  if(failedLines.length){
-    alert(`${Object.keys(parsed).length}개는 채웠는데, ${failedLines.length}줄은 형식을 못 알아봤어요:\n${failedLines.slice(0, 5).join('\n')}${failedLines.length > 5 ? '\n...' : ''}\n\n해당 번호는 아래에서 직접 입력해주세요.`);
-  }
+function getAssignmentTargetStudents(a){
+  if(a.target && a.target.type === 'class') return students.filter(s => s.className === a.target.className);
+  if(a.target && a.target.type === 'individual') return students.filter(s => a.target.studentIds.includes(s.id));
+  return [];
 }
 
-function renderAnswerKeyInputs(){
-  const total = Number(document.getElementById('ak-total').value);
-  const wrap = document.getElementById('ak-inputs');
-  if(!total || total < 1){
-    wrap.innerHTML = '';
-    return;
-  }
-  wrap.innerHTML = Array.from({ length: total }, (_, i) => i + 1).map(n => `
-    <div class="ak-input-row">
-      <span class="ak-num">${n}번</span>
-      <input type="text" id="ak-answer-${n}" placeholder="정답 입력 (예: ③ 또는 24)">
-    </div>
-  `).join('');
-}
-
-function saveAnswerKey(){
-  const range = document.getElementById('ak-range').value.trim();
-  const total = Number(document.getElementById('ak-total').value);
-
-  if(!range || !total){
-    alert('숙제 범위와 문항 수를 입력해주세요.');
-    return;
-  }
-
-  const answers = {};
-  for(let i = 1; i <= total; i++){
-    const val = document.getElementById(`ak-answer-${i}`).value.trim();
-    if(!val){
-      alert(`${i}번 정답이 비어있어요. 모든 문항의 정답을 입력해주세요.`);
-      return;
-    }
-    answers[i] = val;
-  }
-
-  const existing = answerKeys.find(a => a.range === range);
-  if(existing){
-    existing.total = total;
-    existing.answers = answers;
-  } else {
-    answerKeys.push({ id: nextAnswerKeyId++, range, total, answers });
-  }
-
-  document.getElementById('ak-range').value = '';
-  document.getElementById('ak-total').value = '';
-  document.getElementById('ak-inputs').innerHTML = '';
-
-  renderAnswerKeyList();
-  scheduleSync();
-  alert(`"${range}" 정답이 저장됐어요! 학생이 포털에서 이 범위로 숙제를 입력하면 자동채점돼요.`);
-}
-
-function deleteAnswerKey(id){
-  if(!confirm('이 정답 세트를 삭제하시겠습니까?')) return;
-  answerKeys = answerKeys.filter(a => a.id !== id);
-  renderAnswerKeyList();
+function toggleHomeworkDone(assignmentId, studentId){
+  const a = homeworkAssignments.find(x => x.id === assignmentId);
+  if(!a) return;
+  a.doneBy = a.doneBy || [];
+  const idx = a.doneBy.indexOf(studentId);
+  if(idx === -1) a.doneBy.push(studentId); else a.doneBy.splice(idx, 1);
+  renderHomeworkAssignments();
   scheduleSync();
 }
 
-function renderAnswerKeyList(){
-  const listEl = document.getElementById('answerKeyListBody');
-  if(!listEl) return;
-  if(answerKeys.length === 0){
-    listEl.innerHTML = `<li class="report-empty">저장된 정답 세트가 없어요.</li>`;
-    return;
-  }
-  listEl.innerHTML = answerKeys.slice().reverse().map(a => `
-    <li style="display:flex; justify-content:space-between; align-items:center;">
-      <span>${escapeHtml(a.range)} <span style="color:var(--ink-soft); font-size:12px;">· ${a.total}문항</span></span>
-      <button type="button" class="btn small danger-text" onclick="deleteAnswerKey(${a.id})">삭제</button>
-    </li>
-  `).join('');
-}
+function renderHomeworkAssignments(){
+  const listEl = document.getElementById('hwaListBody');
+  const filterEl = document.getElementById('hwaFilterClass');
+  if(!listEl || !filterEl) return;
+  const filter = filterEl.value;
 
-function refreshHomeworkStudentSelects(){
-  const hwStudent = document.getElementById('hw-student');
-  const filterStudent = document.getElementById('homeworkFilterStudent');
-  const hwClass = document.getElementById('hw-class-select');
-  const prevHw = hwStudent.value, prevFilter = filterStudent.value;
-  const prevClass = hwClass ? hwClass.value : '';
-
-  const optionsHtml = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
-  hwStudent.innerHTML = `<option value="">선택</option>` + optionsHtml;
-  filterStudent.innerHTML = `<option value="all">전체 학생</option>` + optionsHtml;
-
-  if(hwClass){
-    const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
-    hwClass.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => {
-      const count = students.filter(s => s.className === c).length;
-      return `<option value="${escapeHtml(c)}">${escapeHtml(c)} (${count}명)</option>`;
-    }).join('');
-    if(classNames.includes(prevClass)) hwClass.value = prevClass;
-  }
-
-  if(students.some(s => String(s.id) === prevHw)) hwStudent.value = prevHw;
-  if(prevFilter === 'all' || students.some(s => String(s.id) === prevFilter)) filterStudent.value = prevFilter;
-}
-
-function renderHomeworkList(){
-  const listEl = document.getElementById('homeworkListBody');
-  const filter = document.getElementById('homeworkFilterStudent').value;
-
-  let list = homeworkRecords.slice();
-  if(filter !== 'all') list = list.filter(h => String(h.studentId) === filter);
+  let list = homeworkAssignments.slice();
+  if(filter !== 'all') list = list.filter(a => a.target && a.target.type === 'class' && a.target.className === filter);
   list.sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
 
-  document.getElementById('homeworkCountSub').textContent =
-    `기록된 숙제 ${homeworkRecords.length}건 (표시 중 ${list.length}건)`;
+  document.getElementById('hwaCountSub').textContent =
+    `배정된 숙제 ${homeworkAssignments.length}건 (표시 중 ${list.length}건)`;
 
   if(list.length === 0){
-    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">기록된 숙제가 없습니다.</li>`;
+    listEl.innerHTML = `<div class="report-empty">배정된 숙제가 없어요.</div>`;
     return;
   }
 
-  listEl.innerHTML = list.map(h => {
-    const s = students.find(x => x.id === h.studentId);
-    const wrongText = (h.wrongNumbers && h.wrongNumbers.length) ? h.wrongNumbers.join(', ') : '없음';
+  listEl.innerHTML = list.map(a => {
+    const targetStudents = getAssignmentTargetStudents(a);
+    const doneBy = a.doneBy || [];
+    const doneCount = targetStudents.filter(s => doneBy.includes(s.id)).length;
+    const targetLabel = a.target.type === 'class' ? `🏷️ ${escapeHtml(a.target.className)}` : '👤 개별 학생';
     return `
-      <li>
-        <div class="left">
-          <span class="date">${h.date.replace(/-/g,'.')}</span>
-          <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
-          <span class="book-badge">${escapeHtml(h.range)}</span>
-          <span style="font-size:12px; color:var(--ink-soft);">${h.correct}/${h.total}문제 · 틀림: ${wrongText}</span>
+      <div style="background:var(--cream-alt); border-radius:10px; padding:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:10px;">
+          <div>
+            <div style="font-size:11px; color:var(--ink-soft); font-family:'Space Mono',monospace;">${a.date.replace(/-/g,'.')} · ${targetLabel}</div>
+            <div style="font-weight:700; font-size:13.5px; margin-top:2px; font-family:'Noto Sans KR',sans-serif;">${escapeHtml(a.text)}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <span class="badge ${doneCount === targetStudents.length ? 'green' : 'gray'}">${doneCount}/${targetStudents.length} 완료</span>
+            <button class="btn small danger-text" onclick="deleteHomeworkAssignment(${a.id})">삭제</button>
+          </div>
         </div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span class="badge ${scoreBadgeClass(h.score)}">${h.score}점</span>
-          <button class="btn small danger-text" onclick="deleteHomework(${h.id})">삭제</button>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          ${targetStudents.map(s => {
+            const done = doneBy.includes(s.id);
+            return `<label style="display:flex; align-items:center; gap:5px; background:${done ? 'var(--brand-soft)' : '#fff'}; border:1px solid ${done ? 'var(--brand)' : 'var(--line)'}; border-radius:8px; padding:5px 10px; font-size:12px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; color:${done ? 'var(--brand-dark)' : 'var(--ink)'};">
+              <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleHomeworkDone(${a.id}, ${s.id})"> ${escapeHtml(s.name)}
+            </label>`;
+          }).join('')}
         </div>
-      </li>`;
+      </div>`;
   }).join('');
 }
+
 
 /* =========================================================
    오답노트
@@ -3233,10 +2989,15 @@ function renderDashboard(){
   const avgScore = monthTests.length ? Math.round(monthTests.reduce((s,t) => s + t.score, 0) / monthTests.length) : null;
   document.getElementById('dashStat4').innerHTML = avgScore !== null ? `${avgScore}<small> 점</small>` : `-<small> 점</small>`;
 
-  // 5. 숙제 미제출 (정답 입력된 범위 기준)
-  const submittedRanges = new Set(homeworkRecords.map(h => h.range));
-  const pendingHW = (answerKeys || []).filter(ak => !submittedRanges.has(ak.range)).length;
-  document.getElementById('dashStat5').innerHTML = `${pendingHW}<small> 건</small>`;
+  // 5. 숙제 체크 미완료 학생 수
+  const studentsWithPendingHW = new Set();
+  homeworkAssignments.forEach(a => {
+    getAssignmentTargetStudents(a).forEach(s => {
+      if(!(a.doneBy || []).includes(s.id)) studentsWithPendingHW.add(s.id);
+    });
+  });
+  const pendingHW = studentsWithPendingHW.size;
+  document.getElementById('dashStat5').innerHTML = `${pendingHW}<small> 명</small>`;
 
   // 6. 초등부 / 중등부
   const elem = students.filter(s => levelOf(s.grade) === '초등부').length;
@@ -3249,7 +3010,7 @@ function renderDashboard(){
   const todayMakeup = attendanceRecords.filter(r => r.status === '결석' && r.makeupDate === todayIso && !r.makeupDone);
   if(todayMakeup.length) alerts.push(`오늘 보강 ${todayMakeup.length}명`);
   if(needMakeupAll.length) alerts.push(`보강 미완료 ${needMakeupAll.length}건`);
-  if(pendingHW) alerts.push(`숙제 미제출 ${pendingHW}건`);
+  if(pendingHW) alerts.push(`숙제 체크 미완료 ${pendingHW}명`);
   if(alerts.length){
     banner.style.display = 'flex';
     banner.className = 'notice-bar';
@@ -3532,13 +3293,12 @@ function collectAllData(){
     progressLogs, nextProgressId,
     attendanceRecords, nextAttendanceId,
     dailyTests, nextDailyId,
-    homeworkRecords, nextHomeworkId,
+    homeworkAssignments, nextHomeworkAssignmentId,
     mistakeRecords, nextMistakeId,
     teacherComments,
     schoolInfos, nextSchoolInfoId,
     examAnalysis, nextExamId,
     parentMessages,
-    answerKeys, nextAnswerKeyId,
     scheduleItems, nextScheduleId
   };
 }
@@ -3554,8 +3314,8 @@ function applyAllData(data){
   nextAttendanceId = data.nextAttendanceId || maxId(attendanceRecords);
   dailyTests = data.dailyTests || [];
   nextDailyId = data.nextDailyId || maxId(dailyTests);
-  homeworkRecords = data.homeworkRecords || [];
-  nextHomeworkId = data.nextHomeworkId || maxId(homeworkRecords);
+  homeworkAssignments = data.homeworkAssignments || [];
+  nextHomeworkAssignmentId = data.nextHomeworkAssignmentId || maxId(homeworkAssignments);
   mistakeRecords = data.mistakeRecords || [];
   nextMistakeId = data.nextMistakeId || maxId(mistakeRecords);
   teacherComments = data.teacherComments || {};
@@ -3564,8 +3324,6 @@ function applyAllData(data){
   examAnalysis = data.examAnalysis || [];
   nextExamId = data.nextExamId || maxId(examAnalysis);
   parentMessages = data.parentMessages || [];
-  answerKeys = data.answerKeys || [];
-  nextAnswerKeyId = data.nextAnswerKeyId || (answerKeys.length ? Math.max(...answerKeys.map(a => a.id || 0)) + 1 : 1);
   scheduleItems = data.scheduleItems || [];
   nextScheduleId = data.nextScheduleId || (scheduleItems.length ? Math.max(...scheduleItems.map(s => s.id || 0)) + 1 : 1);
 
@@ -3640,7 +3398,7 @@ function resetAllData(){
   progressLogs = []; nextProgressId = 1;
   attendanceRecords = []; nextAttendanceId = 1;
   dailyTests = []; nextDailyId = 1;
-  homeworkRecords = []; nextHomeworkId = 1;
+  homeworkAssignments = []; nextHomeworkAssignmentId = 1;
   mistakeRecords = []; nextMistakeId = 1;
   teacherComments = {};
   schoolInfos = []; nextSchoolInfoId = 1;
@@ -3738,15 +3496,14 @@ function init(){
   document.getElementById('p-date').value = iso;
   document.getElementById('att-date').value = iso;
   document.getElementById('dt-date').value = iso;
-  document.getElementById('hw-date').value = iso;
-  document.getElementById('hw-class-date').value = iso;
+  document.getElementById('hwa-date').value = iso;
   document.getElementById('m-date').value = iso;
   document.getElementById('ea-date').value = iso;
   attCalYear = now.getFullYear();
   attCalMonth = now.getMonth();
   setDailyMode('count');
   setProgressMode('individual');
-  setHomeworkMode('individual');
+  setHwAssignMode('class');
   switchTab('dashboard');
   renderDashboard();
   renderStudents();
@@ -3760,9 +3517,8 @@ function init(){
   refreshDailyStudentSelects();
   renderDailyList();
   renderScoreChart();
-  refreshHomeworkStudentSelects();
-  renderHomeworkList();
-  renderAnswerKeyList();
+  refreshHwaSelects();
+  renderHomeworkAssignments();
   refreshMistakeStudentSelects();
   renderMistakeList();
   renderMistakeChart();
