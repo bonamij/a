@@ -393,25 +393,26 @@ function renderReport(data, student){
   attendanceRecords.forEach(r => {
     if(r.status === '결석' && r.makeupDate && !r.makeupDone){
       if(r.makeupDate === todayIso){
-        alerts.push({ icon:'📌', text:`오늘(${r.makeupDate.slice(5).replace('-','/')}) 보강이 있어요!` });
+        alerts.push({ icon:'📌', text:`오늘(${r.makeupDate.slice(5).replace('-','/')}) 보강이 있어요!`, targetId:'attendanceSection' });
       } else if(r.makeupDate > todayIso && r.makeupDate <= in3DaysIso){
         const mm = r.makeupDate.slice(5).replace('-','/');
-        alerts.push({ icon:'🗓️', text:`${mm}에 보강이 예정되어 있어요.` });
+        alerts.push({ icon:'🗓️', text:`${mm}에 보강이 예정되어 있어요.`, targetId:'attendanceSection' });
       }
     }
   });
 
   studentHomeworkAssignments.forEach(a => {
     if(!(a.doneBy || []).includes(student.id)){
-      alerts.push({ icon:'✏️', text:`아직 체크 안 한 숙제가 있어요: ${a.text}` });
+      alerts.push({ icon:'✏️', text:`아직 체크 안 한 숙제가 있어요: ${a.text}`, targetId:'hwChecklistSection' });
     }
   });
 
   const alertBannerHtml = alerts.length ? `
     <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
       ${alerts.map(a => `
-        <div style="background:var(--brand); color:#fff; border-radius:10px; padding:12px 14px; font-size:13.5px; font-weight:700; font-family:'Noto Sans KR',sans-serif; display:flex; align-items:center; gap:8px;">
+        <div onclick="document.getElementById('${a.targetId}').scrollIntoView({behavior:'smooth', block:'start'})" style="background:var(--brand); color:#fff; border-radius:10px; padding:12px 14px; font-size:13.5px; font-weight:700; font-family:'Noto Sans KR',sans-serif; display:flex; align-items:center; gap:8px; cursor:pointer;">
           <span style="font-size:16px;">${a.icon}</span>${escapeHtml(a.text)}
+          <span style="margin-left:auto; font-size:12px; opacity:0.85;">보러가기 →</span>
         </div>
       `).join('')}
     </div>
@@ -434,7 +435,7 @@ function renderReport(data, student){
         </div>
       </div>
 
-      <div class="report-section">
+      <div class="report-section" id="attendanceSection">
         <h4>🗓️ 이번 달 출결 현황</h4>
         ${monthRecords.length === 0 ? `<div class="report-empty">이번 달 출결 기록이 아직 없어요.</div>` : `
           <div class="report-grid">
@@ -450,7 +451,7 @@ function renderReport(data, student){
         ${studentTests.length === 0 ? `<div class="report-empty">기록된 데일리 테스트가 없어요.</div>` : buildScoreChartSVG(studentTests, groupAvgScore)}
       </div>
 
-      <div class="report-section">
+      <div class="report-section" id="hwChecklistSection">
         <h4>✅ 숙제 체크리스트${studentHomeworkAssignments.length ? ` · ${studentHomeworkAssignments.filter(a => (a.doneBy||[]).includes(student.id)).length}/${studentHomeworkAssignments.length} 완료` : ''}</h4>
         <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:500;">선생님이 내주신 숙제예요. 다 풀었으면 체크해주세요!</p>
         <div id="hwChecklistArea">
