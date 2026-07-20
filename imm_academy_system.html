@@ -75,12 +75,24 @@
   .sidebar-item.active{ background:rgba(242,113,28,0.14); color:#fff; border-left-color:var(--brand); }
   .sidebar-item .si{ font-size:15px; width:18px; text-align:center; }
 
+  .mobile-menu-btn{
+    display:none; background:none; border:none; font-size:22px; line-height:1;
+    color:var(--ink); cursor:pointer; padding:4px 8px; border-radius:8px; flex-shrink:0;
+  }
+  .mobile-menu-btn:active{ background:rgba(46,32,19,0.08); }
+
+  .sidebar-overlay{
+    display:none; position:fixed; inset:0; background:rgba(20,16,12,0.45); z-index:19;
+  }
+  .sidebar-overlay.open{ display:block; }
+
   .main{ flex:1; min-width:0; margin-left:220px; padding:26px 32px 60px; }
 
   .topbar{
     display:flex; justify-content:space-between; align-items:center;
     margin-bottom:22px; flex-wrap:wrap; gap:10px;
   }
+  .topbar-left{ display:flex; align-items:center; gap:8px; min-width:0; }
   .topbar h2{ font-size:22px; margin:0; }
   .topbar .topbar-right{ display:flex; align-items:center; gap:12px; }
   .topbar .today{ font-size:12.5px; color:var(--ink-soft); font-family:'Space Mono',monospace; }
@@ -352,7 +364,13 @@
   }
 
   @media (max-width:760px){
-    .main{padding:20px 16px 96px;}
+    .sidebar{
+      transform:translateX(-100%); transition:transform .25s ease;
+      z-index:30; width:78%; max-width:280px; box-shadow:4px 0 24px rgba(0,0,0,0.3);
+    }
+    .sidebar.open{ transform:translateX(0); }
+    .main{ margin-left:0; padding:20px 16px 96px; }
+    .mobile-menu-btn{ display:inline-flex; align-items:center; justify-content:center; }
     .home-hero{margin:-20px -16px 24px; padding:32px 20px 38px;}
     .home-grid{grid-template-columns:repeat(2,1fr);}
     form.inline-form{flex-direction:column; align-items:stretch;}
@@ -386,10 +404,14 @@
     <div class="sidebar-section-label">관리</div>
     <div class="sidebar-item" data-tab="backup" onclick="switchTab('backup')"><span class="si">🔧</span>데이터 관리</div>
   </nav>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
   <main class="main">
     <div class="topbar" id="topbarSlim">
-      <h2 id="pageTitle">전체 현황</h2>
+      <div class="topbar-left">
+        <button type="button" class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="메뉴 열기">☰</button>
+        <h2 id="pageTitle">전체 현황</h2>
+      </div>
       <div class="topbar-right">
         <div class="today mono" id="todayLabel"></div>
         <button class="btn-topbar" id="topbarAddBtn" onclick="openTopbarModal()" style="display:none;">+ 학생 추가</button>
@@ -1392,6 +1414,17 @@ function switchTab(tab){
   document.getElementById('topbarAddBtn').style.display = tab === 'students' ? 'inline-block' : 'none';
   window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
   if(tab === 'dashboard') renderDashboard();
+  if(window.innerWidth <= 760) closeSidebar();
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
 }
 
 function openTopbarModal(){
