@@ -16,129 +16,201 @@
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj4KPGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI0YyNzAxQyIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0M4NTgxMiIvPgo8L2xpbmVhckdyYWRpZW50PjwvZGVmcz4KPHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIHJ4PSI0MiIgZmlsbD0idXJsKCNnKSIvPgo8dGV4dCB4PSIxMDAiIHk9IjEyOCIgZm9udC1mYW1pbHk9IidOb3RvIFNhbnMgS1InLCAnTWFsZ3VuIEdvdGhpYycsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOTYiIGZvbnQtd2VpZ2h0PSI4MDAiIGZpbGw9IiNGRkYzRTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuyVhOyehDwvdGV4dD4KPC9zdmc+">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
 <style>
   :root{
-    --brand:#F2701C;
-    --brand-dark:#C85812;
-    --brand-soft:rgba(242,113,28,0.12);
-    --gold:#8A5A00;
-    --gold-soft:rgba(184,134,11,0.16);
-    --cream:#F6F1E7;
-    --cream-alt:#ECE3D0;
-    --ink:#2E2013;
-    --ink-soft:#6B5A47;
-    --line:#E3D9C7;
-    --shadow:0 2px 10px rgba(46,32,19,0.08);
-    --radius:10px;
+    --brand:#F2701C; --brand-dark:#C85812; --brand-soft:rgba(242,113,28,0.12);
+    --gold:#8A5A00; --gold-soft:rgba(184,134,11,0.16);
+    --cream:#F6F1E7; --cream-alt:#EFE7D6;
+    --ink:#2B2118; --ink-soft:#6B5A47;
+    --line:#DCCFB6; --line-strong:#C9B896;
+    --shadow:0 1px 3px rgba(43,33,24,0.07);
+    --radius:6px;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
     background:var(--cream); color:var(--ink); min-height:100vh;
-    font-family:'Gowun Dodum','Noto Sans KR',sans-serif; font-weight:700;
+    font-family:'Noto Sans KR',sans-serif; font-weight:500;
   }
-  h1,h2,h3,h4{font-family:'Gowun Dodum','Noto Sans KR',sans-serif; margin:0; font-weight:700;}
-  .wrap{max-width:640px; margin:0 auto; padding:0 18px 60px;}
+  h1,h2,h3,h4{font-family:'Noto Serif KR',serif; margin:0; font-weight:700;}
+  .wrap{max-width:500px; margin:0 auto; padding:32px 18px 60px;}
 
-  .hero{
-    background:linear-gradient(160deg,var(--brand),var(--brand-dark));
-    color:#FFF3E8; padding:40px 24px 46px; text-align:center; position:relative; overflow:hidden;
-    border-radius:0 0 28px 28px; margin:0 -18px 28px;
-  }
-  .hero::after{content:''; position:absolute; inset:0; pointer-events:none;
-    background:radial-gradient(circle at 82% -10%, rgba(255,255,255,0.20), transparent 55%);}
-  .hero .eyebrow{font-size:12px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,243,232,0.92); font-family:'Pretendard',sans-serif; font-weight:800; position:relative;}
-  .hero h1{font-size:26px; color:#fff; margin-top:8px; position:relative;}
-  .hero .sub{margin-top:10px; font-size:13.5px; color:rgba(255,243,232,0.94); font-family:'Noto Sans KR',sans-serif; font-weight:500; position:relative;}
-
-  .card{
+  /* 레터헤드 (로그인 + 리포트 공용) */
+  .letterhead{
     background:#fff; border:1px solid var(--line); border-radius:var(--radius);
-    box-shadow:var(--shadow); padding:26px 24px; margin-bottom:20px;
+    padding:30px 26px 24px; text-align:center; box-shadow:var(--shadow);
   }
-  .field{display:flex; flex-direction:column; gap:6px; margin-bottom:16px;}
-  .field label{font-size:12.5px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:700;}
+  .seal{
+    width:54px; height:54px; border-radius:50%; border:2px solid var(--brand);
+    display:flex; align-items:center; justify-content:center; margin:0 auto 13px;
+    font-family:'Gowun Dodum',sans-serif; font-size:17px; color:var(--brand-dark); position:relative;
+  }
+  .seal::after{ content:''; position:absolute; inset:5px; border:1px solid var(--brand); border-radius:50%; opacity:.45; }
+  .eyebrow{
+    font-size:10.5px; letter-spacing:3px; color:var(--ink-soft); text-transform:uppercase;
+    font-weight:700; margin-bottom:6px;
+  }
+  .academy-name{ font-size:22px; margin-bottom:4px; }
+  .login-sub{ font-size:12.5px; color:var(--ink-soft); font-weight:500; margin-bottom:22px; }
+
+  .student-row{ display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; text-align:left; }
+  .student-name{ font-size:17px; }
+  .student-meta{ font-size:12px; color:var(--ink-soft); font-weight:500; margin-top:2px; }
+  .issue-date{ font-family:'Space Mono',monospace; font-size:10.5px; color:var(--ink-soft); text-align:right; line-height:1.5; flex-shrink:0; }
+
+  /* 폼 요소 */
+  .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:16px; text-align:left; }
+  .field label{ font-size:12.5px; color:var(--ink-soft); font-weight:700; }
   .field input{
     padding:12px 14px; border:1px solid var(--line); border-radius:8px; font-size:15px;
     font-family:'Noto Sans KR',sans-serif; font-weight:500; background:var(--cream); color:var(--ink);
   }
-  .field input:focus{outline:none; border-color:var(--brand);}
+  .field input:focus{ outline:none; border-color:var(--brand); }
   .btn{
-    width:100%; background:var(--brand); color:#fff; border:none; padding:13px 18px; border-radius:9px;
-    font-size:15px; font-family:'Noto Sans KR',sans-serif; font-weight:700; cursor:pointer; transition:background .15s;
+    width:100%; background:var(--brand); color:#fff; border:none; padding:13px 18px; border-radius:8px;
+    font-size:14.5px; font-family:'Noto Sans KR',sans-serif; font-weight:700; cursor:pointer; transition:background .15s;
   }
-  .btn:hover{background:var(--brand-dark);}
-  .btn:disabled{opacity:.6; cursor:default;}
-  .btn.ghost{background:transparent; color:var(--ink-soft); border:1px solid var(--line); margin-top:10px;}
-  .error-msg{color:#B8391F; font-size:13px; font-family:'Noto Sans KR',sans-serif; font-weight:600; margin-top:4px; min-height:18px;}
-  .login-note{font-size:12.5px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500; text-align:center; margin-top:6px; line-height:1.6;}
+  .btn:hover{ background:var(--brand-dark); }
+  .btn:disabled{ opacity:.6; cursor:default; }
+  .btn.ghost{ background:transparent; color:var(--ink-soft); border:1px solid var(--line); margin-top:14px; }
+  .error-msg{ color:#B8391F; font-size:13px; font-weight:600; margin-top:4px; min-height:18px; }
+  .login-note{ font-size:12px; color:var(--ink-soft); text-align:center; margin-top:16px; line-height:1.65; }
 
-  .report-head{text-align:center; margin-bottom:22px; padding-bottom:16px; border-bottom:2px solid var(--brand-soft);}
-  .report-head .academy{font-size:11px; letter-spacing:2px; color:var(--ink-soft); text-transform:uppercase; font-family:'Noto Sans KR',sans-serif;}
-  .report-head h2{font-size:21px; margin-top:6px;}
-  .report-head .meta{font-size:12.5px; color:var(--ink-soft); margin-top:8px; font-family:'Space Mono',monospace;}
-  .report-section{margin-bottom:22px;}
-  .report-section h4{font-size:14px; color:var(--brand-dark); margin-bottom:10px;}
-  .report-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px 20px; font-size:13.5px; font-family:'Noto Sans KR',sans-serif; font-weight:500;}
-  .report-grid .label{color:var(--ink-soft); font-size:11.5px; display:block; margin-bottom:2px;}
-  .report-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px;}
-  .report-list li{background:var(--cream-alt); border-radius:8px; padding:9px 13px; font-size:13px; font-family:'Noto Sans KR',sans-serif; font-weight:500;}
-  .report-list li.strong-item{background:var(--brand-soft); color:var(--brand-dark);}
-  .report-list li.grow-item{background:var(--gold-soft); color:var(--gold);}
-  .report-empty{color:var(--ink-soft); font-size:13px; font-family:'Noto Sans KR',sans-serif; font-weight:500;}
-  .comment-box{
-    border:1px dashed var(--line); border-radius:8px; padding:14px 16px; min-height:60px;
-    font-family:'Gowun Dodum','Noto Sans KR',sans-serif; font-size:14px; background:var(--cream); color:var(--ink);
-    white-space:pre-wrap; line-height:1.6;
+  /* 형제자매 탭 */
+  .sibling-tabs{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:14px 0 0; }
+  .sibling-tab{
+    padding:6px 15px; border-radius:20px; border:1px solid var(--line); background:#fff;
+    font-size:12.5px; font-weight:700; color:var(--ink-soft); cursor:pointer; font-family:'Noto Sans KR',sans-serif;
   }
-  .loading{text-align:center; padding:40px 0; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+  .sibling-tab.active{ background:var(--ink); border-color:var(--ink); color:#fff; }
 
-  .sibling-tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; justify-content:center;}
-  .sibling-tab{padding:8px 16px; border-radius:20px; border:1px solid var(--line); background:#fff; font-size:13px; font-weight:700; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; cursor:pointer;}
-  .sibling-tab.active{background:var(--brand); border-color:var(--brand); color:#fff;}
+  /* 알림 공지 */
+  .notice-strip{
+    background:#fff; border:1px solid var(--line); border-left:3px solid var(--brand);
+    border-radius:var(--radius); padding:13px 15px; margin:16px 0; box-shadow:var(--shadow);
+  }
+  .notice-head{
+    display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700;
+    color:var(--brand-dark); letter-spacing:.5px; text-transform:uppercase; margin-bottom:8px;
+  }
+  .notice-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:7px 0; border-top:1px dashed var(--line); cursor:pointer;
+  }
+  .notice-row:first-child{ border-top:none; padding-top:0; }
+  .notice-row-text{ font-size:12.5px; font-weight:600; color:var(--ink); }
+  .notice-row-go{ font-size:11px; color:var(--ink-soft); font-weight:700; white-space:nowrap; flex-shrink:0; }
+  .notice-row:hover .notice-row-go{ color:var(--brand-dark); }
 
+  /* 요약 링 */
+  .summary-strip{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    display:flex; margin:0 0 18px; box-shadow:var(--shadow); padding:18px 6px 16px;
+  }
+  .ring-item{ flex:1; text-align:center; position:relative; }
+  .ring-item + .ring-item::before{
+    content:''; position:absolute; left:0; top:12%; bottom:12%; width:1px; background:var(--line);
+  }
+  .ring-label{ font-size:10.5px; color:var(--ink-soft); font-weight:700; margin-bottom:8px; }
+  .ring-wrap{ position:relative; width:58px; height:58px; margin:0 auto; }
+  .ring-num{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Space Mono',monospace; font-weight:700; font-size:12px; color:var(--ink);
+  }
+
+  /* 탭 */
+  .tabs{ display:flex; border-bottom:1px solid var(--line-strong); margin-bottom:18px; overflow-x:auto; }
+  .tab{
+    flex:1; text-align:center; padding:11px 4px; font-size:12.5px; font-weight:700; color:var(--ink-soft);
+    cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s, border-color .15s;
+    background:none; border-top:none; border-left:none; border-right:none; font-family:'Noto Sans KR',sans-serif;
+    white-space:nowrap;
+  }
+  .tab.active{ color:var(--brand-dark); border-bottom-color:var(--brand); }
+
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; animation:fadeIn .2s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(2px);} to{opacity:1; transform:translateY(0);} }
+
+  .section-card{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    padding:20px 20px 18px; margin-bottom:14px;
+  }
+  .section-title{
+    font-size:14.5px; font-weight:700; margin-bottom:12px;
+    display:flex; align-items:center; gap:8px; color:var(--ink);
+  }
+  .section-title .num{
+    font-family:'Space Mono',monospace; font-size:11px; color:var(--brand); border:1px solid var(--brand);
+    border-radius:50%; width:18px; height:18px; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center;
+  }
+  .row{ display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dashed var(--line); font-size:13px; gap:10px; }
+  .row:last-child{ border-bottom:none; }
+  .row .label{ color:var(--ink-soft); flex-shrink:0; }
+  .row .val{ font-weight:700; font-family:'Space Mono',monospace; text-align:right; }
+
+  .report-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .report-list li{ background:var(--cream-alt); border-radius:8px; padding:9px 13px; font-size:13px; font-weight:500; }
+  .report-list li.strong-item{ background:var(--brand-soft); color:var(--brand-dark); }
+  .report-list li.grow-item{ background:var(--gold-soft); color:var(--gold); }
+  .report-empty{ color:var(--ink-soft); font-size:13px; font-weight:500; }
+
+  .highlight-box{
+    background:var(--cream-alt); border-left:3px solid var(--brand); border-radius:0 8px 8px 0;
+    padding:14px 16px; font-size:13.5px; line-height:1.7; color:var(--ink); white-space:pre-wrap;
+  }
+
+  .footer-mark{
+    text-align:center; margin:22px 0 18px; font-size:10px; color:var(--ink-soft);
+    font-family:'Space Mono',monospace; letter-spacing:.5px;
+  }
+
+  /* 메시지 */
   .msg-textarea{
     width:100%; border:1px solid var(--line); border-radius:8px; padding:10px 12px; box-sizing:border-box;
     font-family:'Noto Sans KR',sans-serif; font-size:13.5px; min-height:70px; resize:vertical;
     background:var(--cream); color:var(--ink);
   }
-  .msg-status{font-size:12px; color:var(--ink-soft); margin-top:6px; font-family:'Noto Sans KR',sans-serif; font-weight:500; min-height:16px;}
-  .msg-history-item{background:var(--cream-alt); border-radius:8px; padding:9px 12px; font-size:12.5px; font-family:'Noto Sans KR',sans-serif; font-weight:500; color:var(--ink);}
-  .msg-history-date{font-size:10.5px; color:var(--ink-soft); font-family:'Space Mono',monospace; display:block; margin-bottom:3px;}
+  .msg-status{ font-size:12px; color:var(--ink-soft); margin-top:6px; font-weight:500; min-height:16px; }
+  .msg-history-item{ background:var(--cream-alt); border-radius:8px; padding:9px 12px; font-size:12.5px; font-weight:500; color:var(--ink); margin-bottom:8px; }
+  .msg-history-date{ font-size:10.5px; color:var(--ink-soft); font-family:'Space Mono',monospace; display:block; margin-bottom:3px; }
 
-  .tap-grid{display:flex; flex-wrap:wrap; gap:6px;}
+  /* 자가채점 / 탭그리드 */
+  .tap-grid{ display:flex; flex-wrap:wrap; gap:6px; }
   .tap-num-btn{
     width:36px; height:36px; border-radius:8px; border:1px solid var(--line); background:#fff;
     color:var(--ink-soft); font-family:'Space Mono',monospace; font-size:13px; font-weight:700;
     transition:background .15s, border-color .15s, color .15s;
   }
-  .tap-num-btn:hover{border-color:var(--brand);}
-  .tap-num-btn.wrong{background:#B8391F; border-color:#B8391F; color:#fff;}
+  .tap-num-btn:hover{ border-color:var(--brand); }
+  .tap-num-btn.wrong{ background:#B8391F; border-color:#B8391F; color:#fff; }
   .hw-self-input{
     width:100%; box-sizing:border-box; padding:9px 10px; border:1px solid var(--line); border-radius:8px;
     font-family:'Noto Sans KR',sans-serif; font-size:13.5px; background:var(--cream); color:var(--ink); margin-bottom:8px;
   }
-  .ak-input-row{display:flex; align-items:center; gap:8px;}
-  .ak-input-row .ak-num{width:32px; font-weight:700; font-family:'Space Mono',monospace; font-size:13px; color:var(--ink-soft); flex-shrink:0;}
-  .ak-input-row input{flex:1;}
+  .ak-input-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .ak-input-row .ak-num{ width:32px; font-weight:700; font-family:'Space Mono',monospace; font-size:13px; color:var(--ink-soft); flex-shrink:0; }
+  .ak-input-row input{ flex:1; margin-bottom:0; }
+  .progress-pill{ display:inline-block; background:var(--cream-alt); border-radius:20px; padding:6px 14px; font-size:12.5px; font-weight:700; color:var(--ink-soft); }
+
+  .loading{ text-align:center; padding:40px 0; color:var(--ink-soft); font-weight:500; }
 
   @media (max-width:480px){
-    .report-grid{grid-template-columns:1fr;}
+    .wrap{ padding:24px 14px 50px; }
   }
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <div class="hero">
-    <div class="eyebrow">FIND YOUR GREATNESS</div>
-    <h1>아임수학학원</h1>
-    <div class="sub">학부모·학생 전용 리포트 조회</div>
-  </div>
-
   <div id="loginView">
-    <div class="card">
+    <div class="letterhead">
+      <div class="seal">아임</div>
+      <div class="eyebrow">Student Portal Login</div>
+      <div class="academy-name">아임수학학원</div>
+      <div class="login-sub">학부모·학생 전용 학습 리포트</div>
       <form id="loginForm" onsubmit="login(event)">
         <div class="field">
           <label for="login-name">학생 이름</label>
@@ -234,6 +306,30 @@ function showStudentReport(studentId){
   const student = (currentData.students || []).find(s => s.id === studentId);
   if(!student) return;
   renderReport(currentData, student);
+}
+
+function switchReportTab(tabName){
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const panel = document.getElementById('tabpanel-' + tabName);
+  if(panel) panel.classList.add('active');
+  const btn = document.querySelector(`.tab[data-tab="${tabName}"]`);
+  if(btn) btn.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function ringSVG(percent, color, size, stroke){
+  size = size || 58; stroke = stroke || 5;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const pct = percent === null || percent === undefined ? 0 : Math.max(0, Math.min(100, percent));
+  const offset = c * (1 - pct / 100);
+  return `
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#EFE7D6" stroke-width="${stroke}"/>
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
+        stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" transform="rotate(-90 ${size/2} ${size/2})"/>
+    </svg>`;
 }
 
 function buildScoreChartSVG(tests, groupAvg){
@@ -387,7 +483,7 @@ function renderReport(data, student){
     </div>
   ` : '';
 
-  // 알림 배너: 보강 예정(오늘 또는 3일 이내), 다음 학교 시험 임박
+  // 알림: 보강 예정(오늘 또는 3일 이내), 숙제 체크 미완료 → 탭 이동
   const alerts = [];
   const in3Days = new Date(now);
   in3Days.setDate(in3Days.getDate() + 3);
@@ -396,74 +492,139 @@ function renderReport(data, student){
   attendanceRecords.forEach(r => {
     if(r.status === '결석' && r.makeupDate && !r.makeupDone){
       if(r.makeupDate === todayIso){
-        alerts.push({ icon:'📌', text:`오늘(${r.makeupDate.slice(5).replace('-','/')}) 보강이 있어요!`, targetId:'attendanceSection' });
+        alerts.push({ icon:'📌', text:`오늘(${r.makeupDate.slice(5).replace('-','/')}) 보강이 있어요!`, tab:'attend' });
       } else if(r.makeupDate > todayIso && r.makeupDate <= in3DaysIso){
         const mm = r.makeupDate.slice(5).replace('-','/');
-        alerts.push({ icon:'🗓️', text:`${mm}에 보강이 예정되어 있어요.`, targetId:'attendanceSection' });
+        alerts.push({ icon:'🗓️', text:`${mm}에 보강이 예정되어 있어요.`, tab:'attend' });
       }
     }
   });
 
   studentHomeworkAssignments.forEach(a => {
     if(!(a.doneBy || []).includes(student.id)){
-      alerts.push({ icon:'✏️', text:`아직 체크 안 한 숙제가 있어요: ${a.text}`, targetId:'hwChecklistSection' });
+      alerts.push({ icon:'✏️', text:`아직 체크 안 한 숙제가 있어요: ${a.text}`, tab:'hw' });
     }
   });
 
-  const alertBannerHtml = alerts.length ? `
-    <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
-      ${alerts.map(a => `
-        <div onclick="document.getElementById('${a.targetId}').scrollIntoView({behavior:'smooth', block:'start'})" style="background:var(--brand); color:#fff; border-radius:10px; padding:12px 14px; font-size:13.5px; font-weight:700; font-family:'Noto Sans KR',sans-serif; display:flex; align-items:center; gap:8px; cursor:pointer;">
-          <span style="font-size:16px;">${a.icon}</span>${escapeHtml(a.text)}
-          <span style="margin-left:auto; font-size:12px; opacity:0.85;">보러가기 →</span>
-        </div>
-      `).join('')}
+  const noticeHtml = alerts.length ? `
+    <div class="notice-strip">
+      <div class="notice-head">🔔 오늘 확인할 것 ${alerts.length}건</div>
+      <div>
+        ${alerts.map(a => `
+          <div class="notice-row" onclick="switchReportTab('${a.tab}')">
+            <div class="notice-row-text">${a.icon} ${escapeHtml(a.text)}</div>
+            <div class="notice-row-go">보러가기 →</div>
+          </div>
+        `).join('')}
+      </div>
     </div>
   ` : '';
 
-  wrap.innerHTML = `
-    ${alertBannerHtml}
-    ${siblingTabsHtml}
-    <div class="card">
-      <div class="report-head">
-        <div class="academy">${escapeHtml(data.academyName || '아임수학학원')}</div>
-        <h2>${escapeHtml(student.name)} 학생 학습 리포트</h2>
-        <div class="meta">${escapeHtml(student.grade)} · ${escapeHtml(student.school) || '학교 정보 없음'} · 조회일 ${todayStr}</div>
-      </div>
+  // 요약 링 3개 계산
+  const attendPercent = monthRecords.length ? Math.round(((attCounts.출석 + attCounts.지각) / monthRecords.length) * 100) : null;
+  const hwTotal = studentHomeworkAssignments.length;
+  const hwDone = studentHomeworkAssignments.filter(a => (a.doneBy || []).includes(student.id)).length;
+  const hwPercent = hwTotal ? Math.round((hwDone / hwTotal) * 100) : null;
 
-      <div class="report-section">
-        <h4>📘 진도 현황</h4>
-        <div class="report-grid">
-          ${progressRows.map(r => `<div><span class="label">${r.label}</span>${escapeHtml(r.value)}</div>`).join('')}
+  wrap.innerHTML = `
+    <div class="letterhead">
+      <div class="seal">아임</div>
+      <div class="eyebrow">Student Learning Report</div>
+      <div class="academy-name">${escapeHtml(data.academyName || '아임수학학원')}</div>
+      <div class="student-row">
+        <div>
+          <div class="student-name">${escapeHtml(student.name)}</div>
+          <div class="student-meta">${escapeHtml(student.grade)} · ${escapeHtml(student.school) || '학교 정보 없음'}${student.className ? ` · ${escapeHtml(student.className)}` : ''}</div>
+        </div>
+        <div class="issue-date">조회일<br>${todayStr}</div>
+      </div>
+      ${siblingTabsHtml}
+    </div>
+
+    ${noticeHtml}
+
+    <div class="summary-strip">
+      <div class="ring-item">
+        <div class="ring-label">이번 달 출석률</div>
+        <div class="ring-wrap">
+          ${ringSVG(attendPercent, '#2B2118')}
+          <div class="ring-num">${attendPercent !== null ? attendPercent + '%' : '-'}</div>
         </div>
       </div>
-
-      <div class="report-section" id="attendanceSection">
-        <h4>🗓️ 이번 달 출결 현황</h4>
-        ${monthRecords.length === 0 ? `<div class="report-empty">이번 달 출결 기록이 아직 없어요.</div>` : `
-          <div class="report-grid">
-            <div><span class="label">출석</span>${attCounts.출석}일</div>
-            <div><span class="label">지각</span>${attCounts.지각}일</div>
-            <div><span class="label">결석</span>${attCounts.결석}일</div>
-            <div><span class="label">조퇴</span>${attCounts.조퇴}일</div>
-          </div>`}
+      <div class="ring-item">
+        <div class="ring-label">숙제 완료</div>
+        <div class="ring-wrap">
+          ${ringSVG(hwPercent, '#F2701C')}
+          <div class="ring-num">${hwTotal ? hwDone + '/' + hwTotal : '-'}</div>
+        </div>
       </div>
+      <div class="ring-item">
+        <div class="ring-label">데일리 테스트 평균</div>
+        <div class="ring-wrap">
+          ${ringSVG(avgScore, '#8A5A00')}
+          <div class="ring-num">${avgScore !== null ? avgScore + '점' : '-'}</div>
+        </div>
+      </div>
+    </div>
 
-      <div class="report-section">
-        <h4>✏️ 데일리 테스트${avgScore !== null ? ` · 평균 ${avgScore}점` : ''}${groupAvgScore !== null ? ` · ${escapeHtml(levelOf(student.grade))} 평균 ${groupAvgScore}점` : ''}</h4>
+    <div class="tabs">
+      <button type="button" class="tab active" data-tab="summary" onclick="switchReportTab('summary')">요약</button>
+      <button type="button" class="tab" data-tab="attend" onclick="switchReportTab('attend')">출결·성적</button>
+      <button type="button" class="tab" data-tab="hw" onclick="switchReportTab('hw')">숙제</button>
+      <button type="button" class="tab" data-tab="analysis" onclick="switchReportTab('analysis')">분석</button>
+      <button type="button" class="tab" data-tab="msg" onclick="switchReportTab('msg')">소통</button>
+    </div>
+
+    <div id="tabpanel-summary" class="tab-panel active">
+      <div class="section-card">
+        <div class="section-title"><span class="num">1</span>선생님 한마디</div>
+        <div class="highlight-box">${comment ? escapeHtml(comment) : '아직 남겨주신 코멘트가 없어요.'}</div>
+      </div>
+      <div class="section-card">
+        <div class="section-title"><span class="num">2</span>진도 현황</div>
+        ${progressRows.map(r => `<div class="row"><span class="label">${escapeHtml(r.label)}</span><span class="val" style="font-family:'Noto Sans KR',sans-serif;">${escapeHtml(r.value)}</span></div>`).join('')}
+      </div>
+      ${isMiddle ? `
+      <div class="section-card">
+        <div class="section-title"><span class="num">3</span>다음 학교 시험 일정</div>
+        ${!nextExamInfo
+          ? `<div class="report-empty">등록된 학교 시험 정보가 없어요.</div>`
+          : `
+            <div class="row"><span class="label">시험명</span><span class="val" style="font-family:'Noto Sans KR',sans-serif;">${escapeHtml(nextExamInfo.examName || '-')}</span></div>
+            <div class="row"><span class="label">시험일</span><span class="val">${nextExamInfo.examDate ? nextExamInfo.examDate.replace(/-/g,'.') : '-'}</span></div>
+            <div class="row"><span class="label">시험범위</span><span class="val" style="font-family:'Noto Sans KR',sans-serif;">${escapeHtml(nextExamInfo.examRange || '-')}</span></div>
+            ${nextExamInfo.note ? `<div class="row"><span class="label">특이사항</span><span class="val" style="font-family:'Noto Sans KR',sans-serif;">${escapeHtml(nextExamInfo.note)}</span></div>` : ''}
+          `}
+      </div>` : ''}
+    </div>
+
+    <div id="tabpanel-attend" class="tab-panel">
+      <div class="section-card" id="attendanceSection">
+        <div class="section-title"><span class="num">1</span>이번 달 출결 현황</div>
+        ${monthRecords.length === 0 ? `<div class="report-empty">이번 달 출결 기록이 아직 없어요.</div>` : `
+          <div class="row"><span class="label">출석</span><span class="val">${attCounts.출석}일</span></div>
+          <div class="row"><span class="label">지각</span><span class="val">${attCounts.지각}일</span></div>
+          <div class="row"><span class="label">결석</span><span class="val">${attCounts.결석}일</span></div>
+          <div class="row"><span class="label">조퇴</span><span class="val">${attCounts.조퇴}일</span></div>
+        `}
+      </div>
+      <div class="section-card">
+        <div class="section-title"><span class="num">2</span>데일리 테스트${avgScore !== null ? ` · 평균 ${avgScore}점` : ''}${groupAvgScore !== null ? ` · ${escapeHtml(levelOf(student.grade))} 평균 ${groupAvgScore}점` : ''}</div>
         ${studentTests.length === 0 ? `<div class="report-empty">기록된 데일리 테스트가 없어요.</div>` : buildScoreChartSVG(studentTests, groupAvgScore)}
       </div>
+    </div>
 
-      <div class="report-section" id="hwChecklistSection">
-        <h4>✅ 숙제 체크리스트${studentHomeworkAssignments.length ? ` · ${studentHomeworkAssignments.filter(a => (a.doneBy||[]).includes(student.id)).length}/${studentHomeworkAssignments.length} 완료` : ''}</h4>
-        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:500;">선생님이 내주신 숙제예요. 다 풀었으면 체크해주세요!</p>
+    <div id="tabpanel-hw" class="tab-panel">
+      <div class="section-card" id="hwChecklistSection">
+        <div class="section-title"><span class="num">1</span>숙제 체크리스트${studentHomeworkAssignments.length ? ` · ${hwDone}/${hwTotal} 완료` : ''}</div>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 10px; font-weight:500;">선생님이 내주신 숙제예요. 다 풀었으면 체크해주세요!</p>
         <div id="hwChecklistArea">
           ${studentHomeworkAssignments.length === 0 ? `<div class="report-empty">지금 배정된 숙제가 없어요.</div>` : studentHomeworkAssignments.map(a => {
             const done = (a.doneBy || []).includes(student.id);
             return `
               <label style="display:flex; align-items:flex-start; gap:10px; padding:11px 12px; margin-bottom:8px; border-radius:9px; background:${done ? 'var(--brand-soft)' : 'var(--cream-alt)'}; cursor:pointer;">
                 <input type="checkbox" ${done ? 'checked' : ''} style="margin-top:2px; width:17px; height:17px; accent-color:var(--brand); flex-shrink:0;" onchange="toggleHomeworkCheck(${a.id}, ${student.id}, this.checked)">
-                <span style="font-size:13.5px; font-family:'Noto Sans KR',sans-serif; font-weight:600; color:${done ? 'var(--brand-dark)' : 'var(--ink)'}; ${done ? 'text-decoration:line-through; text-decoration-color:var(--brand-dark);' : ''}">
+                <span style="font-size:13.5px; font-weight:600; color:${done ? 'var(--brand-dark)' : 'var(--ink)'}; ${done ? 'text-decoration:line-through; text-decoration-color:var(--brand-dark);' : ''}">
                   ${escapeHtml(a.text)}
                   <span style="display:block; font-size:11px; font-weight:500; color:var(--ink-soft); text-decoration:none; margin-top:2px;">${a.date.replace(/-/g,'.')}</span>
                 </span>
@@ -473,9 +634,9 @@ function renderReport(data, student){
         <div class="msg-status" id="hwChecklistStatus"></div>
       </div>
 
-      <div class="report-section">
-        <h4>✍️ 숙제 스스로 채점하기</h4>
-        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:500;">오늘 푼 숙제를 직접 채점해서 선생님께 보내보세요!</p>
+      <div class="section-card">
+        <div class="section-title"><span class="num">2</span>숙제 스스로 채점하기</div>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 10px; font-weight:500;">오늘 푼 숙제를 직접 채점해서 선생님께 보내보세요!</p>
         <input type="date" id="hwSelfDate" class="hw-self-input" value="${todayIsoForInput}">
         <select id="hwSelfRange" class="hw-self-input" onchange="checkHwSelfAnswerKey()">
           <option value="">숙제 범위를 선택해주세요</option>
@@ -490,8 +651,8 @@ function renderReport(data, student){
         <div class="msg-status" id="hwSelfStatus"></div>
       </div>
 
-      <div class="report-section">
-        <h4>📔 숙제 채점 결과</h4>
+      <div class="section-card">
+        <div class="section-title"><span class="num">3</span>숙제 채점 결과</div>
         ${studentHomework.length === 0
           ? `<div class="report-empty">기록된 숙제가 없어요.</div>`
           : `<ul class="report-list">${studentHomework.map(h => {
@@ -499,69 +660,53 @@ function renderReport(data, student){
               return `<li>${h.date.replace(/-/g,'.')} · ${escapeHtml(h.range)} · <strong>${h.score}점</strong> <span style="color:var(--ink-soft); font-size:12px;">(${wrongText})</span></li>`;
             }).join('')}</ul>`}
       </div>
+    </div>
 
-      <div class="report-section">
-        <h4>💪 강점 단원</h4>
+    <div id="tabpanel-analysis" class="tab-panel">
+      <div class="section-card">
+        <div class="section-title"><span class="num">1</span>강점 단원</div>
         ${strongUnits.length === 0
           ? `<div class="report-empty">아직 강점으로 뽑을 만큼 데이터가 쌓이지 않았어요.</div>`
           : `<ul class="report-list">${strongUnits.map(u => `<li class="strong-item">${escapeHtml(u)}</li>`).join('')}</ul>`}
       </div>
-
-      <div class="report-section">
-        <h4>🌱 보완하면 좋은 부분</h4>
+      <div class="section-card">
+        <div class="section-title"><span class="num">2</span>보완하면 좋은 부분</div>
         ${weakUnits.length === 0
           ? `<div class="report-empty">지금까지는 특별히 보완이 필요한 단원이 없어요.</div>`
           : `<ul class="report-list">${weakUnits.map(u => `<li class="grow-item">${escapeHtml(u)} · 조금 더 연습하면 훨씬 좋아질 부분이에요</li>`).join('')}</ul>`}
       </div>
-
-      <div class="report-section">
-        <h4>🔎 자주 보이는 실수 유형</h4>
+      <div class="section-card">
+        <div class="section-title"><span class="num">3</span>자주 보이는 실수 유형</div>
         ${topCauses.length === 0
           ? `<div class="report-empty">기록된 오답 원인이 없어요.</div>`
           : `<ul class="report-list">${topCauses.map(([cause, cnt]) => `<li>${escapeHtml(cause)} <span style="color:var(--ink-soft); font-size:12px;">· ${cnt}회</span></li>`).join('')}</ul>`}
       </div>
-
-      <div class="report-section">
-        <h4>📝 최근 오답 상세</h4>
+      <div class="section-card">
+        <div class="section-title"><span class="num">4</span>최근 오답 상세</div>
         ${recentMistakes.length === 0
           ? `<div class="report-empty">기록된 오답이 없어요.</div>`
           : `<ul class="report-list">${recentMistakes.map(m => `<li>${m.date.replace(/-/g,'.')} · ${escapeHtml(m.unit)} · ${escapeHtml(m.cause)}${m.note ? ` <span style="color:var(--ink-soft); font-size:12px;">(${escapeHtml(m.note)})</span>` : ''}</li>`).join('')}</ul>`}
       </div>
+    </div>
 
-      ${isMiddle ? `
-      <div class="report-section">
-        <h4>🏫 다음 학교 시험 일정</h4>
-        ${!nextExamInfo
-          ? `<div class="report-empty">등록된 학교 시험 정보가 없어요.</div>`
-          : `<div class="report-grid">
-              <div><span class="label">시험명</span>${escapeHtml(nextExamInfo.examName || '-')}</div>
-              <div><span class="label">시험일</span>${nextExamInfo.examDate ? nextExamInfo.examDate.replace(/-/g,'.') : '-'}</div>
-              <div style="grid-column:1/-1;"><span class="label">시험범위</span>${escapeHtml(nextExamInfo.examRange || '-')}</div>
-              ${nextExamInfo.note ? `<div style="grid-column:1/-1;"><span class="label">특이사항</span>${escapeHtml(nextExamInfo.note)}</div>` : ''}
-            </div>`}
-      </div>` : ''}
-
-      <div class="report-section" style="margin-bottom:0;">
-        <h4>💬 선생님 한마디</h4>
-        <div class="comment-box">${comment ? escapeHtml(comment) : '아직 남겨주신 코멘트가 없어요.'}</div>
+    <div id="tabpanel-msg" class="tab-panel">
+      <div class="section-card">
+        <div class="section-title"><span class="num">1</span>선생님께 메시지 남기기</div>
+        ${parentMessages.length > 0 ? `
+          <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+            ${parentMessages.map(m => `
+              <div class="msg-history-item">
+                <span class="msg-history-date">${new Date(m.date).toLocaleString('ko-KR')}</span>
+                ${escapeHtml(m.message)}
+              </div>`).join('')}
+          </div>` : ''}
+        <textarea id="parentMsgInput" class="msg-textarea" placeholder="선생님께 궁금한 점이나 전하고 싶은 말을 남겨주세요."></textarea>
+        <button type="button" class="btn" style="margin-top:10px;" onclick="submitParentMessage(${student.id})">메시지 보내기</button>
+        <div class="msg-status" id="parentMsgStatus"></div>
       </div>
     </div>
 
-    <div class="card">
-      <h4 style="font-size:14px; color:var(--brand-dark); margin-bottom:10px;">💌 선생님께 메시지 남기기</h4>
-      ${parentMessages.length > 0 ? `
-        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
-          ${parentMessages.map(m => `
-            <div class="msg-history-item">
-              <span class="msg-history-date">${new Date(m.date).toLocaleString('ko-KR')}</span>
-              ${escapeHtml(m.message)}
-            </div>`).join('')}
-        </div>` : ''}
-      <textarea id="parentMsgInput" class="msg-textarea" placeholder="선생님께 궁금한 점이나 전하고 싶은 말을 남겨주세요."></textarea>
-      <button type="button" class="btn" style="margin-top:10px;" onclick="submitParentMessage(${student.id})">메시지 보내기</button>
-      <div class="msg-status" id="parentMsgStatus"></div>
-    </div>
-
+    <div class="footer-mark">IMM MATH ACADEMY · REPORT NO. ${y}${String(mo+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(student.id).padStart(3,'0')}</div>
     <button type="button" class="btn ghost" onclick="location.reload()">🔒 로그아웃 (다른 학생 조회)</button>
   `;
 }
@@ -606,7 +751,7 @@ let hwSelfMatchedKey = null;
 function tapModeHtml(){
   return `
     <input type="number" id="hwSelfTotal" class="hw-self-input" min="1" placeholder="전체 문항 수" oninput="renderHwSelfGrid()">
-    <div class="sub" style="margin:6px 0 8px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">틀린 문항 번호를 탭해주세요 (탭하면 빨갛게 표시)</div>
+    <div class="sub" style="margin:6px 0 8px; font-size:12px; color:var(--ink-soft);">틀린 문항 번호를 탭해주세요 (탭하면 빨갛게 표시)</div>
     <div class="tap-grid" id="hwSelfGrid"></div>
     <div class="progress-pill" id="hwSelfPreview" style="margin-top:12px; display:inline-block;">전체 문항 수를 먼저 입력해주세요.</div>
   `;
@@ -646,9 +791,9 @@ function checkHwSelfAnswerKey(){
   if(match){
     hwSelfMatchedKey = match;
     areaEl.innerHTML = `
-      <p style="font-size:12px; color:var(--brand-dark); font-weight:700; margin:10px 0 8px; font-family:'Noto Sans KR',sans-serif;">✅ 이 범위는 자동채점이 가능해요! 네가 쓴 답을 번호별로 입력해봐.</p>
+      <p style="font-size:12px; color:var(--brand-dark); font-weight:700; margin:10px 0 8px;">✅ 이 범위는 자동채점이 가능해요! 네가 쓴 답을 번호별로 입력해봐.</p>
       ${Array.from({ length: match.total }, (_, i) => i + 1).map(n => `
-        <div class="ak-input-row" style="margin-bottom:6px;">
+        <div class="ak-input-row">
           <span class="ak-num">${n}번</span>
           <input type="text" id="hwSelfAnswer-${n}" class="hw-self-input" style="margin-bottom:0;" placeholder="네가 쓴 답">
         </div>
@@ -756,8 +901,6 @@ async function submitSelfHomework(studentId){
   }
 }
 
-
-
 async function submitParentMessage(studentId){
   const textEl = document.getElementById('parentMsgInput');
   const statusEl = document.getElementById('parentMsgStatus');
@@ -773,16 +916,16 @@ async function submitParentMessage(studentId){
   try {
     const freshRes = await fetch(SHEET_URL, { method:'GET' });
     const freshData = await freshRes.json();
+
     const student = (freshData.students || []).find(s => s.id === studentId);
 
     freshData.parentMessages = freshData.parentMessages || [];
-    const nextId = freshData.parentMessages.length ? Math.max(...freshData.parentMessages.map(m => m.id || 0)) + 1 : 1;
     freshData.parentMessages.push({
-      id: nextId,
       studentId: studentId,
       studentName: student ? student.name : '',
+      message: text,
       date: new Date().toISOString(),
-      message: text
+      from: 'parent'
     });
 
     await fetch(SHEET_URL, {
@@ -793,7 +936,8 @@ async function submitParentMessage(studentId){
 
     cachedData = freshData;
     currentData = freshData;
-    statusEl.textContent = '✅ 선생님께 전달했어요!';
+    textEl.value = '';
+    statusEl.textContent = '✅ 전송 완료!';
     showStudentReport(studentId);
   } catch(err){
     statusEl.textContent = '❌ 전송에 실패했어요. 잠시 후 다시 시도해주세요.';

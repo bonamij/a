@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>아임수학학원 - 학습 리포트 (A+B 믹스)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#F2701C; --brand-dark:#C85812;
+    --cream:#F6F1E7; --cream-alt:#EFE7D6;
+    --ink:#2B2118; --ink-soft:#6B5A47;
+    --line:#DCCFB6; --line-strong:#C9B896;
+    --gold:#8A5A00;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--cream); color:var(--ink); min-height:100vh;
+    font-family:'Noto Sans KR',sans-serif;
+    display:flex; justify-content:center; padding:36px 16px 80px;
+  }
+  .sheet{ width:100%; max-width:460px; }
+  .note{
+    text-align:center; font-size:11.5px; letter-spacing:1px; color:var(--ink-soft);
+    text-transform:uppercase; margin-bottom:18px; font-weight:700;
+  }
+
+  /* 레터헤드 */
+  .letterhead{
+    background:#fff; border:1px solid var(--line); border-radius:4px;
+    padding:28px 26px 22px; text-align:center; position:relative;
+    box-shadow:0 1px 3px rgba(43,33,24,0.06);
+  }
+  .seal{
+    width:52px; height:52px; border-radius:50%; border:2px solid var(--brand);
+    display:flex; align-items:center; justify-content:center; margin:0 auto 12px;
+    font-family:'Gowun Dodum',sans-serif; font-size:17px; color:var(--brand-dark);
+    position:relative;
+  }
+  .seal::after{
+    content:''; position:absolute; inset:5px; border:1px solid var(--brand); border-radius:50%; opacity:0.45;
+  }
+  .eyebrow{
+    font-size:10.5px; letter-spacing:3px; color:var(--ink-soft); text-transform:uppercase;
+    font-weight:700; margin-bottom:6px;
+  }
+  .academy-name{
+    font-family:'Noto Serif KR',serif; font-weight:700; font-size:21px; color:var(--ink);
+    margin-bottom:14px;
+  }
+  .student-row{
+    display:flex; justify-content:space-between; align-items:baseline; margin-top:16px; text-align:left;
+  }
+  .student-name{ font-size:18px; font-weight:700; }
+  .student-meta{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .issue-date{ font-family:'Space Mono',monospace; font-size:11px; color:var(--ink-soft); text-align:right; }
+
+  /* 요약 스트립 (링 버전) */
+  .summary-strip{
+    background:#fff; border:1px solid var(--line); border-top:none; border-radius:0 0 4px 4px;
+    display:flex; margin-bottom:22px; box-shadow:0 1px 3px rgba(43,33,24,0.06);
+    padding:18px 6px 16px;
+  }
+  .ring-item{ flex:1; text-align:center; position:relative; }
+  .ring-item + .ring-item::before{
+    content:''; position:absolute; left:0; top:12%; bottom:12%; width:1px; background:var(--line);
+  }
+  .ring-label{ font-size:10.5px; color:var(--ink-soft); font-weight:700; margin-bottom:8px; }
+  .ring-wrap{ position:relative; width:58px; height:58px; margin:0 auto; }
+  .ring-num{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Space Mono',monospace; font-weight:700; font-size:12.5px; color:var(--ink);
+  }
+
+  /* 탭 */
+  .tabs{ display:flex; border-bottom:1px solid var(--line-strong); margin-bottom:20px; }
+  .tab{
+    flex:1; text-align:center; padding:11px 4px; font-size:13px; font-weight:700; color:var(--ink-soft);
+    cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s, border-color .15s;
+    background:none; border-top:none; border-left:none; border-right:none; font-family:'Noto Sans KR',sans-serif;
+  }
+  .tab.active{ color:var(--brand-dark); border-bottom-color:var(--brand); }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; animation:fadeIn .2s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(2px);} to{opacity:1; transform:translateY(0);} }
+
+  .section-card{
+    background:#fff; border:1px solid var(--line); border-radius:4px; padding:20px 20px 18px; margin-bottom:14px;
+  }
+  .section-title{
+    font-family:'Noto Serif KR',serif; font-size:14.5px; font-weight:700; margin-bottom:12px;
+    display:flex; align-items:center; gap:8px; color:var(--ink);
+  }
+  .section-title .num{
+    font-family:'Space Mono',monospace; font-size:11px; color:var(--brand); border:1px solid var(--brand);
+    border-radius:50%; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center;
+  }
+  .row{ display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--line); font-size:13px; }
+  .row:last-child{ border-bottom:none; }
+  .row .label{ color:var(--ink-soft); }
+  .row .val{ font-weight:700; font-family:'Space Mono',monospace; }
+
+  .highlight-box{
+    background:var(--cream-alt); border-left:3px solid var(--brand); border-radius:0 4px 4px 0;
+    padding:14px 16px; font-size:13px; line-height:1.65; color:var(--ink);
+  }
+  .highlight-box b{ color:var(--brand-dark); }
+
+  .footer-mark{
+    text-align:center; margin-top:26px; font-size:10.5px; color:var(--ink-soft);
+    font-family:'Space Mono',monospace; letter-spacing:0.5px;
+  }
+
+  /* 알림 공지 */
+  .notice-strip{
+    background:#fff; border:1px solid var(--line); border-left:3px solid var(--brand);
+    border-radius:4px; padding:13px 15px; margin:14px 0 18px;
+    box-shadow:0 1px 3px rgba(43,33,24,0.06);
+  }
+  .notice-head{
+    display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700;
+    color:var(--brand-dark); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:8px;
+  }
+  .notice-head .bell{ font-size:13px; }
+  .notice-list{ display:flex; flex-direction:column; }
+  .notice-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:7px 0; border-top:1px dashed var(--line); cursor:pointer;
+  }
+  .notice-row:first-child{ border-top:none; padding-top:0; }
+  .notice-row-text{ font-size:12.5px; font-weight:600; color:var(--ink); }
+  .notice-row-go{ font-size:11px; color:var(--ink-soft); font-weight:700; white-space:nowrap; }
+  .notice-row:hover .notice-row-go{ color:var(--brand-dark); }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="note">A + B 믹스 목업 — 실제 데이터 아님</div>
+
+  <div class="letterhead">
+    <div class="seal">아임</div>
+    <div class="eyebrow">Student Learning Report</div>
+    <div class="academy-name">아임수학학원</div>
+    <div class="student-row">
+      <div>
+        <div class="student-name">김민정</div>
+        <div class="student-meta">중2 · 왕선중학교 · 화금중2반</div>
+      </div>
+      <div class="issue-date">발행일<br>2026.07.21</div>
+    </div>
+  </div>
+
+  <div class="notice-strip">
+    <div class="notice-head"><span class="bell">🔔</span>오늘 확인할 것 2건</div>
+    <div class="notice-list">
+      <div class="notice-row" onclick="showTab('hw', document.querySelectorAll('.tab')[2])">
+        <div class="notice-row-text">아직 체크 안 한 숙제가 있어요 — 라이트 62p~68p</div>
+        <div class="notice-row-go">보러가기 →</div>
+      </div>
+      <div class="notice-row" onclick="showTab('attend', document.querySelectorAll('.tab')[1])">
+        <div class="notice-row-text">내일(07.22) 보강이 예정되어 있어요</div>
+        <div class="notice-row-go">보러가기 →</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-strip">
+    <div class="ring-item">
+      <div class="ring-label">출석률</div>
+      <div class="ring-wrap">
+        <svg width="58" height="58" viewBox="0 0 58 58">
+          <circle cx="29" cy="29" r="24" fill="none" stroke="#EFE7D6" stroke-width="5"/>
+          <circle cx="29" cy="29" r="24" fill="none" stroke="#2B2118" stroke-width="5" stroke-linecap="round"
+            stroke-dasharray="150.8" stroke-dashoffset="0" transform="rotate(-90 29 29)"/>
+        </svg>
+        <div class="ring-num">100%</div>
+      </div>
+    </div>
+    <div class="ring-item">
+      <div class="ring-label">숙제 완료</div>
+      <div class="ring-wrap">
+        <svg width="58" height="58" viewBox="0 0 58 58">
+          <circle cx="29" cy="29" r="24" fill="none" stroke="#EFE7D6" stroke-width="5"/>
+          <circle cx="29" cy="29" r="24" fill="none" stroke="#F2701C" stroke-width="5" stroke-linecap="round"
+            stroke-dasharray="150.8" stroke-dashoffset="30" transform="rotate(-90 29 29)"/>
+        </svg>
+        <div class="ring-num">4/5</div>
+      </div>
+    </div>
+    <div class="ring-item">
+      <div class="ring-label">이번 달 평균</div>
+      <div class="ring-wrap">
+        <svg width="58" height="58" viewBox="0 0 58 58">
+          <circle cx="29" cy="29" r="24" fill="none" stroke="#EFE7D6" stroke-width="5"/>
+          <circle cx="29" cy="29" r="24" fill="none" stroke="#8A5A00" stroke-width="5" stroke-linecap="round"
+            stroke-dasharray="150.8" stroke-dashoffset="21" transform="rotate(-90 29 29)"/>
+        </svg>
+        <div class="ring-num">86점</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('summary', this)">요약</button>
+    <button class="tab" onclick="showTab('attend', this)">출결·성적</button>
+    <button class="tab" onclick="showTab('hw', this)">숙제</button>
+    <button class="tab" onclick="showTab('msg', this)">소통</button>
+  </div>
+
+  <div id="panel-summary" class="panel active">
+    <div class="section-card">
+      <div class="section-title"><span class="num">1</span>선생님 코멘트</div>
+      <div class="highlight-box">이번 주 <b>이차방정식 단원</b>에서 계산 실수가 조금 있었지만, 개념 이해도는 확실히 올라왔어요. 다음 주는 응용 문제 위주로 진행할게요.</div>
+    </div>
+    <div class="section-card">
+      <div class="section-title"><span class="num">2</span>이번 달 핵심 지표</div>
+      <div class="row"><span class="label">진도</span><span class="val">쎈 3단원 68p</span></div>
+      <div class="row"><span class="label">강점 단원</span><span class="val">일차함수</span></div>
+      <div class="row"><span class="label">보완 필요</span><span class="val">이차방정식</span></div>
+    </div>
+  </div>
+
+  <div id="panel-attend" class="panel">
+    <div class="section-card">
+      <div class="section-title"><span class="num">1</span>출결 현황</div>
+      <div class="row"><span class="label">출석</span><span class="val">8일</span></div>
+      <div class="row"><span class="label">지각</span><span class="val">0일</span></div>
+      <div class="row"><span class="label">결석</span><span class="val">0일</span></div>
+    </div>
+  </div>
+  <div id="panel-hw" class="panel">
+    <div class="section-card">
+      <div class="section-title"><span class="num">1</span>숙제 체크리스트</div>
+      <div class="row"><span class="label">유형편 1-20</span><span class="val" style="color:var(--brand-dark);">완료</span></div>
+      <div class="row"><span class="label">라이트 62p~68p</span><span class="val" style="color:var(--ink-soft);">미완료</span></div>
+    </div>
+  </div>
+  <div id="panel-msg" class="panel">
+    <div class="section-card">
+      <div class="section-title"><span class="num">1</span>선생님과 메시지</div>
+      <div class="row"><span class="label">아직 메시지가 없어요</span><span class="val"></span></div>
+    </div>
+  </div>
+
+  <div class="footer-mark">IMM MATH ACADEMY · REPORT NO. 2026-0721-014</div>
+</div>
+
+<script>
+function showTab(id, btn){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

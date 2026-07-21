@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>아임수학학원 - 학습 리포트 (디자인 목업 B)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAF8F4; --card:#FFFFFF;
+    --ink:#232323; --ink-soft:#8A8478;
+    --brand:#F2701C; --brand-soft:rgba(242,113,28,0.12);
+    --teal:#3E9C86; --teal-soft:rgba(62,156,134,0.12);
+    --line:#EEEAE0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink); min-height:100vh;
+    font-family:'Pretendard',sans-serif;
+    display:flex; justify-content:center; padding:36px 16px 80px;
+  }
+  .sheet{ width:100%; max-width:440px; }
+  .note{
+    text-align:center; font-size:11.5px; letter-spacing:1px; color:var(--ink-soft);
+    text-transform:uppercase; margin-bottom:18px; font-weight:700;
+  }
+
+  /* 헤더 */
+  .header{ display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+  .avatar{
+    width:46px; height:46px; border-radius:50%; background:var(--brand);
+    display:flex; align-items:center; justify-content:center; color:#fff;
+    font-family:'Gowun Dodum',sans-serif; font-size:16px; flex-shrink:0;
+  }
+  .greeting{ font-size:12.5px; color:var(--ink-soft); font-weight:600; }
+  .header-name{ font-size:18px; font-weight:800; margin-top:1px; }
+
+  /* 링 카드 */
+  .ring-row{ display:flex; gap:10px; margin-bottom:14px; }
+  .ring-card{
+    flex:1; background:var(--card); border-radius:18px; padding:16px 10px 14px;
+    text-align:center; box-shadow:0 2px 10px rgba(35,33,26,0.05);
+  }
+  .ring-label{ font-size:11px; color:var(--ink-soft); font-weight:700; margin-bottom:8px; }
+  .ring-svg-wrap{ position:relative; width:64px; height:64px; margin:0 auto; }
+  .ring-value{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Space Mono',monospace; font-weight:700; font-size:14px;
+  }
+
+  /* 카드 그리드 */
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .info-card{
+    background:var(--card); border-radius:16px; padding:14px 15px; box-shadow:0 2px 10px rgba(35,33,26,0.05);
+  }
+  .info-card.full{ grid-column:1 / -1; }
+  .info-card-label{ font-size:11px; color:var(--ink-soft); font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:5px; }
+  .info-card-value{ font-size:15px; font-weight:800; }
+  .pill{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+  .pill.teal{ background:var(--teal-soft); color:var(--teal); }
+  .pill.brand{ background:var(--brand-soft); color:var(--brand); }
+
+  .comment-card{
+    background:var(--ink); color:#fff; border-radius:16px; padding:16px 17px; margin-bottom:14px;
+    position:relative; overflow:hidden;
+  }
+  .comment-card::before{
+    content:'"'; position:absolute; top:-14px; right:8px; font-size:74px; font-family:Georgia,serif;
+    color:rgba(255,255,255,0.08);
+  }
+  .comment-label{ font-size:10.5px; color:rgba(255,255,255,0.55); font-weight:700; margin-bottom:8px; letter-spacing:0.5px;}
+  .comment-text{ font-size:13px; line-height:1.6; position:relative; }
+
+  .activity-item{
+    display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--line);
+  }
+  .activity-item:last-child{ border-bottom:none; }
+  .activity-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .activity-dot.teal{ background:var(--teal); }
+  .activity-dot.brand{ background:var(--brand); }
+  .activity-text{ font-size:12.5px; flex:1; }
+  .activity-date{ font-size:10.5px; color:var(--ink-soft); font-family:'Space Mono',monospace; }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="note">방향 B 목업 — 실제 데이터 아님</div>
+
+  <div class="header">
+    <div class="avatar">민</div>
+    <div>
+      <div class="greeting">안녕하세요 👋</div>
+      <div class="header-name">김민정 학생 리포트</div>
+    </div>
+  </div>
+
+  <div class="ring-row">
+    <div class="ring-card">
+      <div class="ring-label">출석률</div>
+      <div class="ring-svg-wrap">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="27" fill="none" stroke="#EEEAE0" stroke-width="7"/>
+          <circle cx="32" cy="32" r="27" fill="none" stroke="#3E9C86" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="169.6" stroke-dashoffset="0" transform="rotate(-90 32 32)"/>
+        </svg>
+        <div class="ring-value">100%</div>
+      </div>
+    </div>
+    <div class="ring-card">
+      <div class="ring-label">숙제 완료</div>
+      <div class="ring-svg-wrap">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="27" fill="none" stroke="#EEEAE0" stroke-width="7"/>
+          <circle cx="32" cy="32" r="27" fill="none" stroke="#F2701C" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="169.6" stroke-dashoffset="34" transform="rotate(-90 32 32)"/>
+        </svg>
+        <div class="ring-value">4/5</div>
+      </div>
+    </div>
+    <div class="ring-card">
+      <div class="ring-label">이번달 평균</div>
+      <div class="ring-svg-wrap">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="27" fill="none" stroke="#EEEAE0" stroke-width="7"/>
+          <circle cx="32" cy="32" r="27" fill="none" stroke="#232323" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="169.6" stroke-dashoffset="24" transform="rotate(-90 32 32)"/>
+        </svg>
+        <div class="ring-value">86점</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="comment-card">
+    <div class="comment-label">TEACHER'S NOTE</div>
+    <div class="comment-text">이번 주 이차방정식 단원에서 계산 실수가 조금 있었지만, 개념 이해도는 확실히 올라왔어요. 다음 주는 응용 문제 위주로 진행할게요.</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="info-card">
+      <div class="info-card-label">🏷️ 진도</div>
+      <div class="info-card-value">쎈 3단원 68p</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-label">💪 강점 단원</div>
+      <div class="info-card-value">일차함수</div>
+    </div>
+    <div class="info-card full">
+      <div class="info-card-label">🎯 보완하면 좋은 부분</div>
+      <span class="pill brand">이차방정식</span>
+      <span class="pill teal" style="margin-left:6px;">부호 실수 주의</span>
+    </div>
+  </div>
+
+  <div class="info-card full" style="margin-top:0;">
+    <div class="info-card-label" style="margin-bottom:2px;">📋 최근 활동</div>
+    <div class="activity-item">
+      <div class="activity-dot brand"></div>
+      <div class="activity-text">숙제 <b>유형편 1-20</b> 완료 체크</div>
+      <div class="activity-date">07.21</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot teal"></div>
+      <div class="activity-text">데일리 테스트 <b>86점</b></div>
+      <div class="activity-date">07.19</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot teal"></div>
+      <div class="activity-text">정상 출석</div>
+      <div class="activity-date">07.18</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

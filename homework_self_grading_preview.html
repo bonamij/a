@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>숙제 스스로 채점하기 - 미리보기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@500;700&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#F2701C; --brand-dark:#C85812; --brand-soft:rgba(242,113,28,0.12);
+    --cream:#F6F1E7; --cream-alt:#ECE3D0; --ink:#2E2013; --ink-soft:#6B5A47;
+    --line:#E3D9C7; --shadow:0 2px 10px rgba(46,32,19,0.08); --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--cream); color:var(--ink); min-height:100vh;
+    font-family:'Gowun Dodum','Noto Sans KR',sans-serif; font-weight:700;
+    display:flex; justify-content:center; padding:28px 12px;
+  }
+  .phone{width:100%; max-width:400px;}
+  .badge-note{
+    background:var(--brand); color:#fff; font-size:12px; font-weight:700;
+    font-family:'Noto Sans KR',sans-serif; text-align:center; border-radius:8px;
+    padding:8px 12px; margin-bottom:14px;
+  }
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:22px 20px; margin-bottom:16px;
+  }
+  h4{font-family:'Gowun Dodum','Noto Sans KR',sans-serif; margin:0 0 10px; font-size:15px; color:var(--brand-dark);}
+  .desc{font-size:12.5px; color:var(--ink-soft); margin-bottom:12px; font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+  .hw-self-input{
+    width:100%; box-sizing:border-box; padding:9px 10px; border:1px solid var(--line); border-radius:8px;
+    font-family:'Noto Sans KR',sans-serif; font-size:13.5px; background:var(--cream); color:var(--ink); margin-bottom:8px;
+  }
+  select.hw-self-input{ appearance:none; background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16'%3E%3Cpath fill='%236B5A47' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
+  .ak-input-row{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .ak-input-row .ak-num{width:32px; font-weight:700; font-family:'Space Mono',monospace; font-size:13px; color:var(--ink-soft); flex-shrink:0;}
+  .ak-input-row input{flex:1; margin-bottom:0;}
+  .tap-grid{display:flex; flex-wrap:wrap; gap:6px;}
+  .tap-num-btn{
+    width:36px; height:36px; border-radius:8px; border:1px solid var(--line); background:#fff;
+    color:var(--ink-soft); font-family:'Space Mono',monospace; font-size:13px; font-weight:700; cursor:pointer;
+    transition:background .15s, border-color .15s, color .15s;
+  }
+  .tap-num-btn:hover{border-color:var(--brand);}
+  .tap-num-btn.wrong{background:#B8391F; border-color:#B8391F; color:#fff;}
+  .progress-pill{background:var(--cream-alt); border-radius:20px; padding:6px 14px; font-size:12.5px; font-family:'Noto Sans KR',sans-serif; font-weight:700; color:var(--ink-soft);}
+  .btn{
+    width:100%; background:var(--brand); color:#fff; border:none; padding:13px 18px; border-radius:9px;
+    font-size:15px; font-family:'Noto Sans KR',sans-serif; font-weight:700; cursor:pointer; margin-top:12px;
+  }
+  .btn:hover{background:var(--brand-dark);}
+  .ok-line{font-size:12px; color:var(--brand-dark); font-weight:700; margin:10px 0 8px; font-family:'Noto Sans KR',sans-serif;}
+  .sub{margin:6px 0 8px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;}
+  .status{font-size:12px; color:var(--ink-soft); margin-top:8px; font-family:'Noto Sans KR',sans-serif; font-weight:500; min-height:16px;}
+  .toggle-row{display:flex; gap:8px; margin-bottom:14px;}
+  .toggle-row button{
+    flex:1; padding:9px; border-radius:8px; border:1px solid var(--line); background:#fff;
+    font-family:'Noto Sans KR',sans-serif; font-size:12.5px; font-weight:700; color:var(--ink-soft); cursor:pointer;
+  }
+  .toggle-row button.active{ background:var(--brand-soft); border-color:var(--brand); color:var(--brand-dark); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="badge-note">📱 학생이 학부모 포털에서 실제로 보는 화면 미리보기</div>
+
+  <div class="toggle-row">
+    <button id="btnStateA" class="active" onclick="showState('A')">① 범위 선택 전</button>
+    <button id="btnStateB" onclick="showState('B')">② 저장된 범위 선택함 (자동채점)</button>
+    <button id="btnStateC" onclick="showState('C')">③ 목록에 없어서 직접입력</button>
+  </div>
+
+  <div class="card">
+    <h4>✍️ 숙제 스스로 채점하기</h4>
+    <div class="desc">오늘 푼 숙제를 직접 채점해서 선생님께 보내보세요!</div>
+
+    <input type="date" class="hw-self-input" value="2026-07-20">
+
+    <select id="rangeSelect" class="hw-self-input" onchange="onSelectChange()">
+      <option value="">숙제 범위를 선택해주세요</option>
+      <option value="라이트 62p~68p">라이트 62p~68p (자동채점 가능)</option>
+      <option value="쎈 3단원 유형별">쎈 3단원 유형별 (자동채점 가능)</option>
+      <option value="__manual__">목록에 없어요 (직접 입력할게요)</option>
+    </select>
+    <input type="text" id="manualInput" class="hw-self-input" placeholder="숙제 범위 직접 입력 (예: 라이트 62p~68p)" style="display:none;">
+
+    <div id="modeArea"></div>
+
+    <button type="button" class="btn">제출하기</button>
+    <div class="status" id="statusMsg"></div>
+  </div>
+</div>
+
+<script>
+const areaEl = document.getElementById('modeArea');
+const sel = document.getElementById('rangeSelect');
+const manual = document.getElementById('manualInput');
+
+const stateA = `<div style="color:var(--ink-soft); font-size:13px; font-family:'Noto Sans KR',sans-serif; font-weight:500;">먼저 위에서 숙제 범위를 선택해주세요.</div>`;
+
+const stateB = `
+  <p class="ok-line">✅ 이 범위는 자동채점이 가능해요! 네가 쓴 답을 번호별로 입력해봐.</p>
+  ${[1,2,3,4,5].map(n => `
+    <div class="ak-input-row">
+      <span class="ak-num">${n}번</span>
+      <input type="text" placeholder="네가 쓴 답" ${n===1?'value="③"':''} ${n===3?'value="24"':''}>
+    </div>
+  `).join('')}
+  <div class="status" style="margin-top:6px;">→ 제출하면 정답과 자동으로 비교해서 채점돼요. 정답은 학생 화면에 보이지 않아요.</div>
+`;
+
+const stateC = `
+  <input type="number" class="hw-self-input" min="1" placeholder="전체 문항 수" value="10">
+  <div class="sub">틀린 문항 번호를 탭해주세요 (탭하면 빨갛게 표시)</div>
+  <div class="tap-grid">
+    ${Array.from({length:10}, (_,i)=>i+1).map(n => `<button type="button" class="tap-num-btn ${n===3||n===7?'wrong':''}" onclick="this.classList.toggle('wrong')">${n}</button>`).join('')}
+  </div>
+  <div class="progress-pill" style="margin-top:12px; display:inline-block;">틀린 2개 · 예상 점수 80점</div>
+`;
+
+function showState(state){
+  document.getElementById('btnStateA').classList.toggle('active', state==='A');
+  document.getElementById('btnStateB').classList.toggle('active', state==='B');
+  document.getElementById('btnStateC').classList.toggle('active', state==='C');
+  manual.style.display = 'none';
+  if(state === 'A'){ sel.value=''; areaEl.innerHTML = stateA; }
+  if(state === 'B'){ sel.value='라이트 62p~68p'; areaEl.innerHTML = stateB; }
+  if(state === 'C'){ sel.value='__manual__'; manual.style.display='block'; manual.value='자이스토리 21p~25p'; areaEl.innerHTML = stateC; }
+}
+
+function onSelectChange(){
+  const v = sel.value;
+  if(v === '__manual__') showState('C');
+  else if(v === '라이트 62p~68p') showState('B');
+  else showState('A');
+}
+
+showState('A');
+</script>
+</body>
+</html>
