@@ -785,18 +785,36 @@
           </div>
         </div>
         <form id="generalMakeupForm" onsubmit="addGeneralMakeup(event)">
-          <div class="inline-form">
-            <div class="field">
-              <label for="gm-student">학생</label>
-              <select id="gm-student" required><option value="">선택</option></select>
+          <div class="field">
+            <label>대상</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="btn small ghost active" id="gm-mode-class" onclick="setGmMode('class')">반 전체</button>
+              <button type="button" class="btn small ghost" id="gm-mode-individual" onclick="setGmMode('individual')">개별 학생</button>
             </div>
+          </div>
+
+          <div id="gm-class-wrap">
+            <div class="field">
+              <label for="gm-class-select">반 선택</label>
+              <select id="gm-class-select"><option value="">반을 선택하세요</option></select>
+            </div>
+          </div>
+
+          <div id="gm-individual-wrap" style="display:none;">
+            <div class="field">
+              <label>학생 선택 (여러 명 가능)</label>
+              <div id="gm-student-checks" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+            </div>
+          </div>
+
+          <div class="inline-form">
             <div class="field">
               <label for="gm-date">보강 날짜</label>
               <input type="date" id="gm-date" required>
             </div>
             <div class="field">
               <label for="gm-reason">사유/메모 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(선택)</span></label>
-              <input type="text" id="gm-reason" placeholder="예: 추가 문제풀이 보충">
+              <input type="text" id="gm-reason" placeholder="예: 추가 문제풀이 보충" style="min-width:220px;">
             </div>
           </div>
           <button type="submit" class="btn" style="margin-top:12px;">보강 등록</button>
@@ -2277,39 +2295,80 @@ function toggleMakeupDone(recordId, checked){
 /* =========================================================
    일반 보강 (결석과 무관)
 ========================================================= */
+function setGmMode(mode){
+  document.getElementById('gm-mode-class').classList.toggle('active', mode === 'class');
+  document.getElementById('gm-mode-individual').classList.toggle('active', mode === 'individual');
+  document.getElementById('gm-class-wrap').style.display = mode === 'class' ? 'block' : 'none';
+  document.getElementById('gm-individual-wrap').style.display = mode === 'individual' ? 'block' : 'none';
+}
+
 function refreshGeneralMakeupStudentSelect(){
-  const sel = document.getElementById('gm-student');
-  if(!sel) return;
-  const prev = sel.value;
-  sel.innerHTML = `<option value="">선택</option>` + students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
-  if(students.some(s => String(s.id) === prev)) sel.value = prev;
+  const classSelect = document.getElementById('gm-class-select');
+  const checksWrap = document.getElementById('gm-student-checks');
+  if(!classSelect) return;
+
+  const prevClass = classSelect.value;
+  const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
+
+  classSelect.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => {
+    const count = students.filter(s => s.className === c).length;
+    return `<option value="${escapeHtml(c)}">${escapeHtml(c)} (${count}명)</option>`;
+  }).join('');
+  if(classNames.includes(prevClass)) classSelect.value = prevClass;
+
+  checksWrap.innerHTML = students.map(s => `
+    <label style="display:flex; align-items:center; gap:5px; background:var(--cream-alt); border-radius:8px; padding:6px 10px; font-size:12.5px; font-family:'Noto Sans KR',sans-serif; cursor:pointer;">
+      <input type="checkbox" class="gm-student-check" value="${s.id}"> ${escapeHtml(s.name)}
+    </label>
+  `).join('');
 }
 
 function addGeneralMakeup(e){
   e.preventDefault();
-  const studentId = Number(document.getElementById('gm-student').value);
+  const isClassMode = document.getElementById('gm-mode-class').classList.contains('active');
   const date = document.getElementById('gm-date').value;
   const reason = document.getElementById('gm-reason').value.trim();
 
-  if(!studentId || !date){
-    alert('학생과 보강 날짜를 입력해주세요.');
+  if(!date){
+    alert('보강 날짜를 입력해주세요.');
     return;
   }
 
-  generalMakeups.push({ id: nextGeneralMakeupId++, studentId, date, reason, done: false });
+  let target;
+  if(isClassMode){
+    const className = document.getElementById('gm-class-select').value;
+    if(!className){ alert('반을 선택해주세요.'); return; }
+    if(students.filter(s => s.className === className).length === 0){ alert('이 반에 속한 학생이 없어요.'); return; }
+    target = { type:'class', className };
+  } else {
+    const studentIds = Array.from(document.querySelectorAll('.gm-student-check:checked')).map(el => Number(el.value));
+    if(studentIds.length === 0){ alert('학생을 한 명 이상 선택해주세요.'); return; }
+    target = { type:'individual', studentIds };
+  }
+
+  generalMakeups.push({ id: nextGeneralMakeupId++, date, reason, target, doneBy: [] });
 
   document.getElementById('gm-date').value = '';
   document.getElementById('gm-reason').value = '';
+  document.querySelectorAll('.gm-student-check:checked').forEach(el => el.checked = false);
 
   renderGeneralMakeupList();
   renderDashboard();
   scheduleSync();
 }
 
-function toggleGeneralMakeupDone(id, checked){
+function getGeneralMakeupTargetStudents(r){
+  if(r.target && r.target.type === 'class') return students.filter(s => s.className === r.target.className);
+  if(r.target && r.target.type === 'individual') return students.filter(s => r.target.studentIds.includes(s.id));
+  return [];
+}
+
+function toggleGeneralMakeupStudentDone(id, studentId){
   const r = generalMakeups.find(x => x.id === id);
   if(!r) return;
-  r.done = checked;
+  r.doneBy = r.doneBy || [];
+  const idx = r.doneBy.indexOf(studentId);
+  if(idx === -1) r.doneBy.push(studentId); else r.doneBy.splice(idx, 1);
   renderGeneralMakeupList();
   renderDashboard();
   scheduleSync();
@@ -2328,9 +2387,15 @@ function renderGeneralMakeupList(){
   if(!listEl) return;
 
   const list = generalMakeups.slice().sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
-  const doneCount = generalMakeups.filter(r => r.done).length;
+
+  let totalStudentSlots = 0, doneStudentSlots = 0;
+  generalMakeups.forEach(r => {
+    const targets = getGeneralMakeupTargetStudents(r);
+    totalStudentSlots += targets.length;
+    doneStudentSlots += targets.filter(s => (r.doneBy || []).includes(s.id)).length;
+  });
   document.getElementById('generalMakeupCountSub').textContent =
-    `등록된 일반 보강 ${generalMakeups.length}건 · 완료 ${doneCount}건 · 미완료 ${generalMakeups.length - doneCount}건`;
+    `등록된 일반 보강 ${generalMakeups.length}건 · 학생별 완료 ${doneStudentSlots}/${totalStudentSlots}`;
 
   if(list.length === 0){
     listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">등록된 일반 보강이 없어요.</li>`;
@@ -2338,19 +2403,30 @@ function renderGeneralMakeupList(){
   }
 
   listEl.innerHTML = list.map(r => {
-    const s = students.find(x => x.id === r.studentId);
+    const targetStudents = getGeneralMakeupTargetStudents(r);
+    const doneBy = r.doneBy || [];
+    const doneCount = targetStudents.filter(s => doneBy.includes(s.id)).length;
+    const targetLabel = r.target && r.target.type === 'class' ? `🏷️ ${escapeHtml(r.target.className)}` : '👤 개별 학생';
     return `
-      <li>
-        <div class="left">
-          <span class="date">${r.date.replace(/-/g,'.')}</span>
-          <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
-          ${r.reason ? `<span style="font-size:12px; color:var(--ink-soft);">${escapeHtml(r.reason)}</span>` : ''}
+      <li style="flex-direction:column; align-items:stretch; gap:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+          <div class="left">
+            <span class="date">${r.date.replace(/-/g,'.')}</span>
+            <span style="font-size:12px; color:var(--ink-soft);">${targetLabel}</span>
+            ${r.reason ? `<span style="font-size:12px; color:var(--ink-soft);">· ${escapeHtml(r.reason)}</span>` : ''}
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <span class="badge ${doneCount === targetStudents.length && targetStudents.length ? 'green' : 'gray'}">${doneCount}/${targetStudents.length} 완료</span>
+            <button class="btn small danger-text" onclick="deleteGeneralMakeup(${r.id})">삭제</button>
+          </div>
         </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <label style="display:flex; align-items:center; gap:5px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;">
-            <input type="checkbox" ${r.done ? 'checked' : ''} onchange="toggleGeneralMakeupDone(${r.id}, this.checked)" style="width:15px; height:15px;"> 완료
-          </label>
-          <button class="btn small danger-text" onclick="deleteGeneralMakeup(${r.id})">삭제</button>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          ${targetStudents.map(s => {
+            const done = doneBy.includes(s.id);
+            return `<label style="display:flex; align-items:center; gap:5px; background:${done ? 'var(--brand-soft)' : '#fff'}; border:1px solid ${done ? 'var(--brand)' : 'var(--line)'}; border-radius:8px; padding:5px 10px; font-size:12px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; color:${done ? 'var(--brand-dark)' : 'var(--ink)'};">
+              <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleGeneralMakeupStudentDone(${r.id}, ${s.id})"> ${escapeHtml(s.name)}
+            </label>`;
+          }).join('')}
         </div>
       </li>`;
   }).join('');
@@ -3436,7 +3512,12 @@ function renderDashboard(){
 
   // 3. 보강 미완료 (결석 보강 + 일반 보강)
   const needMakeupAll = attendanceRecords.filter(r => r.status === '결석' && !r.makeupDone);
-  const needGeneralMakeup = generalMakeups.filter(r => !r.done);
+  const needGeneralMakeup = [];
+  generalMakeups.forEach(r => {
+    getGeneralMakeupTargetStudents(r).forEach(s => {
+      if(!(r.doneBy || []).includes(s.id)) needGeneralMakeup.push({ studentId: s.id, date: r.date, reason: r.reason });
+    });
+  });
   document.getElementById('dashStat3').innerHTML = `${needMakeupAll.length + needGeneralMakeup.length}<small> 건</small>`;
 
   // 4. 이번 달 평균
@@ -3991,6 +4072,7 @@ function init(){
   setDailyMode('count');
   setProgressMode('individual');
   setHwAssignMode('class');
+  setGmMode('class');
   switchTab('dashboard');
   renderDashboard();
   renderStudents();

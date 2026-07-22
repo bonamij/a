@@ -447,8 +447,11 @@ function renderReport(data, student){
   const monthPrefix = `${y}-${String(mo + 1).padStart(2,'0')}`;
   const todayIso = `${y}-${String(mo + 1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   const attendanceRecords = (data.attendanceRecords || []).filter(r => r.studentId === student.id);
-  const studentGeneralMakeups = (data.generalMakeups || []).filter(r => r.studentId === student.id)
-    .slice().sort((a,b) => b.date.localeCompare(a.date));
+  const studentGeneralMakeups = (data.generalMakeups || []).filter(r =>
+    (r.target && r.target.type === 'class' && r.target.className === student.className) ||
+    (r.target && r.target.type === 'individual' && r.target.studentIds && r.target.studentIds.includes(student.id))
+  ).map(r => ({ date: r.date, reason: r.reason, done: (r.doneBy || []).includes(student.id) }))
+   .sort((a,b) => b.date.localeCompare(a.date));
   const monthRecords = attendanceRecords.filter(r => r.date.startsWith(monthPrefix));
   const attCounts = { 출석:0, 지각:0, 결석:0, 조퇴:0 };
   monthRecords.forEach(r => { attCounts[r.status] = (attCounts[r.status] || 0) + 1; });
