@@ -776,6 +776,35 @@
         </div>
         <ul class="recent-list" id="makeupListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
       </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>🗓️ 일반 보강 등록</h3>
+            <div class="sub">결석 때문이 아니어도, 별도로 보강 일정을 등록하고 싶을 때 사용하세요. 학부모 포털에도 알림이 떠요.</div>
+          </div>
+        </div>
+        <form id="generalMakeupForm" onsubmit="addGeneralMakeup(event)">
+          <div class="inline-form">
+            <div class="field">
+              <label for="gm-student">학생</label>
+              <select id="gm-student" required><option value="">선택</option></select>
+            </div>
+            <div class="field">
+              <label for="gm-date">보강 날짜</label>
+              <input type="date" id="gm-date" required>
+            </div>
+            <div class="field">
+              <label for="gm-reason">사유/메모 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(선택)</span></label>
+              <input type="text" id="gm-reason" placeholder="예: 추가 문제풀이 보충">
+            </div>
+          </div>
+          <button type="submit" class="btn" style="margin-top:12px;">보강 등록</button>
+        </form>
+
+        <div class="sub" style="margin-top:20px;" id="generalMakeupCountSub">등록된 일반 보강 0건</div>
+        <ul class="recent-list" id="generalMakeupListBody" style="flex-direction:column; display:flex; gap:8px; margin-top:8px;"></ul>
+      </div>
     </section>
     <section class="panel" id="panel-daily">
       <div class="card">
@@ -1335,6 +1364,9 @@ function booksForLevel(level){
 
 let attendanceRecords = [];
 let nextAttendanceId = 1;
+
+let generalMakeups = [];
+let nextGeneralMakeupId = 1;
 const ATT_STATUSES = [
   { key:'출석', cls:'present' },
   { key:'지각', cls:'late' },
@@ -1726,6 +1758,8 @@ function renderStudents(){
     renderAttendanceCalendar();
     renderAllStudentsAttendanceTable();
     renderMakeupList();
+    refreshGeneralMakeupStudentSelect();
+    renderGeneralMakeupList();
   }
   if(document.getElementById('dt-student')){
     refreshDailyStudentSelects();
@@ -2238,6 +2272,88 @@ function toggleMakeupDone(recordId, checked){
   renderAttendanceCalendar();
   renderAllStudentsAttendanceTable();
   scheduleSync();
+}
+
+/* =========================================================
+   일반 보강 (결석과 무관)
+========================================================= */
+function refreshGeneralMakeupStudentSelect(){
+  const sel = document.getElementById('gm-student');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = `<option value="">선택</option>` + students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.grade)})</option>`).join('');
+  if(students.some(s => String(s.id) === prev)) sel.value = prev;
+}
+
+function addGeneralMakeup(e){
+  e.preventDefault();
+  const studentId = Number(document.getElementById('gm-student').value);
+  const date = document.getElementById('gm-date').value;
+  const reason = document.getElementById('gm-reason').value.trim();
+
+  if(!studentId || !date){
+    alert('학생과 보강 날짜를 입력해주세요.');
+    return;
+  }
+
+  generalMakeups.push({ id: nextGeneralMakeupId++, studentId, date, reason, done: false });
+
+  document.getElementById('gm-date').value = '';
+  document.getElementById('gm-reason').value = '';
+
+  renderGeneralMakeupList();
+  renderDashboard();
+  scheduleSync();
+}
+
+function toggleGeneralMakeupDone(id, checked){
+  const r = generalMakeups.find(x => x.id === id);
+  if(!r) return;
+  r.done = checked;
+  renderGeneralMakeupList();
+  renderDashboard();
+  scheduleSync();
+}
+
+function deleteGeneralMakeup(id){
+  if(!confirm('이 보강 일정을 삭제하시겠습니까?')) return;
+  generalMakeups = generalMakeups.filter(x => x.id !== id);
+  renderGeneralMakeupList();
+  renderDashboard();
+  scheduleSync();
+}
+
+function renderGeneralMakeupList(){
+  const listEl = document.getElementById('generalMakeupListBody');
+  if(!listEl) return;
+
+  const list = generalMakeups.slice().sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+  const doneCount = generalMakeups.filter(r => r.done).length;
+  document.getElementById('generalMakeupCountSub').textContent =
+    `등록된 일반 보강 ${generalMakeups.length}건 · 완료 ${doneCount}건 · 미완료 ${generalMakeups.length - doneCount}건`;
+
+  if(list.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">등록된 일반 보강이 없어요.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(r => {
+    const s = students.find(x => x.id === r.studentId);
+    return `
+      <li>
+        <div class="left">
+          <span class="date">${r.date.replace(/-/g,'.')}</span>
+          <strong>${s ? escapeHtml(s.name) : '(삭제된 학생)'}</strong>
+          ${r.reason ? `<span style="font-size:12px; color:var(--ink-soft);">${escapeHtml(r.reason)}</span>` : ''}
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <label style="display:flex; align-items:center; gap:5px; font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;">
+            <input type="checkbox" ${r.done ? 'checked' : ''} onchange="toggleGeneralMakeupDone(${r.id}, this.checked)" style="width:15px; height:15px;"> 완료
+          </label>
+          <button class="btn small danger-text" onclick="deleteGeneralMakeup(${r.id})">삭제</button>
+        </div>
+      </li>`;
+  }).join('');
 }
 
 /* =========================================================
@@ -3318,9 +3434,10 @@ function renderDashboard(){
   const weekPct = weekRecs.length ? Math.round(weekPresent / weekRecs.length * 100) : null;
   document.getElementById('dashStat2').innerHTML = weekPct !== null ? `${weekPct}<small>%</small>` : `-<small>%</small>`;
 
-  // 3. 보강 미완료
+  // 3. 보강 미완료 (결석 보강 + 일반 보강)
   const needMakeupAll = attendanceRecords.filter(r => r.status === '결석' && !r.makeupDone);
-  document.getElementById('dashStat3').innerHTML = `${needMakeupAll.length}<small> 건</small>`;
+  const needGeneralMakeup = generalMakeups.filter(r => !r.done);
+  document.getElementById('dashStat3').innerHTML = `${needMakeupAll.length + needGeneralMakeup.length}<small> 건</small>`;
 
   // 4. 이번 달 평균
   const monthTests = dailyTests.filter(t => t.date.startsWith(monthPrefix));
@@ -3347,8 +3464,9 @@ function renderDashboard(){
   const alerts = [];
   dashAlertTarget = null;
   const todayMakeup = attendanceRecords.filter(r => r.status === '결석' && r.makeupDate === todayIso && !r.makeupDone);
-  if(todayMakeup.length){ alerts.push(`오늘 보강 ${todayMakeup.length}명`); dashAlertTarget = dashAlertTarget || 'attendance'; }
-  if(needMakeupAll.length){ alerts.push(`보강 미완료 ${needMakeupAll.length}건`); dashAlertTarget = dashAlertTarget || 'attendance'; }
+  const todayGeneralMakeup = needGeneralMakeup.filter(r => r.date === todayIso);
+  if(todayMakeup.length || todayGeneralMakeup.length){ alerts.push(`오늘 보강 ${todayMakeup.length + todayGeneralMakeup.length}명`); dashAlertTarget = dashAlertTarget || 'attendance'; }
+  if(needMakeupAll.length || needGeneralMakeup.length){ alerts.push(`보강 미완료 ${needMakeupAll.length + needGeneralMakeup.length}건`); dashAlertTarget = dashAlertTarget || 'attendance'; }
   if(pendingHW){ alerts.push(`숙제 체크 미완료 ${pendingHW}명`); dashAlertTarget = dashAlertTarget || 'homework'; }
   if(alerts.length){
     banner.style.display = 'flex';
@@ -3363,18 +3481,20 @@ function renderDashboard(){
   // === 일정 테이블 ===
   renderDashboardSchedule();
 
-  // === 보강 필요 학생 ===
+  // === 보강 필요 학생 (결석 보강 + 일반 보강 합산) ===
   const makeupListEl = document.getElementById('dashMakeupList');
   if(makeupListEl){
-    if(needMakeupAll.length === 0){
+    const combined = [
+      ...needMakeupAll.map(r => ({ studentId:r.studentId, date:r.makeupDate, label: r.makeupDate ? `보강예정 ${r.makeupDate.slice(5).replace('-','/')}` : '보강필요', cls: r.makeupDate ? 'score-mid' : 'score-low' })),
+      ...needGeneralMakeup.map(r => ({ studentId:r.studentId, date:r.date, label: `일반보강 ${r.date.slice(5).replace('-','/')}${r.reason ? ` · ${r.reason}` : ''}`, cls:'score-mid' }))
+    ];
+    if(combined.length === 0){
       makeupListEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">없어요 🎉</li>`;
     } else {
-      const sorted = needMakeupAll.slice().sort((a,b) => a.date.localeCompare(b.date));
+      const sorted = combined.slice().sort((a,b) => (a.date || '').localeCompare(b.date || ''));
       makeupListEl.innerHTML = sorted.map(r => {
         const s = students.find(x => x.id === r.studentId);
-        const label = r.makeupDate ? `보강예정 ${r.makeupDate.slice(5).replace('-','/')}` : '보강필요';
-        const cls = r.makeupDate ? 'score-mid' : 'score-low';
-        return `<li><div class="left"><strong>${s ? escapeHtml(s.name) : '-'}</strong><span class="badge ${cls}">${label}</span></div></li>`;
+        return `<li><div class="left"><strong>${s ? escapeHtml(s.name) : '-'}</strong><span class="badge ${r.cls}">${escapeHtml(r.label)}</span></div></li>`;
       }).join('');
     }
   }
@@ -3631,6 +3751,7 @@ function collectAllData(){
     students, nextStudentId, withdrawnStudents,
     progressLogs, nextProgressId,
     attendanceRecords, nextAttendanceId,
+    generalMakeups, nextGeneralMakeupId,
     dailyTests, nextDailyId,
     homeworkAssignments, nextHomeworkAssignmentId,
     answerKeys, nextAnswerKeyId,
@@ -3654,6 +3775,8 @@ function applyAllData(data){
   nextProgressId = data.nextProgressId || maxId(progressLogs);
   attendanceRecords = data.attendanceRecords || [];
   nextAttendanceId = data.nextAttendanceId || maxId(attendanceRecords);
+  generalMakeups = data.generalMakeups || [];
+  nextGeneralMakeupId = data.nextGeneralMakeupId || maxId(generalMakeups);
   dailyTests = data.dailyTests || [];
   nextDailyId = data.nextDailyId || maxId(dailyTests);
   homeworkAssignments = data.homeworkAssignments || [];
@@ -3743,6 +3866,7 @@ function resetAllData(){
   students = []; nextStudentId = 1; withdrawnStudents = [];
   progressLogs = []; nextProgressId = 1;
   attendanceRecords = []; nextAttendanceId = 1;
+  generalMakeups = []; nextGeneralMakeupId = 1;
   dailyTests = []; nextDailyId = 1;
   homeworkAssignments = []; nextHomeworkAssignmentId = 1;
   answerKeys = []; nextAnswerKeyId = 1;
@@ -3856,6 +3980,7 @@ function init(){
   const iso = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   document.getElementById('p-date').value = iso;
   document.getElementById('att-date').value = iso;
+  document.getElementById('gm-date').value = iso;
   document.getElementById('dt-date').value = iso;
   document.getElementById('hwa-date').value = iso;
   document.getElementById('s-enroll').value = iso;
@@ -3876,6 +4001,8 @@ function init(){
   renderAttendanceCalendar();
   renderAllStudentsAttendanceTable();
   renderMakeupList();
+  refreshGeneralMakeupStudentSelect();
+  renderGeneralMakeupList();
   refreshDailyStudentSelects();
   renderDailyList();
   renderScoreChart();

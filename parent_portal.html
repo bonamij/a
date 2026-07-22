@@ -447,6 +447,8 @@ function renderReport(data, student){
   const monthPrefix = `${y}-${String(mo + 1).padStart(2,'0')}`;
   const todayIso = `${y}-${String(mo + 1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   const attendanceRecords = (data.attendanceRecords || []).filter(r => r.studentId === student.id);
+  const studentGeneralMakeups = (data.generalMakeups || []).filter(r => r.studentId === student.id)
+    .slice().sort((a,b) => b.date.localeCompare(a.date));
   const monthRecords = attendanceRecords.filter(r => r.date.startsWith(monthPrefix));
   const attCounts = { 출석:0, 지각:0, 결석:0, 조퇴:0 };
   monthRecords.forEach(r => { attCounts[r.status] = (attCounts[r.status] || 0) + 1; });
@@ -511,6 +513,16 @@ function renderReport(data, student){
         const mm = r.makeupDate.slice(5).replace('-','/');
         alerts.push({ icon:'🗓️', text:`${mm}에 보강이 예정되어 있어요.`, tab:'attend' });
       }
+    }
+  });
+
+  studentGeneralMakeups.forEach(r => {
+    if(r.done) return;
+    if(r.date === todayIso){
+      alerts.push({ icon:'📌', text:`오늘(${r.date.slice(5).replace('-','/')}) 보강이 있어요!${r.reason ? ` — ${r.reason}` : ''}`, tab:'attend' });
+    } else if(r.date > todayIso && r.date <= in3DaysIso){
+      const mm = r.date.slice(5).replace('-','/');
+      alerts.push({ icon:'🗓️', text:`${mm}에 보강이 예정되어 있어요.${r.reason ? ` — ${r.reason}` : ''}`, tab:'attend' });
     }
   });
 
@@ -623,7 +635,18 @@ function renderReport(data, student){
         `}
       </div>
       <div class="section-card">
-        <div class="section-title"><span class="num">2</span>데일리 테스트${avgScore !== null ? ` · 평균 ${avgScore}점` : ''}${groupAvgScore !== null ? ` · ${escapeHtml(levelOf(student.grade))} 평균 ${groupAvgScore}점` : ''}</div>
+        <div class="section-title"><span class="num">2</span>보강 일정</div>
+        ${(() => {
+          const absenceMakeups = attendanceRecords.filter(r => r.status === '결석' && r.makeupDate)
+            .map(r => ({ date:r.makeupDate, done:r.makeupDone, note:'결석 보강' }));
+          const generalOnes = studentGeneralMakeups.map(r => ({ date:r.date, done:r.done, note:r.reason || '일반 보강' }));
+          const combined = [...absenceMakeups, ...generalOnes].sort((a,b) => b.date.localeCompare(a.date));
+          if(combined.length === 0) return `<div class="report-empty">등록된 보강 일정이 없어요.</div>`;
+          return `<ul class="report-list">${combined.map(r => `<li>${r.date.replace(/-/g,'.')} · ${escapeHtml(r.note)} <span style="color:${r.done ? 'var(--brand-dark)' : 'var(--ink-soft)'}; font-size:12px; font-weight:700;">${r.done ? '· 완료' : '· 예정'}</span></li>`).join('')}</ul>`;
+        })()}
+      </div>
+      <div class="section-card">
+        <div class="section-title"><span class="num">3</span>데일리 테스트${avgScore !== null ? ` · 평균 ${avgScore}점` : ''}${groupAvgScore !== null ? ` · ${escapeHtml(levelOf(student.grade))} 평균 ${groupAvgScore}점` : ''}</div>
         ${studentTests.length === 0 ? `<div class="report-empty">기록된 데일리 테스트가 없어요.</div>` : buildScoreChartSVG(studentTests, groupAvgScore)}
       </div>
     </div>
