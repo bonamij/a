@@ -403,6 +403,7 @@
     <div class="sidebar-section-label">학습</div>
     <div class="sidebar-item" data-tab="progress" onclick="switchTab('progress')"><span class="si">📘</span>진도 관리</div>
     <div class="sidebar-item" data-tab="daily" onclick="switchTab('daily')"><span class="si">✏️</span>데일리 테스트</div>
+    <div class="sidebar-item" data-tab="conceptbank" onclick="switchTab('conceptbank')"><span class="si">🧩</span>개념빈칸 테스트</div>
     <div class="sidebar-item" data-tab="mistakes" onclick="switchTab('mistakes')"><span class="si">📌</span>오답노트</div>
     <div class="sidebar-item" data-tab="report" onclick="switchTab('report')"><span class="si">📄</span>학생 리포트</div>
     <div class="sidebar-item" data-tab="middle" onclick="switchTab('middle')"><span class="si">🏫</span>중등부 정보</div>
@@ -495,6 +496,7 @@
           <div class="home-card" onclick="switchTab('progress')"><span class="home-card-icon">📘</span><div class="home-card-title">진도 관리</div><div class="home-card-sub">교재별 진도 기록</div></div>
           <div class="home-card" onclick="switchTab('attendance')"><span class="home-card-icon">🗓️</span><div class="home-card-title">출결 관리</div><div class="home-card-sub">출결·보강 관리</div></div>
           <div class="home-card" onclick="switchTab('daily')"><span class="home-card-icon">✏️</span><div class="home-card-title">데일리 테스트</div></div>
+          <div class="home-card" onclick="switchTab('conceptbank')"><span class="home-card-icon">🧩</span><div class="home-card-title">개념빈칸 테스트</div><div class="home-card-sub">매일 자동 출제!</div></div>
           <div class="home-card" onclick="switchTab('homework')"><span class="home-card-icon">📔</span><div class="home-card-title">숙제 체크리스트</div><div class="home-card-sub">배정하고 완료 체크만!</div></div>
         </div>
       </div>
@@ -935,6 +937,72 @@
           </div>
         </div>
         <div id="scoreChartWrap"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-conceptbank">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>🧩 개념빈칸 문제 추가</h3>
+            <div class="sub">반별로 문제은행을 쌓아두면, 매일 자동으로 순서대로 돌아가며 학생들에게 나가요. 관리자가 매일 새로 입력할 필요 없어요.</div>
+          </div>
+        </div>
+        <form id="conceptItemForm" onsubmit="addConceptItem(event)">
+          <div class="inline-form">
+            <div class="field">
+              <label for="ci-class-select">반</label>
+              <select id="ci-class-select" required><option value="">반을 선택하세요</option></select>
+            </div>
+            <div class="field">
+              <label for="ci-unit">단원 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(선택)</span></label>
+              <input type="text" id="ci-unit" placeholder="예: 이차방정식">
+            </div>
+          </div>
+          <div class="field">
+            <label for="ci-question">문제 (빈칸 부분에 ___ 표시)</label>
+            <input type="text" id="ci-question" placeholder="예: 피타고라스 정리: 직각삼각형에서 a² + b² = ___" style="width:100%;" required>
+          </div>
+          <div class="field">
+            <label for="ci-answer">정답</label>
+            <input type="text" id="ci-answer" placeholder="예: c²" required>
+          </div>
+          <button type="submit" class="btn" style="margin-top:8px;">문제 추가</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>⚙️ 하루 출제 개수</h3>
+            <div class="sub">반마다 하루에 몇 문제씩 낼지 정해요. (기본 5문제)</div>
+          </div>
+        </div>
+        <div id="conceptDailyCountList" style="display:flex; flex-direction:column; gap:8px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>📋 문제은행 목록</h3>
+            <div class="sub" id="conceptItemCountSub">등록된 문제 0개</div>
+          </div>
+          <div class="field">
+            <label for="conceptItemFilterClass">반 필터</label>
+            <select id="conceptItemFilterClass" onchange="renderConceptItemList()"><option value="all">전체</option></select>
+          </div>
+        </div>
+        <ul class="recent-list" id="conceptItemListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>✅ 오늘의 제출 현황</h3>
+            <div class="sub" id="conceptTodaySub"></div>
+          </div>
+        </div>
+        <ul class="recent-list" id="conceptTodayListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
       </div>
     </section>
     <section class="panel" id="panel-homework">
@@ -1400,6 +1468,12 @@ let generalMakeups = [];
 let nextGeneralMakeupId = 1;
 
 let adminPushTokens = [];
+
+let conceptBankItems = [];
+let nextConceptItemId = 1;
+let conceptDailyCounts = {};
+let conceptTestRecords = [];
+let nextConceptRecordId = 1;
 const ATT_STATUSES = [
   { key:'출석', cls:'present' },
   { key:'지각', cls:'late' },
@@ -1437,7 +1511,7 @@ let parentMessages = [];
 
 const TAB_TITLES = {
   home:'홈', dashboard:'대시보드', students:'학생 명단', progress:'진도 관리', attendance:'출결 관리', daily:'데일리 테스트',
-  homework:'숙제 체크리스트', mistakes:'오답노트', report:'학생 리포트', middle:'중등부 정보', backup:'데이터 관리'
+  homework:'숙제 체크리스트', conceptbank:'개념빈칸 테스트', mistakes:'오답노트', report:'학생 리포트', middle:'중등부 정보', backup:'데이터 관리'
 };
 
 function escapeHtml(str){
@@ -1807,6 +1881,11 @@ function renderStudents(){
     refreshHomeworkStudentSelects();
     renderHomeworkList();
     renderAnswerKeyList();
+  }
+  if(document.getElementById('ci-class-select')){
+    refreshConceptClassSelects();
+    renderConceptItemList();
+    renderConceptTodaySubmissions();
   }
   if(document.getElementById('m-student')){
     refreshMistakeStudentSelects();
@@ -2471,8 +2550,156 @@ function renderGeneralMakeupList(){
 }
 
 /* =========================================================
-   데일리 테스트
+   개념빈칸 테스트
 ========================================================= */
+function refreshConceptClassSelects(){
+  const classSel = document.getElementById('ci-class-select');
+  const filterSel = document.getElementById('conceptItemFilterClass');
+  if(!classSel) return;
+
+  const prevClass = classSel.value, prevFilter = filterSel.value;
+  const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
+
+  classSel.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  if(classNames.includes(prevClass)) classSel.value = prevClass;
+
+  filterSel.innerHTML = `<option value="all">전체</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  if(prevFilter === 'all' || classNames.includes(prevFilter)) filterSel.value = prevFilter;
+
+  renderConceptDailyCountList(classNames);
+}
+
+function renderConceptDailyCountList(classNames){
+  const wrap = document.getElementById('conceptDailyCountList');
+  if(!wrap) return;
+  if(!classNames || classNames.length === 0){
+    wrap.innerHTML = `<div class="report-empty">반이 아직 없어요. 학생 목록에서 반을 먼저 지정해주세요.</div>`;
+    return;
+  }
+  wrap.innerHTML = classNames.map(c => `
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span style="width:110px; font-size:13px; font-family:'Noto Sans KR',sans-serif; font-weight:700;">${escapeHtml(c)}</span>
+      <input type="number" min="1" max="30" value="${conceptDailyCounts[c] || 5}" style="width:80px; padding:6px 8px; border:1px solid var(--line); border-radius:6px;" onchange="setConceptDailyCount('${escapeHtml(c).replace(/'/g,"\\'")}', this.value)">
+      <span style="font-size:12px; color:var(--ink-soft);">문제 / 일</span>
+    </div>
+  `).join('');
+}
+
+function setConceptDailyCount(className, value){
+  const n = Math.max(1, Math.min(30, Number(value) || 5));
+  conceptDailyCounts[className] = n;
+  scheduleSync();
+}
+
+function addConceptItem(e){
+  e.preventDefault();
+  const className = document.getElementById('ci-class-select').value;
+  const unit = document.getElementById('ci-unit').value.trim();
+  const question = document.getElementById('ci-question').value.trim();
+  const answer = document.getElementById('ci-answer').value.trim();
+
+  if(!className || !question || !answer){
+    alert('반, 문제, 정답을 모두 입력해주세요.');
+    return;
+  }
+
+  conceptBankItems.push({ id: nextConceptItemId++, className, unit, question, answer });
+
+  document.getElementById('ci-unit').value = '';
+  document.getElementById('ci-question').value = '';
+  document.getElementById('ci-answer').value = '';
+  document.getElementById('ci-question').focus();
+
+  renderConceptItemList();
+  scheduleSync();
+}
+
+function deleteConceptItem(id){
+  if(!confirm('이 문제를 삭제하시겠습니까?')) return;
+  conceptBankItems = conceptBankItems.filter(i => i.id !== id);
+  renderConceptItemList();
+  scheduleSync();
+}
+
+function renderConceptItemList(){
+  const listEl = document.getElementById('conceptItemListBody');
+  const filterEl = document.getElementById('conceptItemFilterClass');
+  if(!listEl || !filterEl) return;
+  const filter = filterEl.value;
+
+  let list = conceptBankItems.slice();
+  if(filter !== 'all') list = list.filter(i => i.className === filter);
+  list.sort((a,b) => a.className.localeCompare(b.className) || a.id - b.id);
+
+  document.getElementById('conceptItemCountSub').textContent =
+    `등록된 문제 ${conceptBankItems.length}개 (표시 중 ${list.length}개)`;
+
+  if(list.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">등록된 문제가 없어요.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(item => `
+    <li>
+      <div class="left">
+        <span class="date" style="font-family:'Noto Sans KR',sans-serif;">🏷️ ${escapeHtml(item.className)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</span>
+        <strong style="font-size:13px;">${escapeHtml(item.question)}</strong>
+        <span style="font-size:12px; color:var(--ink-soft);">정답: ${escapeHtml(item.answer)}</span>
+      </div>
+      <button class="btn small danger-text" onclick="deleteConceptItem(${item.id})">삭제</button>
+    </li>
+  `).join('');
+}
+
+// 날짜(일수) 기준으로 그 반의 오늘 출제 문항을 결정 (문제은행을 순서대로 순환)
+function getTodaysConceptItems(className){
+  const classItems = conceptBankItems.filter(i => i.className === className).sort((a,b) => a.id - b.id);
+  if(classItems.length === 0) return [];
+  const perDay = conceptDailyCounts[className] || 5;
+  const dayIndex = Math.floor(Date.now() / 86400000);
+  const total = classItems.length;
+  const startIdx = (dayIndex * perDay) % total;
+  const result = [];
+  for(let i = 0; i < Math.min(perDay, total); i++){
+    result.push(classItems[(startIdx + i) % total]);
+  }
+  return result;
+}
+
+function renderConceptTodaySubmissions(){
+  const listEl = document.getElementById('conceptTodayListBody');
+  const subEl = document.getElementById('conceptTodaySub');
+  if(!listEl || !subEl) return;
+
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const todayRecords = conceptTestRecords.filter(r => r.date === todayIso);
+  const submittedIds = new Set(todayRecords.map(r => r.studentId));
+  const eligibleStudents = students.filter(s => s.className && getTodaysConceptItems(s.className).length > 0);
+
+  subEl.textContent = `오늘(${todayIso}) 대상 ${eligibleStudents.length}명 중 ${todayRecords.length}명 제출`;
+
+  if(eligibleStudents.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">오늘 출제된 반이 없어요. 반별로 문제를 등록해주세요.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = eligibleStudents.slice().sort((a,b) => (a.className||'').localeCompare(b.className||'') || a.name.localeCompare(b.name)).map(s => {
+    const rec = todayRecords.find(r => r.studentId === s.id);
+    return `
+      <li>
+        <div class="left">
+          <strong>${escapeHtml(s.name)}</strong>
+          <span style="font-size:12px; color:var(--ink-soft);">${escapeHtml(s.className || '')}</span>
+        </div>
+        ${rec
+          ? `<span class="badge ${rec.correct === rec.total ? 'green' : 'gray'}">${rec.correct}/${rec.total} 완료</span>`
+          : `<span class="badge gray">미제출</span>`}
+      </li>`;
+  }).join('');
+}
+
+
 function setDailyMode(mode){
   currentDailyMode = mode;
   document.getElementById('dt-mode-count').classList.toggle('active', mode === 'count');
@@ -3895,6 +4122,7 @@ function collectAllData(){
     attendanceRecords, nextAttendanceId,
     generalMakeups, nextGeneralMakeupId,
     adminPushTokens,
+    conceptBankItems, nextConceptItemId, conceptDailyCounts, conceptTestRecords, nextConceptRecordId,
     dailyTests, nextDailyId,
     homeworkAssignments, nextHomeworkAssignmentId,
     answerKeys, nextAnswerKeyId,
@@ -3921,6 +4149,11 @@ function applyAllData(data){
   generalMakeups = data.generalMakeups || [];
   nextGeneralMakeupId = data.nextGeneralMakeupId || maxId(generalMakeups);
   adminPushTokens = data.adminPushTokens || [];
+  conceptBankItems = data.conceptBankItems || [];
+  nextConceptItemId = data.nextConceptItemId || maxId(conceptBankItems);
+  conceptDailyCounts = data.conceptDailyCounts || {};
+  conceptTestRecords = data.conceptTestRecords || [];
+  nextConceptRecordId = data.nextConceptRecordId || maxId(conceptTestRecords);
   dailyTests = data.dailyTests || [];
   nextDailyId = data.nextDailyId || maxId(dailyTests);
   homeworkAssignments = data.homeworkAssignments || [];
@@ -4016,6 +4249,8 @@ function resetAllData(){
   homeworkAssignments = []; nextHomeworkAssignmentId = 1;
   answerKeys = []; nextAnswerKeyId = 1;
   homeworkRecords = []; nextHomeworkId = 1;
+  conceptBankItems = []; nextConceptItemId = 1; conceptDailyCounts = {};
+  conceptTestRecords = []; nextConceptRecordId = 1;
   mistakeRecords = []; nextMistakeId = 1;
   teacherComments = {};
   schoolInfos = []; nextSchoolInfoId = 1;
@@ -4266,6 +4501,9 @@ function init(){
   refreshHomeworkStudentSelects();
   renderHomeworkList();
   renderAnswerKeyList();
+  refreshConceptClassSelects();
+  renderConceptItemList();
+  renderConceptTodaySubmissions();
   refreshMistakeStudentSelects();
   renderMistakeList();
   renderMistakeChart();

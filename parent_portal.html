@@ -343,6 +343,22 @@ function levelOf(grade){
   return grade.startsWith('초') ? '초등부' : grade.startsWith('중') ? '중등부' : '';
 }
 
+// 날짜(일수) 기준으로 그 반의 오늘 출제 문항을 결정 (관리자 앱과 동일한 로직 — 문제은행을 순서대로 순환)
+function getTodaysConceptItems(className, allItems, dailyCounts){
+  if(!className) return [];
+  const classItems = (allItems || []).filter(i => i.className === className).sort((a,b) => a.id - b.id);
+  if(classItems.length === 0) return [];
+  const perDay = (dailyCounts && dailyCounts[className]) || 5;
+  const dayIndex = Math.floor(Date.now() / 86400000);
+  const total = classItems.length;
+  const startIdx = (dayIndex * perDay) % total;
+  const result = [];
+  for(let i = 0; i < Math.min(perDay, total); i++){
+    result.push(classItems[(startIdx + i) % total]);
+  }
+  return result;
+}
+
 // 구글시트에서 불러온 데이터가 정상인지 확인 (비어있거나 깨진 데이터를 실수로 덮어쓰지 않기 위한 안전장치)
 function assertDataLooksSane_(data){
   if(!data || typeof data !== 'object' || !Array.isArray(data.students)){
@@ -576,6 +592,13 @@ function renderReport(data, student){
   const studentHomework = (data.homeworkRecords || []).filter(h => h.studentId === student.id)
     .slice().sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 8);
 
+  // 오늘의 개념빈칸 문제 (반 기준으로 문제은행에서 자동 순환)
+  const todayIsoStr = `${y}-${String(mo + 1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const todaysConceptItems = getTodaysConceptItems(student.className, data.conceptBankItems || [], data.conceptDailyCounts || {});
+  const conceptRecordToday = (data.conceptTestRecords || []).find(r => r.studentId === student.id && r.date === todayIsoStr);
+  const recentConceptRecords = (data.conceptTestRecords || []).filter(r => r.studentId === student.id)
+    .slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 7);
+
   let nextExamInfo = null;
   const isMiddle = levelOf(student.grade) === '중등부';
   if(isMiddle && student.school){
@@ -631,6 +654,10 @@ function renderReport(data, student){
       alerts.push({ icon:'✏️', text:`아직 체크 안 한 숙제가 있어요: ${a.text}`, tab:'hw' });
     }
   });
+
+  if(todaysConceptItems.length > 0 && !conceptRecordToday){
+    alerts.push({ icon:'🧩', text:`오늘의 개념빈칸 테스트가 아직 안 끝났어요 (${todaysConceptItems.length}문제)`, tab:'hw' });
+  }
 
   const noticeHtml = alerts.length ? `
     <div class="notice-strip">
@@ -761,8 +788,44 @@ function renderReport(data, student){
     </div>
 
     <div id="tabpanel-hw" class="tab-panel">
+      <div class="section-card" id="conceptTestSection">
+        <div class="section-title"><span class="num">1</span>오늘의 개념빈칸 테스트</div>
+        ${todaysConceptItems.length === 0 ? `
+          <div class="report-empty">오늘은 출제된 문제가 없어요.</div>
+        ` : conceptRecordToday ? `
+          <p style="font-size:12.5px; color:var(--brand-dark); font-weight:700; margin:0 0 10px;">✅ 오늘 ${conceptRecordToday.correct}/${conceptRecordToday.total}문제 맞혔어요! 수고했어요.</p>
+          <ul class="report-list">
+            ${todaysConceptItems.map(item => {
+              const given = (conceptRecordToday.answers || {})[item.id] || '';
+              const correct = given.trim() === item.answer.trim();
+              return `<li style="background:${correct ? 'var(--brand-soft)' : 'var(--gold-soft)'};">${escapeHtml(item.question)} <span style="color:${correct ? 'var(--brand-dark)' : 'var(--gold)'}; font-weight:700;">${correct ? '✓' : `✗ 정답: ${escapeHtml(item.answer)}`}</span></li>`;
+            }).join('')}
+          </ul>
+        ` : `
+          <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 10px; font-weight:500;">빈칸에 답을 채우고 제출하면 바로 채점돼요. 매일 새로운 문제가 나와요!</p>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            ${todaysConceptItems.map(item => `
+              <div>
+                <div style="font-size:13px; font-weight:600; margin-bottom:5px;">${escapeHtml(item.question)}</div>
+                <input type="text" id="concept-answer-${item.id}" class="hw-self-input" style="margin-bottom:0;" placeholder="정답 입력">
+              </div>
+            `).join('')}
+          </div>
+          <button type="button" class="btn" style="margin-top:12px;" onclick="submitConceptTest(${student.id}, '${todayIsoStr}')">채점하기</button>
+        `}
+        <div class="msg-status" id="conceptTestStatus"></div>
+        ${recentConceptRecords.length > 0 ? `
+          <div style="margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);">
+            <div style="font-size:11.5px; color:var(--ink-soft); font-weight:700; margin-bottom:6px;">최근 기록</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              ${recentConceptRecords.map(r => `<span class="progress-pill">${r.date.slice(5).replace('-','/')} ${r.correct}/${r.total}</span>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+
       <div class="section-card" id="hwChecklistSection">
-        <div class="section-title"><span class="num">1</span>숙제 체크리스트${studentHomeworkAssignments.length ? ` · ${hwDone}/${hwTotal} 완료` : ''}</div>
+        <div class="section-title"><span class="num">2</span>숙제 체크리스트${studentHomeworkAssignments.length ? ` · ${hwDone}/${hwTotal} 완료` : ''}</div>
         <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 10px; font-weight:500;">선생님이 내주신 숙제예요. 다 풀었으면 체크해주세요!</p>
         <div id="hwChecklistArea">
           ${studentHomeworkAssignments.length === 0 ? `<div class="report-empty">지금 배정된 숙제가 없어요.</div>` : studentHomeworkAssignments.map(a => {
@@ -781,7 +844,7 @@ function renderReport(data, student){
       </div>
 
       <div class="section-card">
-        <div class="section-title"><span class="num">2</span>숙제 스스로 채점하기</div>
+        <div class="section-title"><span class="num">3</span>숙제 스스로 채점하기</div>
         <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 10px; font-weight:500;">오늘 푼 숙제를 직접 채점해서 선생님께 보내보세요!</p>
         <input type="date" id="hwSelfDate" class="hw-self-input" value="${todayIsoForInput}">
         <select id="hwSelfRange" class="hw-self-input" onchange="checkHwSelfAnswerKey()">
@@ -798,7 +861,7 @@ function renderReport(data, student){
       </div>
 
       <div class="section-card">
-        <div class="section-title"><span class="num">3</span>숙제 채점 결과</div>
+        <div class="section-title"><span class="num">4</span>숙제 채점 결과</div>
         ${studentHomework.length === 0
           ? `<div class="report-empty">기록된 숙제가 없어요.</div>`
           : `<ul class="report-list">${studentHomework.map(h => {
@@ -1043,6 +1106,59 @@ async function submitSelfHomework(studentId){
     cachedData = freshData;
     currentData = freshData;
     statusEl.textContent = `✅ 제출 완료! (${score}점)`;
+    showStudentReport(studentId);
+  } catch(err){
+    statusEl.textContent = '❌ 제출에 실패했어요. 잠시 후 다시 시도해주세요.';
+  }
+}
+
+async function submitConceptTest(studentId, dateIso){
+  const statusEl = document.getElementById('conceptTestStatus');
+  statusEl.textContent = '채점 중...';
+
+  try {
+    const freshRes = await fetch(SHEET_URL, { method:'GET' });
+    const freshData = await freshRes.json();
+    assertDataLooksSane_(freshData);
+
+    const s = (freshData.students || []).find(x => x.id === studentId);
+    if(!s){ statusEl.textContent = '❌ 학생 정보를 찾을 수 없어요.'; return; }
+
+    const items = getTodaysConceptItems(s.className, freshData.conceptBankItems || [], freshData.conceptDailyCounts || {});
+    if(items.length === 0){ statusEl.textContent = '오늘 출제된 문제가 없어요.'; return; }
+
+    freshData.conceptTestRecords = freshData.conceptTestRecords || [];
+    // 이미 오늘 제출했으면 중복 제출 방지
+    if(freshData.conceptTestRecords.some(r => r.studentId === studentId && r.date === dateIso)){
+      statusEl.textContent = '이미 오늘 제출했어요.';
+      cachedData = freshData; currentData = freshData;
+      showStudentReport(studentId);
+      return;
+    }
+
+    const answers = {};
+    let correct = 0;
+    items.forEach(item => {
+      const given = (document.getElementById(`concept-answer-${item.id}`) || {}).value || '';
+      answers[item.id] = given.trim();
+      if(given.trim() === item.answer.trim()) correct++;
+    });
+
+    const newId = freshData.conceptTestRecords.length ? Math.max(...freshData.conceptTestRecords.map(r => r.id || 0)) + 1 : 1;
+    freshData.conceptTestRecords.push({
+      id: newId, studentId, date: dateIso,
+      itemIds: items.map(i => i.id), answers, correct, total: items.length
+    });
+
+    await fetch(SHEET_URL, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    cachedData = freshData;
+    currentData = freshData;
+    statusEl.textContent = `✅ 채점 완료! ${correct}/${items.length}문제 맞혔어요.`;
     showStudentReport(studentId);
   } catch(err){
     statusEl.textContent = '❌ 제출에 실패했어요. 잠시 후 다시 시도해주세요.';
