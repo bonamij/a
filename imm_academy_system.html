@@ -3942,6 +3942,7 @@ function applyAllData(data){
     const brandEl = document.querySelector('.brand-title');
     if(brandEl) brandEl.textContent = data.academyName;
   }
+  updateAdminPushButtonState();
 }
 
 function exportBackup(){
@@ -4060,6 +4061,19 @@ function initFirebaseMessaging(){
   } catch(e){ /* 메시징 준비 전이면 무시 */ }
 }
 
+function updateAdminPushButtonState(){
+  const btn = document.getElementById('adminPushBtn');
+  const statusEl = document.getElementById('adminPushStatus');
+  if(!btn) return;
+  if(adminPushTokens && adminPushTokens.length > 0){
+    btn.textContent = `🔔 알림 켜짐 (${adminPushTokens.length}개 기기)`;
+    btn.classList.add('btn');
+    if(statusEl && !statusEl.textContent) statusEl.textContent = '이 브라우저에 처음 들어오셨거나 알림이 안 오면, 버튼을 다시 눌러 이 기기도 등록해주세요.';
+  } else {
+    btn.textContent = '🔔 알림 받기';
+  }
+}
+
 async function enableAdminPushNotifications(){
   const statusEl = document.getElementById('adminPushStatus');
   const btn = document.getElementById('adminPushBtn');
@@ -4103,7 +4117,8 @@ async function enableAdminPushNotifications(){
 
     adminPushTokens = freshData.adminPushTokens;
     if(statusEl) statusEl.textContent = '✅ 알림이 켜졌어요! 학부모 메시지가 오면 바로 알려드릴게요.';
-    if(btn){ btn.textContent = '🔔 알림 켜짐'; }
+    if(btn){ btn.disabled = false; }
+    updateAdminPushButtonState();
   } catch(err){
     if(statusEl) statusEl.textContent = '❌ 알림 설정에 실패했어요: ' + err.message;
     if(btn){ btn.disabled = false; btn.textContent = '🔔 알림 받기'; }
