@@ -2375,6 +2375,7 @@ async function addGeneralMakeup(e){
   try {
     const res = await fetch(sheetSyncUrl, { method:'GET' });
     const freshData = await res.json();
+    assertDataLooksSane_(freshData);
     freshData.generalMakeups = freshData.generalMakeups || [];
     const newId = freshData.generalMakeups.length ? Math.max(...freshData.generalMakeups.map(r => r.id || 0)) + 1 : 1;
     freshData.generalMakeups.push({ id: newId, date, reason, target, doneBy: [] });
@@ -2950,6 +2951,7 @@ async function addHomeworkAssignment(e){
   try {
     const res = await fetch(sheetSyncUrl, { method:'GET' });
     const freshData = await res.json();
+    assertDataLooksSane_(freshData);
     freshData.homeworkAssignments = freshData.homeworkAssignments || [];
     const newId = freshData.homeworkAssignments.length ? Math.max(...freshData.homeworkAssignments.map(a => a.id || 0)) + 1 : 1;
     freshData.homeworkAssignments.push({ id: newId, text, date, target, doneBy: [] });
@@ -4031,6 +4033,13 @@ function resetAllData(){
 ========================================================= */
 let sheetSyncUrl = '';
 try { sheetSyncUrl = localStorage.getItem('academySheetSyncUrl') || ''; } catch(err) { sheetSyncUrl = ''; }
+
+// 구글시트에서 불러온 데이터가 정상인지 확인 (비어있거나 깨진 데이터를 실수로 덮어쓰지 않기 위한 안전장치)
+function assertDataLooksSane_(data){
+  if(!data || typeof data !== 'object' || !Array.isArray(data.students)){
+    throw new Error('방금 불러온 데이터가 이상해서 안전하게 저장을 중단했어요. 잠시 후 다시 시도해주세요.');
+  }
+}
 let syncTimer = null;
 
 /* ⚙️ 파이어베이스 콘솔에서 복사한 값으로 바꿔주세요 (sw.js, parent_portal.html과 반드시 똑같아야 해요) */
@@ -4111,6 +4120,7 @@ async function enableAdminPushNotifications(){
 
     const freshRes = await fetch(sheetSyncUrl, { method:'GET' });
     const freshData = await freshRes.json();
+    assertDataLooksSane_(freshData);
     freshData.adminPushTokens = freshData.adminPushTokens || [];
     if(!freshData.adminPushTokens.includes(token)) freshData.adminPushTokens.push(token);
 

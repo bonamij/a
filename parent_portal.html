@@ -305,6 +305,7 @@ async function enablePushNotifications(studentId){
 
     const freshRes = await fetch(SHEET_URL, { method:'GET' });
     const freshData = await freshRes.json();
+    assertDataLooksSane_(freshData);
     const s = (freshData.students || []).find(x => x.id === studentId);
     if(s){
       s.pushTokens = s.pushTokens || [];
@@ -340,6 +341,13 @@ function escapeHtml(str){
 function levelOf(grade){
   if(!grade) return '';
   return grade.startsWith('초') ? '초등부' : grade.startsWith('중') ? '중등부' : '';
+}
+
+// 구글시트에서 불러온 데이터가 정상인지 확인 (비어있거나 깨진 데이터를 실수로 덮어쓰지 않기 위한 안전장치)
+function assertDataLooksSane_(data){
+  if(!data || typeof data !== 'object' || !Array.isArray(data.students)){
+    throw new Error('방금 불러온 데이터가 이상해서 안전하게 저장을 중단했어요. 잠시 후 다시 시도해주세요.');
+  }
 }
 
 async function fetchData(){
@@ -856,6 +864,7 @@ async function toggleHomeworkCheck(assignmentId, studentId, checked){
   try {
     const freshRes = await fetch(SHEET_URL, { method:'GET' });
     const freshData = await freshRes.json();
+    assertDataLooksSane_(freshData);
 
     freshData.homeworkAssignments = freshData.homeworkAssignments || [];
     const a = freshData.homeworkAssignments.find(x => x.id === assignmentId);
@@ -1019,6 +1028,7 @@ async function submitSelfHomework(studentId){
   try {
     const freshRes = await fetch(SHEET_URL, { method:'GET' });
     const freshData = await freshRes.json();
+    assertDataLooksSane_(freshData);
 
     freshData.homeworkRecords = freshData.homeworkRecords || [];
     const nextId = freshData.homeworkRecords.length ? Math.max(...freshData.homeworkRecords.map(h => h.id || 0)) + 1 : 1;
@@ -1054,6 +1064,7 @@ async function submitParentMessage(studentId){
   try {
     const freshRes = await fetch(SHEET_URL, { method:'GET' });
     const freshData = await freshRes.json();
+    assertDataLooksSane_(freshData);
 
     const student = (freshData.students || []).find(s => s.id === studentId);
 
