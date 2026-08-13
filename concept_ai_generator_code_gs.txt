@@ -1,0 +1,66 @@
+/* =========================================================
+   AI로 개념 사진 → 빈칸 객관식 문제 자동 생성
+   (Code.gs에 추가하세요. 기존 데일리테스트 사진분석과 같은
+    callGeminiWithRetry() 함수를 그대로 재사용해요.)
+========================================================= */
+
+function handleGenerateConceptQuestions(body) {
+  const images = body.images || [];
+  if (images.length === 0) {
+    return ContentService.createTextOutput(JSON.stringify({ error: '사진이 없어요.' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const promptText =
+    '너는 한국 중고등학교 수학 개념을 가르치는 선생님이야. ' +
+    '첨부된 사진에는 수학 개념 설명(정의, 성질, 공식 등)이 담겨 있어. ' +
+    '이 사진의 "개념"만 참고해서, 학생이 개념을 이해했는지 확인하는 ' +
+    '빈칸 채우기 객관식 문제를 최대한 많이(사진에 있는 개념 하나당 1~2개씩) 만들어줘.\n\n' +
+    '중요한 규칙:\n' +
+    '1. 사진 안에 있는 "확인 문제"나 "연습 문제"(구체적인 숫자나 도형이 있는 예제)는 ' +
+    '   그대로 베끼지 말고, 완전히 새로운 문제로 만들어. 개념/정의/공식 자체만 물어봐.\n' +
+    '2. 각 문제는 빈칸(___)이 하나 있는 짧은 문장이어야 해.\n' +
+    '3. 보기는 2개 또는 3개로 만들고, 그 중 정답은 하나만 있어야 해.\n' +
+    '4. 반드시 아래 JSON 형식으로만 응답해. 다른 설명은 절대 붙이지 마.\n\n' +
+    '{"questions":[{"question":"문제 텍스트 (___는 빈칸)","choices":["보기1","보기2","보기3"],"correctIndex":0}]}\n\n' +
+    '(correctIndex는 0부터 시작, 정답이 choices 배열의 몇 번째인지를 뜻해)';
+
+  const parts = [{ text: promptText }];
+  images.forEach(function (img) {
+    parts.push({ inline_data: { mime_type: img.mimeType || 'image/jpeg', data: img.data } });
+  });
+
+  const payload = {
+    contents: [{ parts: parts }],
+    generationConfig: { temperature: 0.4 }
+  };
+
+  try {
+    const responseText = callGeminiWithRetry(payload, 4);
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return ContentService.createTextOutput(JSON.stringify({ error: 'AI 응답에서 JSON을 못 찾았어요.', raw: responseText.slice(0, 500) }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    const parsed = JSON.parse(jsonMatch[0]);
+    return ContentService.createTextOutput(JSON.stringify(parsed))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ error: 'AI 분석 중 오류: ' + err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/*
+  doPost(e) 안에서, 기존에 이런 부분이 있을 거예요:
+
+    if (body.action === 'analyzeExam') {
+      return handleAnalyzeExam(body);
+    }
+
+  바로 아래에 이 부분을 추가해주세요:
+
+    if (body.action === 'generateConceptQuestions') {
+      return handleGenerateConceptQuestions(body);
+    }
+*/
