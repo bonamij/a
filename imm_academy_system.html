@@ -2338,7 +2338,7 @@ function refreshGeneralMakeupStudentSelect(){
   `).join('');
 }
 
-function addGeneralMakeup(e){
+async function addGeneralMakeup(e){
   e.preventDefault();
   const isClassMode = document.getElementById('gm-mode-class').classList.contains('active');
   const date = document.getElementById('gm-date').value;
@@ -2361,15 +2361,37 @@ function addGeneralMakeup(e){
     target = { type:'individual', studentIds };
   }
 
-  generalMakeups.push({ id: nextGeneralMakeupId++, date, reason, target, doneBy: [] });
-
   document.getElementById('gm-date').value = '';
   document.getElementById('gm-reason').value = '';
   document.querySelectorAll('.gm-student-check:checked').forEach(el => el.checked = false);
 
-  renderGeneralMakeupList();
-  renderDashboard();
-  scheduleSync();
+  if(!sheetSyncUrl){
+    generalMakeups.push({ id: nextGeneralMakeupId++, date, reason, target, doneBy: [] });
+    renderGeneralMakeupList();
+    renderDashboard();
+    return;
+  }
+
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    freshData.generalMakeups = freshData.generalMakeups || [];
+    const newId = freshData.generalMakeups.length ? Math.max(...freshData.generalMakeups.map(r => r.id || 0)) + 1 : 1;
+    freshData.generalMakeups.push({ id: newId, date, reason, target, doneBy: [] });
+
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    applyAllData(freshData);
+    renderStudents();
+    renderDashboard();
+    setSyncStatus(`✅ 보강이 등록되고 최신 데이터와 합쳐졌어요. (${new Date().toLocaleString('ko-KR')})`);
+  } catch(err){
+    alert('보강 등록 중 저장에 실패했어요. 인터넷 연결을 확인해주세요.');
+  }
 }
 
 function getGeneralMakeupTargetStudents(r){
@@ -2893,7 +2915,7 @@ function refreshHwaSelects(){
   `).join('');
 }
 
-function addHomeworkAssignment(e){
+async function addHomeworkAssignment(e){
   e.preventDefault();
   const isClassMode = document.getElementById('hwa-mode-class').classList.contains('active');
   const text = document.getElementById('hwa-text').value.trim();
@@ -2916,13 +2938,35 @@ function addHomeworkAssignment(e){
     target = { type:'individual', studentIds };
   }
 
-  homeworkAssignments.push({ id: nextHomeworkAssignmentId++, text, date, target, doneBy: [] });
-
   document.getElementById('hwa-text').value = '';
   document.querySelectorAll('.hwa-student-check:checked').forEach(el => el.checked = false);
 
-  renderHomeworkAssignments();
-  scheduleSync();
+  if(!sheetSyncUrl){
+    homeworkAssignments.push({ id: nextHomeworkAssignmentId++, text, date, target, doneBy: [] });
+    renderHomeworkAssignments();
+    return;
+  }
+
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    freshData.homeworkAssignments = freshData.homeworkAssignments || [];
+    const newId = freshData.homeworkAssignments.length ? Math.max(...freshData.homeworkAssignments.map(a => a.id || 0)) + 1 : 1;
+    freshData.homeworkAssignments.push({ id: newId, text, date, target, doneBy: [] });
+
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    applyAllData(freshData);
+    renderStudents();
+    renderDashboard();
+    setSyncStatus(`✅ 숙제가 배정되고 최신 데이터와 합쳐졌어요. (${new Date().toLocaleString('ko-KR')})`);
+  } catch(err){
+    alert('숙제 배정 중 저장에 실패했어요. 인터넷 연결을 확인해주세요.');
+  }
 }
 
 function deleteHomeworkAssignment(id){
@@ -4004,6 +4048,16 @@ function initFirebaseMessaging(){
   if(fcmInitialized) return;
   if(typeof firebase === 'undefined') return;
   try { firebase.initializeApp(FIREBASE_CONFIG); fcmInitialized = true; } catch(e){ fcmInitialized = true; }
+  // 화면(탭)을 보고 있는 상태에서도 알림이 뜨도록 (백그라운드는 sw.js가 처리)
+  try {
+    firebase.messaging().onMessage((payload) => {
+      const title = (payload.notification && payload.notification.title) || (payload.data && payload.data.title) || '아임수학학원';
+      const body = (payload.notification && payload.notification.body) || (payload.data && payload.data.body) || '';
+      if(Notification.permission === 'granted'){
+        new Notification(title, { body });
+      }
+    });
+  } catch(e){ /* 메시징 준비 전이면 무시 */ }
 }
 
 async function enableAdminPushNotifications(){
