@@ -206,6 +206,8 @@
     .wrap{ padding:24px 14px 50px; }
   }
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 </head>
 <body>
 
@@ -238,6 +240,78 @@
 <script>
 /* ⚙️ 학원 선생님만: 구글 Apps Script 웹 앱 URL을 여기에 넣어주세요 (관리자 앱의 '데이터 관리'에서 쓰신 것과 동일한 주소예요) */
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycby248HXB7pvkzJ1gBjmLux0myAH2otNNt2A4Vp0edu0HAW49W42-8-uJzN_aKnbP6Uf/exec';
+
+/* ⚙️ 학원 선생님만: 파이어베이스 콘솔에서 복사한 값으로 아래 6개를 바꿔주세요 (sw.js 안의 값과 반드시 똑같아야 해요) */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA_eKm80oZKPrZM2Nc7KH28U9xFAfGyydY",
+  authDomain: "im-math.firebaseapp.com",
+  projectId: "im-math",
+  storageBucket: "im-math.firebasestorage.app",
+  messagingSenderId: "553499784115",
+  appId: "1:553499784115:web:eb72ca41f0c206c0b551c6"
+};
+const FIREBASE_VAPID_KEY = "BL_9SWjFCwr66J7O_pN7cpJWnL4TNJpgfNnOqmYivxjNNIIoQyOvQ7ou0UgcgHBtXsMy6lsOkaGqosfR1a1m0qQ";
+
+let fcmInitialized = false;
+function initFirebaseMessaging(){
+  if(fcmInitialized) return;
+  if(typeof firebase === 'undefined') return;
+  try { firebase.initializeApp(FIREBASE_CONFIG); fcmInitialized = true; } catch(e){ /* 이미 초기화된 경우 */ fcmInitialized = true; }
+}
+
+async function enablePushNotifications(studentId){
+  const statusEl = document.getElementById('pushStatus');
+  const btn = document.getElementById('pushBtn');
+
+  if(FIREBASE_CONFIG.apiKey.startsWith('REPLACE_ME')){
+    if(statusEl) statusEl.textContent = '아직 알림 기능이 설정되지 않았어요. (선생님께 문의해주세요)';
+    return;
+  }
+  if(!('serviceWorker' in navigator) || !('PushManager' in window) || typeof firebase === 'undefined'){
+    if(statusEl) statusEl.textContent = '이 브라우저는 알림 기능을 지원하지 않아요.';
+    return;
+  }
+
+  if(btn){ btn.disabled = true; btn.textContent = '설정 중...'; }
+  if(statusEl) statusEl.textContent = '';
+
+  try {
+    initFirebaseMessaging();
+    const permission = await Notification.requestPermission();
+    if(permission !== 'granted'){
+      if(statusEl) statusEl.textContent = '알림 권한이 거부됐어요. 브라우저 설정에서 이 사이트의 알림을 허용해주세요.';
+      if(btn){ btn.disabled = false; btn.textContent = '🔔 알림 받기'; }
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.register('./sw.js');
+    const messaging = firebase.messaging();
+    const token = await messaging.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: registration });
+
+    const freshRes = await fetch(SHEET_URL, { method:'GET' });
+    const freshData = await freshRes.json();
+    const s = (freshData.students || []).find(x => x.id === studentId);
+    if(s){
+      s.pushTokens = s.pushTokens || [];
+      if(!s.pushTokens.includes(token)) s.pushTokens.push(token);
+    }
+
+    await fetch(SHEET_URL, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    cachedData = freshData;
+    currentData = freshData;
+    if(statusEl) statusEl.textContent = '✅ 알림이 켜졌어요! 숙제·보강 소식이 오면 바로 알려드릴게요.';
+    if(btn){ btn.textContent = '🔔 알림 켜짐'; }
+  } catch(err){
+    if(statusEl) statusEl.textContent = '❌ 알림 설정에 실패했어요: ' + err.message;
+    if(btn){ btn.disabled = false; btn.textContent = '🔔 알림 받기'; }
+  }
+}
+
 
 let cachedData = null;
 let currentData = null;
@@ -568,6 +642,10 @@ function renderReport(data, student){
         <div class="issue-date">조회일<br>${todayStr}</div>
       </div>
       ${siblingTabsHtml}
+      <div style="margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);">
+        <button type="button" id="pushBtn" class="btn ghost" style="margin-top:0; width:auto; padding:8px 16px; font-size:12.5px;" onclick="enablePushNotifications(${student.id})">🔔 알림 받기</button>
+        <div class="msg-status" id="pushStatus" style="margin-top:6px;"></div>
+      </div>
     </div>
 
     ${noticeHtml}

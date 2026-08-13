@@ -382,6 +382,8 @@
     .dash-grid{grid-template-columns:repeat(2,1fr);}
   }
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 </head>
 <body>
 
@@ -1306,6 +1308,17 @@ function getDataSheet() {
       <div class="card">
         <div class="card-head">
           <div>
+            <h3>🔔 브라우저 알림</h3>
+            <div class="sub">학부모가 메시지를 남기면 이 브라우저로 알림이 와요. (파이어베이스 설정이 먼저 필요해요 — 코드 안 FIREBASE_CONFIG 참고)</div>
+          </div>
+        </div>
+        <button type="button" class="btn" id="adminPushBtn" onclick="enableAdminPushNotifications()">🔔 알림 받기</button>
+        <div id="adminPushStatus" style="margin-top:10px; font-size:13px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
             <h3>데이터 백업</h3>
             <div class="sub">버튼을 누르면 지금까지 입력한 모든 데이터(학생·진도·출결·보강·데일리테스트·숙제·오답·리포트 코멘트·중등부 정보)가 파일 하나로 저장돼요. 이 파일을 컴퓨터에 잘 보관해주세요.</div>
           </div>
@@ -1385,6 +1398,8 @@ let nextAttendanceId = 1;
 
 let generalMakeups = [];
 let nextGeneralMakeupId = 1;
+
+let adminPushTokens = [];
 const ATT_STATUSES = [
   { key:'출석', cls:'present' },
   { key:'지각', cls:'late' },
@@ -3833,6 +3848,7 @@ function collectAllData(){
     progressLogs, nextProgressId,
     attendanceRecords, nextAttendanceId,
     generalMakeups, nextGeneralMakeupId,
+    adminPushTokens,
     dailyTests, nextDailyId,
     homeworkAssignments, nextHomeworkAssignmentId,
     answerKeys, nextAnswerKeyId,
@@ -3858,6 +3874,7 @@ function applyAllData(data){
   nextAttendanceId = data.nextAttendanceId || maxId(attendanceRecords);
   generalMakeups = data.generalMakeups || [];
   nextGeneralMakeupId = data.nextGeneralMakeupId || maxId(generalMakeups);
+  adminPushTokens = data.adminPushTokens || [];
   dailyTests = data.dailyTests || [];
   nextDailyId = data.nextDailyId || maxId(dailyTests);
   homeworkAssignments = data.homeworkAssignments || [];
@@ -3970,6 +3987,74 @@ function resetAllData(){
 let sheetSyncUrl = '';
 try { sheetSyncUrl = localStorage.getItem('academySheetSyncUrl') || ''; } catch(err) { sheetSyncUrl = ''; }
 let syncTimer = null;
+
+/* ⚙️ 파이어베이스 콘솔에서 복사한 값으로 바꿔주세요 (sw.js, parent_portal.html과 반드시 똑같아야 해요) */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA_eKm80oZKPrZM2Nc7KH28U9xFAfGyydY",
+  authDomain: "im-math.firebaseapp.com",
+  projectId: "im-math",
+  storageBucket: "im-math.firebasestorage.app",
+  messagingSenderId: "553499784115",
+  appId: "1:553499784115:web:eb72ca41f0c206c0b551c6"
+};
+const FIREBASE_VAPID_KEY = "BL_9SWjFCwr66J7O_pN7cpJWnL4TNJpgfNnOqmYivxjNNIIoQyOvQ7ou0UgcgHBtXsMy6lsOkaGqosfR1a1m0qQ";
+
+let fcmInitialized = false;
+function initFirebaseMessaging(){
+  if(fcmInitialized) return;
+  if(typeof firebase === 'undefined') return;
+  try { firebase.initializeApp(FIREBASE_CONFIG); fcmInitialized = true; } catch(e){ fcmInitialized = true; }
+}
+
+async function enableAdminPushNotifications(){
+  const statusEl = document.getElementById('adminPushStatus');
+  const btn = document.getElementById('adminPushBtn');
+
+  if(!sheetSyncUrl){ alert('먼저 구글시트 연동을 설정해주세요.'); return; }
+  if(FIREBASE_CONFIG.apiKey.startsWith('REPLACE_ME')){
+    if(statusEl) statusEl.textContent = '아직 파이어베이스 설정값이 입력 안 됐어요. (코드 안 FIREBASE_CONFIG를 채워주세요)';
+    return;
+  }
+  if(!('serviceWorker' in navigator) || !('PushManager' in window) || typeof firebase === 'undefined'){
+    if(statusEl) statusEl.textContent = '이 브라우저는 알림 기능을 지원하지 않아요.';
+    return;
+  }
+
+  if(btn){ btn.disabled = true; btn.textContent = '설정 중...'; }
+  if(statusEl) statusEl.textContent = '';
+
+  try {
+    initFirebaseMessaging();
+    const permission = await Notification.requestPermission();
+    if(permission !== 'granted'){
+      if(statusEl) statusEl.textContent = '알림 권한이 거부됐어요. 브라우저 설정에서 이 사이트의 알림을 허용해주세요.';
+      if(btn){ btn.disabled = false; btn.textContent = '🔔 알림 받기'; }
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.register('./sw.js');
+    const messaging = firebase.messaging();
+    const token = await messaging.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: registration });
+
+    const freshRes = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await freshRes.json();
+    freshData.adminPushTokens = freshData.adminPushTokens || [];
+    if(!freshData.adminPushTokens.includes(token)) freshData.adminPushTokens.push(token);
+
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    adminPushTokens = freshData.adminPushTokens;
+    if(statusEl) statusEl.textContent = '✅ 알림이 켜졌어요! 학부모 메시지가 오면 바로 알려드릴게요.';
+    if(btn){ btn.textContent = '🔔 알림 켜짐'; }
+  } catch(err){
+    if(statusEl) statusEl.textContent = '❌ 알림 설정에 실패했어요: ' + err.message;
+    if(btn){ btn.disabled = false; btn.textContent = '🔔 알림 받기'; }
+  }
+}
 
 function setSyncStatus(text){
   const el = document.getElementById('sheetSyncStatus');
