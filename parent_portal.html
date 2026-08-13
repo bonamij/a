@@ -257,16 +257,19 @@ function initFirebaseMessaging(){
   if(fcmInitialized) return;
   if(typeof firebase === 'undefined') return;
   try { firebase.initializeApp(FIREBASE_CONFIG); fcmInitialized = true; } catch(e){ /* 이미 초기화된 경우 */ fcmInitialized = true; }
+}
+
+function setupForegroundNotifications_(messaging){
   // 화면(탭)을 보고 있는 상태에서도 알림이 뜨도록 (백그라운드는 sw.js가 처리)
   try {
-    firebase.messaging().onMessage((payload) => {
+    messaging.onMessage((payload) => {
       const title = (payload.notification && payload.notification.title) || (payload.data && payload.data.title) || '아임수학학원';
       const body = (payload.notification && payload.notification.body) || (payload.data && payload.data.body) || '';
       if(Notification.permission === 'granted'){
         new Notification(title, { body });
       }
     });
-  } catch(e){ /* 메시징 준비 전이면 무시 */ }
+  } catch(e){ /* 사파리 등에서 실패해도 나머지 기능엔 영향 없음 */ }
 }
 
 async function enablePushNotifications(studentId){
@@ -278,7 +281,7 @@ async function enablePushNotifications(studentId){
     return;
   }
   if(!('serviceWorker' in navigator) || !('PushManager' in window) || typeof firebase === 'undefined'){
-    if(statusEl) statusEl.textContent = '이 브라우저는 알림 기능을 지원하지 않아요.';
+    if(statusEl) statusEl.textContent = '이 브라우저는 알림 기능을 지원하지 않아요. (아이폰은 사파리로 홈 화면에 추가한 뒤, 그 아이콘으로 열어야 알림이 지원돼요)';
     return;
   }
 
@@ -295,7 +298,9 @@ async function enablePushNotifications(studentId){
     }
 
     const registration = await navigator.serviceWorker.register('./sw.js');
+    await navigator.serviceWorker.ready;
     const messaging = firebase.messaging();
+    setupForegroundNotifications_(messaging);
     const token = await messaging.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: registration });
 
     const freshRes = await fetch(SHEET_URL, { method:'GET' });
