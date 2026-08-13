@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>개념빈칸 테스트 미리보기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Serif+KR:wght@700&family=Noto+Sans+KR:wght@400;500;700&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#F2701C; --brand-dark:#C85812; --brand-soft:rgba(242,113,28,0.12);
+    --cream:#F6F1E7; --cream-alt:#EFE7D6;
+    --ink:#2B2118; --ink-soft:#6B5A47;
+    --line:#DCCFB6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--cream); color:var(--ink); min-height:100vh;
+    font-family:'Noto Sans KR',sans-serif;
+    display:flex; justify-content:center; padding:28px 14px;
+  }
+  .sheet{ width:100%; max-width:460px; }
+  .note{ text-align:center; font-size:11px; letter-spacing:1px; color:var(--ink-soft); text-transform:uppercase; margin-bottom:14px; font-weight:700; }
+  .section-card{ background:#fff; border:1px solid var(--line); border-radius:6px; padding:20px; }
+  .section-title{ font-family:'Noto Serif KR',serif; font-size:15px; font-weight:700; margin-bottom:6px; }
+  .desc{ font-size:12.5px; color:var(--ink-soft); margin:0 0 16px; font-weight:500; }
+  .qbox{ margin-bottom:18px; }
+  .qtext{ font-size:13.5px; font-weight:600; margin-bottom:9px; }
+  .choices{ display:flex; flex-wrap:wrap; gap:8px; }
+  .concept-choice-btn{
+    padding:9px 16px; border-radius:8px; border:1.5px solid var(--line); background:#fff;
+    font-family:'Noto Sans KR',sans-serif; font-size:13px; font-weight:600; color:var(--ink); cursor:pointer;
+    transition:all .15s;
+  }
+  .concept-choice-btn:hover:not(:disabled){ border-color:var(--brand); }
+  .concept-choice-btn:disabled{ cursor:default; }
+  .concept-choice-btn.correct{ color:#DC2626; border-color:#DC2626; background:rgba(220,38,38,0.08); font-weight:800; }
+  .concept-choice-btn.wrong{ color:#2563EB; border-color:#2563EB; background:rgba(37,99,235,0.08); }
+  .status{ font-size:12.5px; color:var(--ink-soft); font-weight:600; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line); }
+  .status.done{ color:var(--brand-dark); }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="note">학생이 실제로 보는 화면 미리보기 (샘플 4문제)</div>
+  <div class="section-card">
+    <div class="section-title">오늘의 개념빈칸 테스트</div>
+    <p class="desc">보기 중에서 답을 골라 클릭하면 바로 채점돼요. 매일 새로운 문제가 나와요!</p>
+    <div id="quiz"></div>
+    <div class="status" id="status">0 / 4문제 완료</div>
+  </div>
+</div>
+
+<script>
+const items = [
+  { id:1, q:'한 도형을 일정한 비율로 확대하거나 축소한 도형이 다른 도형과 합동일 때, 이 두 도형은 서로 ___ 관계에 있다고 한다.', choices:['합동','닮음','대칭'], correct:1 },
+  { id:2, q:'서로 닮은 두 평면도형에서 대응변의 길이의 비는 ___.', choices:['항상 다르다','일정하다(같다)','항상 0이다'], correct:1 },
+  { id:3, q:'닮음비가 m:n인 두 평면도형의 넓이의 비는 ___이다.', choices:['m:n','m²:n²','m³:n³'], correct:1 },
+  { id:4, q:'닮음비가 m:n인 두 입체도형의 부피의 비는 ___이다.', choices:['m:n','m²:n²','m³:n³'], correct:2 }
+];
+
+const quizEl = document.getElementById('quiz');
+const statusEl = document.getElementById('status');
+let answeredCount = 0;
+
+quizEl.innerHTML = items.map(item => `
+  <div class="qbox">
+    <div class="qtext">${item.q}</div>
+    <div class="choices">
+      ${item.choices.map((c, idx) => `<button type="button" class="concept-choice-btn" data-item="${item.id}" data-choice="${idx}" onclick="pick(${item.id}, ${idx}, ${item.correct})">${c}</button>`).join('')}
+    </div>
+  </div>
+`).join('');
+
+function pick(itemId, choiceIdx, correctIdx){
+  const btns = document.querySelectorAll(`.concept-choice-btn[data-item="${itemId}"]`);
+  if(btns[0].disabled) return;
+  btns.forEach(btn => {
+    const idx = Number(btn.dataset.choice);
+    btn.disabled = true;
+    if(idx === correctIdx) btn.classList.add('correct');
+    else if(idx === choiceIdx) btn.classList.add('wrong');
+  });
+  answeredCount++;
+  statusEl.textContent = `${answeredCount} / ${items.length}문제 완료`;
+  if(answeredCount === items.length){
+    statusEl.textContent = `✅ 오늘 ${items.length}/${items.length}문제 완료! (실제로는 정답 개수가 채점돼요)`;
+    statusEl.classList.add('done');
+  }
+}
+</script>
+</body>
+</html>

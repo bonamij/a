@@ -200,6 +200,16 @@
   .ak-input-row input{ flex:1; margin-bottom:0; }
   .progress-pill{ display:inline-block; background:var(--cream-alt); border-radius:20px; padding:6px 14px; font-size:12.5px; font-weight:700; color:var(--ink-soft); }
 
+  .concept-choice-btn{
+    padding:9px 16px; border-radius:8px; border:1.5px solid var(--line); background:#fff;
+    font-family:'Noto Sans KR',sans-serif; font-size:13px; font-weight:600; color:var(--ink); cursor:pointer;
+    transition:all .15s;
+  }
+  .concept-choice-btn:hover:not(:disabled){ border-color:var(--brand); }
+  .concept-choice-btn:disabled{ cursor:default; }
+  .concept-choice-btn.concept-correct{ color:#DC2626; border-color:#DC2626; background:rgba(220,38,38,0.08); font-weight:800; }
+  .concept-choice-btn.concept-wrong{ color:#2563EB; border-color:#2563EB; background:rgba(37,99,235,0.08); }
+
   .loading{ text-align:center; padding:40px 0; color:var(--ink-soft); font-weight:500; }
 
   @media (max-width:480px){
@@ -796,22 +806,27 @@ function renderReport(data, student){
           <p style="font-size:12.5px; color:var(--brand-dark); font-weight:700; margin:0 0 10px;">✅ 오늘 ${conceptRecordToday.correct}/${conceptRecordToday.total}문제 맞혔어요! 수고했어요.</p>
           <ul class="report-list">
             ${todaysConceptItems.map(item => {
-              const given = (conceptRecordToday.answers || {})[item.id] || '';
-              const correct = given.trim() === item.answer.trim();
-              return `<li style="background:${correct ? 'var(--brand-soft)' : 'var(--gold-soft)'};">${escapeHtml(item.question)} <span style="color:${correct ? 'var(--brand-dark)' : 'var(--gold)'}; font-weight:700;">${correct ? '✓' : `✗ 정답: ${escapeHtml(item.answer)}`}</span></li>`;
+              const givenIdx = (conceptRecordToday.answers || {})[item.id];
+              const correct = givenIdx === item.correctIndex;
+              const givenText = item.choices[givenIdx] !== undefined ? item.choices[givenIdx] : '(미응답)';
+              return `<li style="background:${correct ? 'var(--brand-soft)' : 'var(--gold-soft)'};">${escapeHtml(item.question)} — 선택: ${escapeHtml(givenText)} <span style="color:${correct ? '#DC2626' : '#2563EB'}; font-weight:${correct ? '800' : '700'};">${correct ? '✓' : `✗ 정답: ${escapeHtml(item.choices[item.correctIndex])}`}</span></li>`;
             }).join('')}
           </ul>
         ` : `
-          <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 10px; font-weight:500;">빈칸에 답을 채우고 제출하면 바로 채점돼요. 매일 새로운 문제가 나와요!</p>
-          <div style="display:flex; flex-direction:column; gap:10px;">
+          <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 10px; font-weight:500;">보기 중에서 답을 골라 클릭하면 바로 채점돼요. 매일 새로운 문제가 나와요!</p>
+          <div style="display:flex; flex-direction:column; gap:16px;">
             ${todaysConceptItems.map(item => `
               <div>
-                <div style="font-size:13px; font-weight:600; margin-bottom:5px;">${escapeHtml(item.question)}</div>
-                <input type="text" id="concept-answer-${item.id}" class="hw-self-input" style="margin-bottom:0;" placeholder="정답 입력">
+                <div style="font-size:13px; font-weight:600; margin-bottom:8px;">${escapeHtml(item.question)}</div>
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                  ${item.choices.map((choice, idx) => `
+                    <button type="button" class="concept-choice-btn" data-item="${item.id}" data-choice="${idx}"
+                      onclick="selectConceptChoice(${item.id}, ${idx}, ${item.correctIndex}, ${student.id}, '${todayIsoStr}', ${todaysConceptItems.length})">${escapeHtml(choice)}</button>
+                  `).join('')}
+                </div>
               </div>
             `).join('')}
           </div>
-          <button type="button" class="btn" style="margin-top:12px;" onclick="submitConceptTest(${student.id}, '${todayIsoStr}')">채점하기</button>
         `}
         <div class="msg-status" id="conceptTestStatus"></div>
         ${recentConceptRecords.length > 0 ? `
@@ -1112,9 +1127,29 @@ async function submitSelfHomework(studentId){
   }
 }
 
+let conceptAnswersInProgress = {};
+
+function selectConceptChoice(itemId, choiceIndex, correctIndex, studentId, dateIso, totalItems){
+  if(conceptAnswersInProgress[itemId] !== undefined) return; // 이미 답한 문항이면 무시 (한 번 고르면 고정)
+  conceptAnswersInProgress[itemId] = choiceIndex;
+
+  const btns = document.querySelectorAll(`.concept-choice-btn[data-item="${itemId}"]`);
+  btns.forEach(btn => {
+    const idx = Number(btn.dataset.choice);
+    btn.disabled = true;
+    if(idx === correctIndex) btn.classList.add('concept-correct');
+    else if(idx === choiceIndex) btn.classList.add('concept-wrong');
+  });
+
+  const answeredCount = Object.keys(conceptAnswersInProgress).length;
+  if(answeredCount >= totalItems){
+    submitConceptTest(studentId, dateIso);
+  }
+}
+
 async function submitConceptTest(studentId, dateIso){
   const statusEl = document.getElementById('conceptTestStatus');
-  statusEl.textContent = '채점 중...';
+  if(statusEl) statusEl.textContent = '채점 중...';
 
   try {
     const freshRes = await fetch(SHEET_URL, { method:'GET' });
@@ -1122,15 +1157,15 @@ async function submitConceptTest(studentId, dateIso){
     assertDataLooksSane_(freshData);
 
     const s = (freshData.students || []).find(x => x.id === studentId);
-    if(!s){ statusEl.textContent = '❌ 학생 정보를 찾을 수 없어요.'; return; }
+    if(!s){ if(statusEl) statusEl.textContent = '❌ 학생 정보를 찾을 수 없어요.'; return; }
 
     const items = getTodaysConceptItems(s.className, freshData.conceptBankItems || [], freshData.conceptDailyCounts || {});
-    if(items.length === 0){ statusEl.textContent = '오늘 출제된 문제가 없어요.'; return; }
+    if(items.length === 0){ if(statusEl) statusEl.textContent = '오늘 출제된 문제가 없어요.'; return; }
 
     freshData.conceptTestRecords = freshData.conceptTestRecords || [];
     // 이미 오늘 제출했으면 중복 제출 방지
     if(freshData.conceptTestRecords.some(r => r.studentId === studentId && r.date === dateIso)){
-      statusEl.textContent = '이미 오늘 제출했어요.';
+      conceptAnswersInProgress = {};
       cachedData = freshData; currentData = freshData;
       showStudentReport(studentId);
       return;
@@ -1139,9 +1174,9 @@ async function submitConceptTest(studentId, dateIso){
     const answers = {};
     let correct = 0;
     items.forEach(item => {
-      const given = (document.getElementById(`concept-answer-${item.id}`) || {}).value || '';
-      answers[item.id] = given.trim();
-      if(given.trim() === item.answer.trim()) correct++;
+      const chosenIdx = conceptAnswersInProgress[item.id];
+      answers[item.id] = chosenIdx;
+      if(chosenIdx === item.correctIndex) correct++;
     });
 
     const newId = freshData.conceptTestRecords.length ? Math.max(...freshData.conceptTestRecords.map(r => r.id || 0)) + 1 : 1;
@@ -1156,9 +1191,10 @@ async function submitConceptTest(studentId, dateIso){
       body: JSON.stringify(freshData)
     });
 
+    conceptAnswersInProgress = {};
     cachedData = freshData;
     currentData = freshData;
-    statusEl.textContent = `✅ 채점 완료! ${correct}/${items.length}문제 맞혔어요.`;
+    if(statusEl) statusEl.textContent = `✅ 채점 완료! ${correct}/${items.length}문제 맞혔어요.`;
     showStudentReport(studentId);
   } catch(err){
     statusEl.textContent = '❌ 제출에 실패했어요. 잠시 후 다시 시도해주세요.';
