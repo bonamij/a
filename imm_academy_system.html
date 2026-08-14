@@ -4491,6 +4491,7 @@ function assertDataLooksSane_(data){
   }
 }
 let syncTimer = null;
+let syncRetryTimer = null;
 
 /* ⚙️ 파이어베이스 콘솔에서 복사한 값으로 바꿔주세요 (sw.js, parent_portal.html과 반드시 똑같아야 해요) */
 const FIREBASE_CONFIG = {
@@ -4658,9 +4659,90 @@ function scheduleSync(){
   syncTimer = setTimeout(syncToSheet, 900);
 }
 
+// 배열을 id(또는 내용) 기준으로 합쳐요. 같은 id면 로컬(방금 수정한 것) 쪽을 우선하고,
+// 로컬에 없는데 시트(다른 기기)에만 있는 항목은 살려서 합쳐요.
+function mergeArrays_(freshArr, localArr){
+  const freshArr2 = Array.isArray(freshArr) ? freshArr : [];
+  const localArr2 = Array.isArray(localArr) ? localArr : [];
+  const keyOf = x => (x && typeof x === 'object' && 'id' in x) ? ('id:' + x.id) : JSON.stringify(x);
+  const localKeys = new Set(localArr2.map(keyOf));
+  const onlyInFresh = freshArr2.filter(x => !localKeys.has(keyOf(x)));
+  return [...localArr2, ...onlyInFresh];
+}
+
+function mergeObjectKeys_(freshObj, localObj){
+  return { ...(freshObj || {}), ...(localObj || {}) };
+}
+
 async function syncToSheet(){
   if(!sheetSyncUrl) return;
   try {
+    // 저장하기 직전에, 다른 기기/탭에서 먼저 추가해둔 게 있으면 조용히 자동으로 합쳐요.
+    let freshCheck = null;
+    try {
+      const checkRes = await fetch(sheetSyncUrl, { method:'GET' });
+      freshCheck = await checkRes.json();
+    } catch(checkErr){ freshCheck = null; }
+
+    // ⚠️ 매우 중요한 안전장치: 구글시트 상태를 확인 못 했으면(응답 이상, 네트워크 문제 등)
+    // 절대로 저장을 진행하지 않아요. 지금 이 화면 내용이 오래된/불완전한 상태일 수 있는데,
+    // 그걸 그대로 저장해버리면 다른 기기에 있던 데이터가 통째로 사라질 수 있기 때문이에요.
+    // "확인이 안 되면 저장하지 않는다"가 제일 안전한 원칙이라, 이번 저장은 건너뛰고
+    // 몇 초 후에 자동으로 다시 시도해요.
+    if(!freshCheck || !Array.isArray(freshCheck.students)){
+      setSyncStatus('⚠️ 구글시트 상태를 확인하지 못해서 이번 저장은 건너뛰었어요(안전을 위해서예요). 잠시 후 자동으로 다시 시도할게요.');
+      clearTimeout(syncRetryTimer);
+      syncRetryTimer = setTimeout(syncToSheet, 4000);
+      return;
+    }
+
+    students = mergeArrays_(freshCheck.students, students);
+    withdrawnStudents = mergeArrays_(freshCheck.withdrawnStudents, withdrawnStudents);
+    progressLogs = mergeArrays_(freshCheck.progressLogs, progressLogs);
+    attendanceRecords = mergeArrays_(freshCheck.attendanceRecords, attendanceRecords);
+    generalMakeups = mergeArrays_(freshCheck.generalMakeups, generalMakeups);
+    adminPushTokens = mergeArrays_(freshCheck.adminPushTokens, adminPushTokens);
+    conceptBankItems = mergeArrays_(freshCheck.conceptBankItems, conceptBankItems);
+    conceptTestRecords = mergeArrays_(freshCheck.conceptTestRecords, conceptTestRecords);
+    dailyTests = mergeArrays_(freshCheck.dailyTests, dailyTests);
+    homeworkAssignments = mergeArrays_(freshCheck.homeworkAssignments, homeworkAssignments);
+    answerKeys = mergeArrays_(freshCheck.answerKeys, answerKeys);
+    homeworkRecords = mergeArrays_(freshCheck.homeworkRecords, homeworkRecords);
+    mistakeRecords = mergeArrays_(freshCheck.mistakeRecords, mistakeRecords);
+    schoolInfos = mergeArrays_(freshCheck.schoolInfos, schoolInfos);
+    examAnalysis = mergeArrays_(freshCheck.examAnalysis, examAnalysis);
+    parentMessages = mergeArrays_(freshCheck.parentMessages, parentMessages);
+    scheduleItems = mergeArrays_(freshCheck.scheduleItems, scheduleItems);
+
+    teacherComments = mergeObjectKeys_(freshCheck.teacherComments, teacherComments);
+    conceptDailyCounts = mergeObjectKeys_(freshCheck.conceptDailyCounts, conceptDailyCounts);
+
+    const maxOf = (a, b) => Math.max(a || 1, b || 1);
+    nextStudentId = maxOf(nextStudentId, freshCheck.nextStudentId);
+    nextProgressId = maxOf(nextProgressId, freshCheck.nextProgressId);
+    nextAttendanceId = maxOf(nextAttendanceId, freshCheck.nextAttendanceId);
+    nextGeneralMakeupId = maxOf(nextGeneralMakeupId, freshCheck.nextGeneralMakeupId);
+    nextConceptItemId = maxOf(nextConceptItemId, freshCheck.nextConceptItemId);
+    nextConceptRecordId = maxOf(nextConceptRecordId, freshCheck.nextConceptRecordId);
+    nextDailyId = maxOf(nextDailyId, freshCheck.nextDailyId);
+    nextHomeworkAssignmentId = maxOf(nextHomeworkAssignmentId, freshCheck.nextHomeworkAssignmentId);
+    nextAnswerKeyId = maxOf(nextAnswerKeyId, freshCheck.nextAnswerKeyId);
+    nextHomeworkId = maxOf(nextHomeworkId, freshCheck.nextHomeworkId);
+    nextMistakeId = maxOf(nextMistakeId, freshCheck.nextMistakeId);
+    nextSchoolInfoId = maxOf(nextSchoolInfoId, freshCheck.nextSchoolInfoId);
+    nextExamId = maxOf(nextExamId, freshCheck.nextExamId);
+    nextScheduleId = maxOf(nextScheduleId, freshCheck.nextScheduleId);
+
+    renderStudents();
+    renderDashboard();
+
+    // 저장 직전 마지막 확인: 병합 후에도 학생 수가 이상하게 줄어들면(있을 수 없는 일이지만 만약을 위해)
+    // 절대 저장하지 않고 멈춰요.
+    if(freshCheck.students.length > 0 && students.length === 0){
+      setSyncStatus('🛑 저장을 안전하게 중단했어요 (학생 데이터 이상 감지). 새로고침 후 다시 시도해주세요.');
+      return;
+    }
+
     await fetch(sheetSyncUrl, {
       method:'POST',
       headers: { 'Content-Type':'text/plain' },
