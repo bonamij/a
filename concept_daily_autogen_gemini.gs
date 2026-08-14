@@ -27,11 +27,12 @@
 
 const CONCEPT_AUTOGEN_CONFIG = {
   SHEET_URL: 'https://script.google.com/macros/s/여기에_실제_URL_붙여넣기/exec',
-  QUESTIONS_PER_CLASS: 3,
+  QUESTIONS_PER_CLASS: 5,
 };
 
 /**
- * 반별 개념 요약 (중2-2 개념노트 기반)
+ * 반별 개념 요약 — 이제 관리자 앱의 "커리큘럼 단원 관리"에서 반마다 단원을 체크해두면
+ * 그걸 우선 사용해요. 이건 아직 설정을 안 한 반이 있을 때 쓰이는 "기본값"이에요.
  * 여기 없는 반(className)은 자동으로 건너뜁니다.
  * 학년/교재가 바뀌면 이 부분만 갱신하면 돼요.
  */
@@ -83,7 +84,7 @@ function generateDailyConceptQuestions(){
         ...(data.conceptBankItems || []).filter(i => i.className === className),
         ...(data.conceptDraftItems || []).filter(i => i.className === className)
       ];
-      const newItems = generateConceptQuestionsForClass_(className, existing);
+      const newItems = generateConceptQuestionsForClass_(className, existing, data.conceptCurriculumUnits || []);
 
       newItems.forEach(item => {
         data.conceptDraftItems.push({
@@ -183,13 +184,21 @@ function getActiveConceptClassNames_(data){
 }
 
 /** 기존 callGeminiWithRetry()를 그대로 재사용해서 문제를 생성해요 (텍스트만 필요, 사진 없음) */
-function generateConceptQuestionsForClass_(className, existingItems){
+function generateConceptQuestionsForClass_(className, existingItems, curriculumUnitsFromApp){
   if(typeof callGeminiWithRetry !== 'function'){
     throw new Error('callGeminiWithRetry 함수를 찾을 수 없어요. 기존 Code.gs와 같은 프로젝트에 있는지 확인해주세요.');
   }
 
   const existingQuestionTexts = existingItems.map(i => i.question);
-  const curriculumText = Object.entries(CONCEPT_CURRICULUM_BY_UNIT)
+
+  // 관리자 앱의 "커리큘럼 단원 관리"에서 이 반에 체크(활성화)해둔 단원이 있으면 그걸 쓰고,
+  // 하나도 없으면(아직 설정 안 했으면) 기본 18개 단원으로 대체해요.
+  const activeUnitsFromApp = (curriculumUnitsFromApp || []).filter(u => u.className === className && u.active);
+  const unitEntries = activeUnitsFromApp.length > 0
+    ? activeUnitsFromApp.map(u => [u.unitName, u.summary])
+    : Object.entries(CONCEPT_CURRICULUM_BY_UNIT);
+
+  const curriculumText = unitEntries
     .map(([unit, summary]) => `[${unit}] ${summary}`)
     .join('\n');
 

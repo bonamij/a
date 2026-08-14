@@ -1003,6 +1003,34 @@
       <div class="card">
         <div class="card-head">
           <div>
+            <h3>📖 커리큘럼 단원 관리</h3>
+            <div class="sub">새벽 자동생성이 어떤 단원에서 문제를 만들지 정해요. 체크된 단원만 사용돼요.</div>
+          </div>
+        </div>
+        <div class="inline-form">
+          <div class="field">
+            <label for="cu-class-select">반</label>
+            <select id="cu-class-select" onchange="renderCurriculumUnitList()"><option value="">반을 선택하세요</option></select>
+          </div>
+          <button type="button" class="btn small ghost" style="align-self:flex-end;" onclick="importDefaultCurriculumUnits()">📥 기본 18개 단원 가져오기</button>
+        </div>
+        <div id="curriculumUnitListBody" style="display:flex; flex-direction:column; gap:8px; margin-top:12px;"></div>
+
+        <div style="background:var(--cream-alt); border-radius:10px; padding:14px; margin-top:14px;">
+          <label style="display:block; font-size:12.5px; font-weight:700; color:var(--brand-dark); margin-bottom:8px; font-family:'Noto Sans KR',sans-serif;">➕ 새 단원 직접 추가</label>
+          <div class="field" style="margin-bottom:8px;">
+            <input type="text" id="cu-name" placeholder="단원 이름 (예: 8-1 이차방정식의 풀이)" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px;">
+          </div>
+          <div class="field" style="margin-bottom:8px;">
+            <textarea id="cu-summary" rows="2" placeholder="개념 요약 (예: 인수분해를 이용해 이차방정식의 해를 구한다...)" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-family:'Noto Sans KR',sans-serif; font-size:12.5px;"></textarea>
+          </div>
+          <button type="button" class="btn small" onclick="addCurriculumUnit()">단원 추가</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
             <h3>⚙️ 하루 출제 개수</h3>
             <div class="sub">반마다 하루에 몇 문제씩 낼지 정해요. (기본 5문제)</div>
           </div>
@@ -1517,6 +1545,8 @@ let conceptTestRecords = [];
 let nextConceptRecordId = 1;
 let conceptDraftItems = [];
 let nextConceptDraftId = 1;
+let conceptCurriculumUnits = [];
+let nextCurriculumUnitId = 1;
 const ATT_STATUSES = [
   { key:'출석', cls:'present' },
   { key:'지각', cls:'late' },
@@ -1551,6 +1581,28 @@ let examAnalysis = [];
 let nextExamId = 1;
 
 let parentMessages = [];
+
+// "기본 18개 단원 가져오기" 버튼에 쓰이는 기본 커리큘럼 (중2-2 개념노트 기반)
+const DEFAULT_CURRICULUM_UNITS = [
+  { unitName:"1-1 이등변삼각형", summary:"이등변삼각형: 두 변의 길이가 같은 삼각형. 꼭지각(길이가 같은 두 변이 이루는 각)/밑변(꼭지각의 대변)/밑각. 두 밑각의 크기는 같다. 꼭지각의 이등분선은 밑변을 수직이등분한다. 두 내각이 같으면 이등변삼각형(역)." },
+  { unitName:"1-2 직각삼각형의 합동조건", summary:"직각삼각형에서 직각의 대변=빗변. RHA합동(빗변+한 예각), RHS합동(빗변+다른 한 변). 각의 이등분선 위의 점은 그 각을 이루는 두 변까지 거리가 같다(역도 성립)." },
+  { unitName:"1-3 삼각형의 외심과 내심", summary:"외심=외접원 중심=세 변의 수직이등분선의 교점, OA=OB=OC. 직각삼각형의 외심=빗변의 중점. 내심=내접원 중심=세 내각의 이등분선의 교점, ID=IE=IF, 항상 내부에 위치." },
+  { unitName:"2-1 평행사변형", summary:"두 쌍의 대변이 각각 평행. 대변 길이 같음/대각 크기 같음/두 대각선이 서로를 이등분. 되는 조건 5가지 중 하나만 만족해도 평행사변형." },
+  { unitName:"2-2 여러 가지 사각형", summary:"직사각형(네 내각 90도, 대각선 길이 같고 이등분), 마름모(네 변 길이 같음, 대각선 수직이등분), 정사각형(둘 다), 사다리꼴/등변사다리꼴." },
+  { unitName:"2-3 평행선과 넓이", summary:"밑변 공통+평행선 사이=넓이 같음. 높이가 같으면 넓이비=밑변비. 등적변형." },
+  { unitName:"3-1 닮음의 뜻과 성질", summary:"닮음비, 둘레의 비=닮음비, 넓이의 비=닮음비의 제곱, 부피의 비=닮음비의 세제곱." },
+  { unitName:"3-2 삼각형의 닮음조건", summary:"SSS닮음(세 변의 비), SAS닮음(두 변의 비+끼인각), AA닮음(두 각). 직각삼각형에서 한 예각이 같으면 AA닮음." },
+  { unitName:"4-1 삼각형과 평행선", summary:"BC∥DE이면 AB:AD=AC:AE=BC:DE (역도 성립). 내각/외각의 이등분선과 변의 비." },
+  { unitName:"4-2 중점연결정리", summary:"두 변의 중점을 이은 선분은 나머지 변과 평행, 길이는 1/2. 사다리꼴에서 MN=(AD+BC)/2." },
+  { unitName:"4-3 평행선 사이의 선분의 길이의 비", summary:"l∥m∥n이면 a:b=a′:b′ (역은 성립하지 않음)." },
+  { unitName:"4-4 삼각형의 무게중심", summary:"세 중선의 교점=무게중심, 2:1로 나눔, 중선은 넓이를 이등분, 6개 삼각형 넓이 모두 같음(1/6씩)." },
+  { unitName:"5-1 피타고라스 정리", summary:"a²+b²=c² (직각삼각형). c²=a²+b²이면 직각, c²>a²+b²이면 둔각, c²<a²+b²이면 예각삼각형." },
+  { unitName:"5-2 피타고라스 정리의 활용", summary:"두 대각선이 직교하는 사각형: AB²+CD²=AD²+BC². 반원 넓이: S1+S2=S3." },
+  { unitName:"6-1 경우의 수", summary:"동시에 일어나지 않음(또는)=덧셈법칙 a+b, 동시에 일어남(그리고)=곱셈법칙 a×b." },
+  { unitName:"6-2 여러 가지 경우의 수", summary:"한 줄 세우기 n!, 대표뽑기(자격 다름=n(n-1), 자격 같음=n(n-1)/2), 자연수 만들기(맨 앞 0 불가)." },
+  { unitName:"7-1 확률의 뜻과 성질", summary:"확률=해당 경우의 수/전체 경우의 수, 0≤p≤1, 여사건 확률=1-p." },
+  { unitName:"7-2 확률의 계산", summary:"또는(동시에 안 일어남)=덧셈 p+q, 동시에(독립)=곱셈 p×q, 비복원추출=종속시행." },
+];
 
 const TAB_TITLES = {
   home:'홈', dashboard:'대시보드', students:'학생 명단', progress:'진도 관리', attendance:'출결 관리', daily:'데일리 테스트',
@@ -2610,7 +2662,95 @@ function refreshConceptClassSelects(){
   filterSel.innerHTML = `<option value="all">전체</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
   if(prevFilter === 'all' || classNames.includes(prevFilter)) filterSel.value = prevFilter;
 
+  const cuClassSel = document.getElementById('cu-class-select');
+  if(cuClassSel){
+    const prevCuClass = cuClassSel.value;
+    cuClassSel.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if(classNames.includes(prevCuClass)) cuClassSel.value = prevCuClass;
+    renderCurriculumUnitList();
+  }
+
   renderConceptDailyCountList(classNames);
+}
+
+function renderCurriculumUnitList(){
+  const wrap = document.getElementById('curriculumUnitListBody');
+  const classSel = document.getElementById('cu-class-select');
+  if(!wrap || !classSel) return;
+  const className = classSel.value;
+
+  if(!className){
+    wrap.innerHTML = `<div class="report-empty">반을 먼저 선택해주세요.</div>`;
+    return;
+  }
+
+  const units = conceptCurriculumUnits.filter(u => u.className === className).sort((a,b) => a.id - b.id);
+  if(units.length === 0){
+    wrap.innerHTML = `<div class="report-empty">이 반에 등록된 단원이 없어요. "기본 18개 단원 가져오기"를 눌러보세요.</div>`;
+    return;
+  }
+
+  wrap.innerHTML = units.map(u => `
+    <div style="display:flex; align-items:flex-start; gap:8px; background:${u.active ? 'var(--cream-alt)' : '#fff'}; border:1px solid var(--line); border-radius:8px; padding:10px 12px;">
+      <input type="checkbox" ${u.active ? 'checked' : ''} onchange="toggleCurriculumUnitActive(${u.id}, this.checked)" style="width:17px; height:17px; margin-top:2px; flex-shrink:0;">
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:12.5px; font-weight:700; color:${u.active ? 'var(--brand-dark)' : 'var(--ink-soft)'};">${escapeHtml(u.unitName)}</div>
+        <div style="font-size:11px; color:var(--ink-soft); margin-top:2px;">${escapeHtml(u.summary)}</div>
+      </div>
+      <button class="btn small danger-text" onclick="deleteCurriculumUnit(${u.id})">삭제</button>
+    </div>
+  `).join('');
+}
+
+function importDefaultCurriculumUnits(){
+  const classSel = document.getElementById('cu-class-select');
+  const className = classSel.value;
+  if(!className){ alert('먼저 반을 선택해주세요.'); return; }
+
+  const existingNames = new Set(conceptCurriculumUnits.filter(u => u.className === className).map(u => u.unitName));
+  let added = 0;
+  DEFAULT_CURRICULUM_UNITS.forEach(u => {
+    if(existingNames.has(u.unitName)) return; // 이미 있으면 중복 추가 안 함
+    conceptCurriculumUnits.push({ id: nextCurriculumUnitId++, className, unitName: u.unitName, summary: u.summary, active: true });
+    added++;
+  });
+
+  renderCurriculumUnitList();
+  scheduleSync();
+  alert(added > 0 ? `기본 단원 ${added}개를 가져왔어요!` : '이미 기본 단원이 다 들어있어요.');
+}
+
+function addCurriculumUnit(){
+  const classSel = document.getElementById('cu-class-select');
+  const className = classSel.value;
+  const unitName = document.getElementById('cu-name').value.trim();
+  const summary = document.getElementById('cu-summary').value.trim();
+
+  if(!className){ alert('먼저 반을 선택해주세요.'); return; }
+  if(!unitName || !summary){ alert('단원 이름과 요약을 모두 입력해주세요.'); return; }
+
+  conceptCurriculumUnits.push({ id: nextCurriculumUnitId++, className, unitName, summary, active: true });
+
+  document.getElementById('cu-name').value = '';
+  document.getElementById('cu-summary').value = '';
+
+  renderCurriculumUnitList();
+  scheduleSync();
+}
+
+function toggleCurriculumUnitActive(id, checked){
+  const u = conceptCurriculumUnits.find(x => x.id === id);
+  if(!u) return;
+  u.active = checked;
+  renderCurriculumUnitList();
+  scheduleSync();
+}
+
+function deleteCurriculumUnit(id){
+  if(!confirm('이 단원을 삭제하시겠습니까? (자동생성 대상에서만 빠지고, 이미 만들어진 문제는 안 지워져요)')) return;
+  conceptCurriculumUnits = conceptCurriculumUnits.filter(u => u.id !== id);
+  renderCurriculumUnitList();
+  scheduleSync();
 }
 
 function renderConceptDailyCountList(classNames){
@@ -4407,6 +4547,7 @@ function collectAllData(){
     adminPushTokens,
     conceptBankItems, nextConceptItemId, conceptDailyCounts, conceptTestRecords, nextConceptRecordId,
     conceptDraftItems, nextConceptDraftId,
+    conceptCurriculumUnits, nextCurriculumUnitId,
     dailyTests, nextDailyId,
     homeworkAssignments, nextHomeworkAssignmentId,
     answerKeys, nextAnswerKeyId,
@@ -4440,6 +4581,8 @@ function applyAllData(data){
   nextConceptRecordId = data.nextConceptRecordId || maxId(conceptTestRecords);
   conceptDraftItems = data.conceptDraftItems || [];
   nextConceptDraftId = data.nextConceptDraftId || maxId(conceptDraftItems);
+  conceptCurriculumUnits = data.conceptCurriculumUnits || [];
+  nextCurriculumUnitId = data.nextCurriculumUnitId || maxId(conceptCurriculumUnits);
   dailyTests = data.dailyTests || [];
   nextDailyId = data.nextDailyId || maxId(dailyTests);
   homeworkAssignments = data.homeworkAssignments || [];
@@ -4538,6 +4681,7 @@ function resetAllData(){
   conceptBankItems = []; nextConceptItemId = 1; conceptDailyCounts = {};
   conceptTestRecords = []; nextConceptRecordId = 1;
   conceptDraftItems = []; nextConceptDraftId = 1;
+  conceptCurriculumUnits = []; nextCurriculumUnitId = 1;
   mistakeRecords = []; nextMistakeId = 1;
   teacherComments = {};
   schoolInfos = []; nextSchoolInfoId = 1;
@@ -4777,6 +4921,7 @@ async function syncToSheet(){
     conceptBankItems = mergeArrays_(freshCheck.conceptBankItems, conceptBankItems);
     conceptTestRecords = mergeArrays_(freshCheck.conceptTestRecords, conceptTestRecords);
     conceptDraftItems = mergeArrays_(freshCheck.conceptDraftItems, conceptDraftItems);
+    conceptCurriculumUnits = mergeArrays_(freshCheck.conceptCurriculumUnits, conceptCurriculumUnits);
     dailyTests = mergeArrays_(freshCheck.dailyTests, dailyTests);
     homeworkAssignments = mergeArrays_(freshCheck.homeworkAssignments, homeworkAssignments);
     answerKeys = mergeArrays_(freshCheck.answerKeys, answerKeys);
@@ -4798,6 +4943,7 @@ async function syncToSheet(){
     nextConceptItemId = maxOf(nextConceptItemId, freshCheck.nextConceptItemId);
     nextConceptRecordId = maxOf(nextConceptRecordId, freshCheck.nextConceptRecordId);
     nextConceptDraftId = maxOf(nextConceptDraftId, freshCheck.nextConceptDraftId);
+    nextCurriculumUnitId = maxOf(nextCurriculumUnitId, freshCheck.nextCurriculumUnitId);
     nextDailyId = maxOf(nextDailyId, freshCheck.nextDailyId);
     nextHomeworkAssignmentId = maxOf(nextHomeworkAssignmentId, freshCheck.nextHomeworkAssignmentId);
     nextAnswerKeyId = maxOf(nextAnswerKeyId, freshCheck.nextAnswerKeyId);
