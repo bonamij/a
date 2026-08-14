@@ -941,64 +941,6 @@
     </section>
 
     <section class="panel" id="panel-conceptbank">
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <h3>🧩 개념빈칸 문제 추가</h3>
-            <div class="sub">반별로 문제은행을 쌓아두면, 매일 자동으로 순서대로 돌아가며 학생들에게 나가요. 학생은 보기 중에서 클릭해서 답을 골라요.</div>
-          </div>
-        </div>
-        <form id="conceptItemForm" onsubmit="addConceptItem(event)">
-          <div class="inline-form">
-            <div class="field">
-              <label for="ci-class-select">반</label>
-              <select id="ci-class-select" required><option value="">반을 선택하세요</option></select>
-            </div>
-            <div class="field">
-              <label for="ci-unit">단원 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(선택)</span></label>
-              <input type="text" id="ci-unit" placeholder="예: 이차방정식">
-            </div>
-          </div>
-          <div class="field">
-            <label for="ci-question">문제 (빈칸 부분에 ___ 표시)</label>
-            <input type="text" id="ci-question" placeholder="예: 피타고라스 정리: 직각삼각형에서 a² + b² = ___" style="width:100%;" required>
-          </div>
-          <div class="field">
-            <label>보기 (2개는 필수, 3번째는 선택) · 정답 옆 동그라미를 체크하세요</label>
-            <div style="display:flex; flex-direction:column; gap:6px;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <input type="radio" name="ci-correct" value="0" checked style="width:16px; height:16px; flex-shrink:0;">
-                <input type="text" id="ci-choice-0" placeholder="보기 1" required style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:6px;">
-              </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <input type="radio" name="ci-correct" value="1" style="width:16px; height:16px; flex-shrink:0;">
-                <input type="text" id="ci-choice-1" placeholder="보기 2" required style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:6px;">
-              </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <input type="radio" name="ci-correct" value="2" style="width:16px; height:16px; flex-shrink:0;">
-                <input type="text" id="ci-choice-2" placeholder="보기 3 (선택)" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:6px;">
-              </div>
-            </div>
-          </div>
-          <button type="submit" class="btn" style="margin-top:8px;">문제 추가</button>
-        </form>
-
-        <div style="background:var(--cream-alt); border-radius:10px; padding:14px; margin-top:16px;">
-          <label for="ci-bulk-paste" style="display:block; font-size:12.5px; font-weight:700; color:var(--brand-dark); margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;">⚡ 여러 문제 한 번에 넣기</label>
-          <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 8px; font-family:'Noto Sans KR',sans-serif;">위에서 반을 먼저 선택하고, 한 줄에 문제 하나씩 "문제 | 보기1 | 보기2 | (보기3) | 정답번호" 형식으로 입력하세요. 정답번호는 정답이 몇 번째 보기인지예요(1부터 시작). 예:<br>
-            <span class="mono" style="font-size:11px;">피타고라스 정리: a²+b²=___ | b² | c² | a² | 2<br>일차함수 y=ax+b에서 a는 ___를 뜻한다 | 절편 | 기울기 | 2</span></p>
-          <textarea id="ci-bulk-paste" rows="5" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-family:'Space Mono',monospace; font-size:12px;" placeholder="문제 | 보기1 | 보기2 | 보기3 | 정답번호"></textarea>
-          <button type="button" class="btn small ghost" style="margin-top:8px;" onclick="bulkAddConceptItems()">↓ 선택된 반에 한꺼번에 추가</button>
-        </div>
-
-        <div style="background:var(--cream-alt); border-radius:10px; padding:14px; margin-top:12px;">
-          <label style="display:block; font-size:12.5px; font-weight:700; color:var(--brand-dark); margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;">📷 AI로 사진에서 문제 만들기</label>
-          <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 8px; font-family:'Noto Sans KR',sans-serif;">위에서 반을 먼저 선택하고, 개념 설명이 있는 페이지 사진을 올리면 AI가 빈칸 객관식 문제를 만들어줘요. 원본 문제를 그대로 베끼지 않고, 같은 개념을 새로 물어보는 문제로 만들도록 되어있어요. 만들어진 문제는 검토하고 수정한 뒤 추가하시면 돼요.</p>
-          <input type="file" id="ci-photo-file" accept="image/*" multiple style="margin-bottom:8px;">
-          <div><button type="button" class="btn small ghost" onclick="analyzeConceptPhoto()">🔍 AI로 문제 만들기</button></div>
-          <div id="ciPhotoAnalysisResult" style="margin-top:12px;"></div>
-        </div>
-      </div>
 
       <div class="card">
         <div class="card-head">
@@ -1977,7 +1919,7 @@ function renderStudents(){
     renderHomeworkList();
     renderAnswerKeyList();
   }
-  if(document.getElementById('ci-class-select')){
+  if(document.getElementById('cu-class-select')){
     refreshConceptClassSelects();
     renderConceptItemList();
     renderConceptDraftList();
@@ -2649,26 +2591,22 @@ function renderGeneralMakeupList(){
    개념빈칸 테스트
 ========================================================= */
 function refreshConceptClassSelects(){
-  const classSel = document.getElementById('ci-class-select');
+  const cuClassSel = document.getElementById('cu-class-select');
   const filterSel = document.getElementById('conceptItemFilterClass');
-  if(!classSel) return;
+  if(!cuClassSel) return;
 
-  const prevClass = classSel.value, prevFilter = filterSel.value;
   const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
 
-  classSel.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-  if(classNames.includes(prevClass)) classSel.value = prevClass;
-
-  filterSel.innerHTML = `<option value="all">전체</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-  if(prevFilter === 'all' || classNames.includes(prevFilter)) filterSel.value = prevFilter;
-
-  const cuClassSel = document.getElementById('cu-class-select');
-  if(cuClassSel){
-    const prevCuClass = cuClassSel.value;
-    cuClassSel.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-    if(classNames.includes(prevCuClass)) cuClassSel.value = prevCuClass;
-    renderCurriculumUnitList();
+  if(filterSel){
+    const prevFilter = filterSel.value;
+    filterSel.innerHTML = `<option value="all">전체</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if(prevFilter === 'all' || classNames.includes(prevFilter)) filterSel.value = prevFilter;
   }
+
+  const prevCuClass = cuClassSel.value;
+  cuClassSel.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  if(classNames.includes(prevCuClass)) cuClassSel.value = prevCuClass;
+  renderCurriculumUnitList();
 
   renderConceptDailyCountList(classNames);
 }
@@ -2775,214 +2713,6 @@ function setConceptDailyCount(className, value){
   scheduleSync();
 }
 
-function addConceptItem(e){
-  e.preventDefault();
-  const className = document.getElementById('ci-class-select').value;
-  const unit = document.getElementById('ci-unit').value.trim();
-  const question = document.getElementById('ci-question').value.trim();
-  const choices = [0,1,2].map(i => document.getElementById(`ci-choice-${i}`).value.trim()).filter(Boolean);
-  const correctIndex = Number(document.querySelector('input[name="ci-correct"]:checked').value);
-
-  if(!className || !question || choices.length < 2){
-    alert('반, 문제, 보기 2개 이상을 입력해주세요.');
-    return;
-  }
-  if(correctIndex >= choices.length){
-    alert('정답으로 체크한 보기가 비어있어요. 보기를 채우거나 다른 보기를 정답으로 체크해주세요.');
-    return;
-  }
-
-  conceptBankItems.push({ id: nextConceptItemId++, className, unit, question, choices, correctIndex });
-
-  document.getElementById('ci-unit').value = '';
-  document.getElementById('ci-question').value = '';
-  [0,1,2].forEach(i => document.getElementById(`ci-choice-${i}`).value = '');
-  document.querySelector('input[name="ci-correct"][value="0"]').checked = true;
-  document.getElementById('ci-question').focus();
-
-  renderConceptItemList();
-  scheduleSync();
-}
-
-// "문제 | 보기1 | 보기2 | (보기3) | 정답번호" 형식 한 줄을 파싱
-function parseConceptBulkLine_(line){
-  const parts = line.split('|').map(p => p.trim()).filter(p => p !== '');
-  if(parts.length < 4) return null;
-  const question = parts[0];
-  const answerIdx = Number(parts[parts.length - 1]) - 1;
-  const choices = parts.slice(1, parts.length - 1);
-  if(choices.length < 2 || choices.length > 3) return null;
-  if(isNaN(answerIdx) || answerIdx < 0 || answerIdx >= choices.length) return null;
-  return { question, choices, correctIndex: answerIdx };
-}
-
-function bulkAddConceptItems(){
-  const className = document.getElementById('ci-class-select').value;
-  const unit = document.getElementById('ci-unit').value.trim();
-  const raw = document.getElementById('ci-bulk-paste').value;
-  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-
-  if(!className){
-    alert('먼저 위에서 반을 선택해주세요.');
-    return;
-  }
-  if(lines.length === 0){
-    alert('붙여넣을 문제가 없어요.');
-    return;
-  }
-
-  let added = 0;
-  const failedLines = [];
-  lines.forEach(line => {
-    const parsed = parseConceptBulkLine_(line);
-    if(parsed){
-      conceptBankItems.push({ id: nextConceptItemId++, className, unit, question: parsed.question, choices: parsed.choices, correctIndex: parsed.correctIndex });
-      added++;
-    } else {
-      failedLines.push(line);
-    }
-  });
-
-  document.getElementById('ci-bulk-paste').value = failedLines.join('\n');
-  renderConceptItemList();
-  if(added > 0) scheduleSync();
-
-  if(failedLines.length){
-    alert(`${added}개는 추가됐고, ${failedLines.length}줄은 형식을 못 알아봤어요. (입력창에 남겨뒀어요, 형식을 확인해서 다시 눌러주세요)`);
-  } else {
-    alert(`${added}개 문제를 추가했어요!`);
-  }
-}
-
-let lastConceptPhotoAnalysis = null;
-
-async function analyzeConceptPhoto(){
-  const className = document.getElementById('ci-class-select').value;
-  const fileInput = document.getElementById('ci-photo-file');
-  const resultEl = document.getElementById('ciPhotoAnalysisResult');
-  const files = Array.from(fileInput.files || []);
-
-  if(!className){
-    alert('먼저 위에서 반을 선택해주세요.');
-    return;
-  }
-  if(files.length === 0){
-    alert('사진을 먼저 선택해주세요 (여러 장 선택 가능해요).');
-    return;
-  }
-  if(!sheetSyncUrl){
-    alert('구글시트 연동이 꺼져 있어요. "데이터 관리" 탭에서 먼저 연동해주세요.');
-    return;
-  }
-
-  resultEl.innerHTML = `<div class="report-empty">🔍 사진을 최적화하고 AI가 ${files.length}장에서 문제를 만들고 있어요... (몇 초~1분 정도 걸릴 수 있어요)</div>`;
-
-  try {
-    const dataUrls = await Promise.all(files.map(f => compressImageToDataURL(f, 1600, 0.75)));
-    const images = dataUrls.map((dataUrl) => ({
-      data: dataUrl.split(',')[1],
-      mimeType: 'image/jpeg'
-    }));
-
-    let res;
-    try {
-      res = await fetch(sheetSyncUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'generateConceptQuestions', images })
-      });
-    } catch(networkErr){
-      resultEl.innerHTML = `<div class="report-empty">❌ 서버에 연결하지 못했어요.<br><span style="font-size:11px;">오류 내용: ${escapeHtml(networkErr.message || String(networkErr))}</span></div>`;
-      return;
-    }
-
-    if(!res.ok){
-      const bodyText = await res.text().catch(() => '');
-      resultEl.innerHTML = `<div class="report-empty">❌ 서버에서 오류 응답을 보냈어요 (상태 코드 ${res.status}).<br><span style="font-size:11px;">${escapeHtml(bodyText.slice(0, 200))}</span></div>`;
-      return;
-    }
-
-    const result = await res.json();
-
-    if(result.error){
-      resultEl.innerHTML = `<div class="report-empty">❌ ${escapeHtml(result.error)}</div>`;
-      return;
-    }
-
-    const questions = Array.isArray(result.questions) ? result.questions : [];
-    lastConceptPhotoAnalysis = { className, questions };
-
-    if(questions.length === 0){
-      resultEl.innerHTML = `<div class="report-empty">❌ AI가 문제를 만들지 못했어요. 사진이 잘 보이는지 확인하고 다시 시도해주세요.</div>`;
-      return;
-    }
-
-    renderGeneratedConceptQuestions();
-  } catch(err){
-    resultEl.innerHTML = `<div class="report-empty">❌ 분석 요청에 실패했어요.<br><span style="font-size:11px;">오류 내용: ${escapeHtml(err.message || String(err))}</span></div>`;
-  }
-}
-
-function renderGeneratedConceptQuestions(){
-  const resultEl = document.getElementById('ciPhotoAnalysisResult');
-  if(!lastConceptPhotoAnalysis) return;
-  const { questions } = lastConceptPhotoAnalysis;
-
-  resultEl.innerHTML = `
-    <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:600;">✅ AI가 문제 ${questions.length}개를 만들었어요. 내용을 확인·수정하고 원하는 것만 골라 추가하세요.</p>
-    <div style="display:flex; flex-direction:column; gap:12px;" id="ciGeneratedList">
-      ${questions.map((q, qi) => `
-        <div style="background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px;">
-          <label style="display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:11px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">
-            <input type="checkbox" id="cig-use-${qi}" checked style="width:15px; height:15px;"> 이 문제 포함
-          </label>
-          <input type="text" id="cig-question-${qi}" value="${escapeHtml(q.question || '')}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px; font-size:12.5px;">
-          ${[0,1,2].map(ci => `
-            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-              <input type="radio" name="cig-correct-${qi}" value="${ci}" ${(q.correctIndex || 0) === ci ? 'checked' : ''} style="width:15px; height:15px; flex-shrink:0;">
-              <input type="text" id="cig-choice-${qi}-${ci}" value="${escapeHtml((q.choices || [])[ci] || '')}" placeholder="${ci < 2 ? '보기 ' + (ci+1) : '보기 3 (선택)'}" style="flex:1; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-size:12.5px;">
-            </div>
-          `).join('')}
-        </div>
-      `).join('')}
-    </div>
-    <button type="button" class="btn small" style="margin-top:10px;" onclick="applyGeneratedConceptQuestions()">✔️ 체크된 문제 문제은행에 추가</button>
-    <details style="font-size:11px; color:var(--ink-soft); margin-top:8px;">
-      <summary style="cursor:pointer;">🔧 AI 원본 응답 보기 (문제 생길 때 확인용)</summary>
-      <pre style="white-space:pre-wrap; word-break:break-all; background:#fff; padding:8px; border-radius:6px; margin-top:6px; font-family:'Space Mono',monospace; font-size:10.5px;">${escapeHtml(JSON.stringify(lastConceptPhotoAnalysis, null, 2))}</pre>
-    </details>
-  `;
-}
-
-function applyGeneratedConceptQuestions(){
-  if(!lastConceptPhotoAnalysis) return;
-  const { className, questions } = lastConceptPhotoAnalysis;
-  const unit = document.getElementById('ci-unit').value.trim();
-
-  let added = 0;
-  questions.forEach((q, qi) => {
-    const useIt = document.getElementById(`cig-use-${qi}`);
-    if(!useIt || !useIt.checked) return;
-
-    const question = document.getElementById(`cig-question-${qi}`).value.trim();
-    const choices = [0,1,2].map(ci => document.getElementById(`cig-choice-${qi}-${ci}`).value.trim()).filter(Boolean);
-    const correctIndexEl = document.querySelector(`input[name="cig-correct-${qi}"]:checked`);
-    const correctIndex = correctIndexEl ? Number(correctIndexEl.value) : 0;
-
-    if(!question || choices.length < 2 || correctIndex >= choices.length) return;
-
-    conceptBankItems.push({ id: nextConceptItemId++, className, unit, question, choices, correctIndex });
-    added++;
-  });
-
-  renderConceptItemList();
-  if(added > 0) scheduleSync();
-
-  lastConceptPhotoAnalysis = null;
-  document.getElementById('ciPhotoAnalysisResult').innerHTML = '';
-  document.getElementById('ci-photo-file').value = '';
-  alert(`${added}개 문제를 문제은행에 추가했어요!`);
-}
 
 function deleteConceptItem(id){
   if(!confirm('이 문제를 삭제하시겠습니까?')) return;
