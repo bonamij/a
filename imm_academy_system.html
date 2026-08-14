@@ -1027,6 +1027,18 @@
       <div class="card">
         <div class="card-head">
           <div>
+            <h3>📋 AI 검토 대기함</h3>
+            <div class="sub" id="conceptDraftCountSub">대기 중인 문제 0개</div>
+          </div>
+          <button type="button" class="btn small ghost" onclick="approveAllConceptDrafts()">✅ 전체 승인</button>
+        </div>
+        <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 10px; font-family:'Noto Sans KR',sans-serif;">새벽에 AI가 자동으로 만든 문제가 여기 먼저 쌓여요. 승인해야 학생한테 나가요.</p>
+        <div id="conceptDraftListBody" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
             <h3>✅ 오늘의 제출 현황</h3>
             <div class="sub" id="conceptTodaySub"></div>
           </div>
@@ -1503,6 +1515,8 @@ let nextConceptItemId = 1;
 let conceptDailyCounts = {};
 let conceptTestRecords = [];
 let nextConceptRecordId = 1;
+let conceptDraftItems = [];
+let nextConceptDraftId = 1;
 const ATT_STATUSES = [
   { key:'출석', cls:'present' },
   { key:'지각', cls:'late' },
@@ -1914,6 +1928,7 @@ function renderStudents(){
   if(document.getElementById('ci-class-select')){
     refreshConceptClassSelects();
     renderConceptItemList();
+    renderConceptDraftList();
     renderConceptTodaySubmissions();
   }
   if(document.getElementById('m-student')){
@@ -2879,6 +2894,59 @@ function getTodaysConceptItems(className){
     result.push(classItems[(startIdx + i) % total]);
   }
   return result;
+}
+
+function renderConceptDraftList(){
+  const listEl = document.getElementById('conceptDraftListBody');
+  const subEl = document.getElementById('conceptDraftCountSub');
+  if(!listEl || !subEl) return;
+
+  subEl.textContent = `대기 중인 문제 ${conceptDraftItems.length}개`;
+
+  if(conceptDraftItems.length === 0){
+    listEl.innerHTML = `<div class="report-empty">검토 대기 중인 문제가 없어요.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = conceptDraftItems.slice().sort((a,b) => a.className.localeCompare(b.className) || a.id - b.id).map(item => `
+    <div style="background:var(--cream-alt); border-radius:8px; padding:12px;">
+      <div style="font-size:11px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; margin-bottom:5px;">🏷️ ${escapeHtml(item.className)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</div>
+      <div style="font-size:13px; font-weight:700; margin-bottom:6px;">${escapeHtml(item.question)}</div>
+      <div style="font-size:12px; color:var(--ink-soft); margin-bottom:8px;">보기: ${item.choices.map((c,i) => i === item.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)}✓</strong>` : escapeHtml(c)).join(' / ')}</div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn small" onclick="approveConceptDraft(${item.id})">✅ 승인</button>
+        <button class="btn small danger-text" onclick="rejectConceptDraft(${item.id})">❌ 거부</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function approveConceptDraft(id){
+  const draft = conceptDraftItems.find(i => i.id === id);
+  if(!draft) return;
+  conceptBankItems.push({ id: nextConceptItemId++, className: draft.className, unit: draft.unit, question: draft.question, choices: draft.choices, correctIndex: draft.correctIndex });
+  conceptDraftItems = conceptDraftItems.filter(i => i.id !== id);
+  renderConceptDraftList();
+  renderConceptItemList();
+  scheduleSync();
+}
+
+function rejectConceptDraft(id){
+  conceptDraftItems = conceptDraftItems.filter(i => i.id !== id);
+  renderConceptDraftList();
+  scheduleSync();
+}
+
+function approveAllConceptDrafts(){
+  if(conceptDraftItems.length === 0) return;
+  if(!confirm(`대기 중인 문제 ${conceptDraftItems.length}개를 전부 승인할까요?`)) return;
+  conceptDraftItems.forEach(draft => {
+    conceptBankItems.push({ id: nextConceptItemId++, className: draft.className, unit: draft.unit, question: draft.question, choices: draft.choices, correctIndex: draft.correctIndex });
+  });
+  conceptDraftItems = [];
+  renderConceptDraftList();
+  renderConceptItemList();
+  scheduleSync();
 }
 
 function renderConceptTodaySubmissions(){
@@ -4338,6 +4406,7 @@ function collectAllData(){
     generalMakeups, nextGeneralMakeupId,
     adminPushTokens,
     conceptBankItems, nextConceptItemId, conceptDailyCounts, conceptTestRecords, nextConceptRecordId,
+    conceptDraftItems, nextConceptDraftId,
     dailyTests, nextDailyId,
     homeworkAssignments, nextHomeworkAssignmentId,
     answerKeys, nextAnswerKeyId,
@@ -4369,6 +4438,8 @@ function applyAllData(data){
   conceptDailyCounts = data.conceptDailyCounts || {};
   conceptTestRecords = data.conceptTestRecords || [];
   nextConceptRecordId = data.nextConceptRecordId || maxId(conceptTestRecords);
+  conceptDraftItems = data.conceptDraftItems || [];
+  nextConceptDraftId = data.nextConceptDraftId || maxId(conceptDraftItems);
   dailyTests = data.dailyTests || [];
   nextDailyId = data.nextDailyId || maxId(dailyTests);
   homeworkAssignments = data.homeworkAssignments || [];
@@ -4466,6 +4537,7 @@ function resetAllData(){
   homeworkRecords = []; nextHomeworkId = 1;
   conceptBankItems = []; nextConceptItemId = 1; conceptDailyCounts = {};
   conceptTestRecords = []; nextConceptRecordId = 1;
+  conceptDraftItems = []; nextConceptDraftId = 1;
   mistakeRecords = []; nextMistakeId = 1;
   teacherComments = {};
   schoolInfos = []; nextSchoolInfoId = 1;
@@ -4704,6 +4776,7 @@ async function syncToSheet(){
     adminPushTokens = mergeArrays_(freshCheck.adminPushTokens, adminPushTokens);
     conceptBankItems = mergeArrays_(freshCheck.conceptBankItems, conceptBankItems);
     conceptTestRecords = mergeArrays_(freshCheck.conceptTestRecords, conceptTestRecords);
+    conceptDraftItems = mergeArrays_(freshCheck.conceptDraftItems, conceptDraftItems);
     dailyTests = mergeArrays_(freshCheck.dailyTests, dailyTests);
     homeworkAssignments = mergeArrays_(freshCheck.homeworkAssignments, homeworkAssignments);
     answerKeys = mergeArrays_(freshCheck.answerKeys, answerKeys);
@@ -4724,6 +4797,7 @@ async function syncToSheet(){
     nextGeneralMakeupId = maxOf(nextGeneralMakeupId, freshCheck.nextGeneralMakeupId);
     nextConceptItemId = maxOf(nextConceptItemId, freshCheck.nextConceptItemId);
     nextConceptRecordId = maxOf(nextConceptRecordId, freshCheck.nextConceptRecordId);
+    nextConceptDraftId = maxOf(nextConceptDraftId, freshCheck.nextConceptDraftId);
     nextDailyId = maxOf(nextDailyId, freshCheck.nextDailyId);
     nextHomeworkAssignmentId = maxOf(nextHomeworkAssignmentId, freshCheck.nextHomeworkAssignmentId);
     nextAnswerKeyId = maxOf(nextAnswerKeyId, freshCheck.nextAnswerKeyId);
@@ -4800,6 +4874,7 @@ function init(){
   renderAnswerKeyList();
   refreshConceptClassSelects();
   renderConceptItemList();
+  renderConceptDraftList();
   renderConceptTodaySubmissions();
   refreshMistakeStudentSelects();
   renderMistakeList();
