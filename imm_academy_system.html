@@ -2749,11 +2749,25 @@ function toggleCurriculumUnitActive(id, checked){
   scheduleSync();
 }
 
-function deleteCurriculumUnit(id){
+async function deleteCurriculumUnit(id){
   if(!confirm('이 단원을 삭제하시겠습니까? (자동생성 대상에서만 빠지고, 이미 만들어진 문제는 안 지워져요)')) return;
-  conceptCurriculumUnits = conceptCurriculumUnits.filter(u => u.id !== id);
-  renderCurriculumUnitList();
-  scheduleSync();
+  if(!sheetSyncUrl){
+    conceptCurriculumUnits = conceptCurriculumUnits.filter(u => u.id !== id);
+    renderCurriculumUnitList();
+    return;
+  }
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+    freshData.conceptCurriculumUnits = (freshData.conceptCurriculumUnits || []).filter(u => u.id !== id);
+    await fetch(sheetSyncUrl, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(freshData) });
+    applyAllData(freshData);
+    renderStudents();
+    renderDashboard();
+  } catch(err){
+    alert('삭제 중 오류가 발생했어요: ' + (err.message || err));
+  }
 }
 
 function renderConceptDailyCountList(classNames){
@@ -2779,11 +2793,25 @@ function setConceptDailyCount(className, value){
 }
 
 
-function deleteConceptItem(id){
+async function deleteConceptItem(id){
   if(!confirm('이 문제를 삭제하시겠습니까?')) return;
-  conceptBankItems = conceptBankItems.filter(i => i.id !== id);
-  renderConceptItemList();
-  scheduleSync();
+  if(!sheetSyncUrl){
+    conceptBankItems = conceptBankItems.filter(i => i.id !== id);
+    renderConceptItemList();
+    return;
+  }
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+    freshData.conceptBankItems = (freshData.conceptBankItems || []).filter(i => i.id !== id);
+    await fetch(sheetSyncUrl, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(freshData) });
+    applyAllData(freshData);
+    renderStudents();
+    renderDashboard();
+  } catch(err){
+    alert('삭제 중 오류가 발생했어요: ' + (err.message || err));
+  }
 }
 
 function renderConceptItemList(){
@@ -2875,32 +2903,78 @@ function renderConceptDraftList(){
   `).join('');
 }
 
-function approveConceptDraft(id){
-  const draft = conceptDraftItems.find(i => i.id === id);
-  if(!draft) return;
-  conceptBankItems.push({ id: nextConceptItemId++, target: draft.target, unit: draft.unit, question: draft.question, choices: draft.choices, correctIndex: draft.correctIndex });
-  conceptDraftItems = conceptDraftItems.filter(i => i.id !== id);
-  renderConceptDraftList();
-  renderConceptItemList();
-  scheduleSync();
+async function approveConceptDraft(id){
+  if(!sheetSyncUrl){ alert('먼저 구글시트 연동을 설정해주세요.'); return; }
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+
+    const draft = (freshData.conceptDraftItems || []).find(i => i.id === id);
+    if(!draft){ alert('이미 처리된 문제예요. 새로고침할게요.'); }
+
+    freshData.conceptBankItems = freshData.conceptBankItems || [];
+    if(draft){
+      const newId = freshData.conceptBankItems.length ? Math.max(...freshData.conceptBankItems.map(i => i.id || 0)) + 1 : 1;
+      freshData.conceptBankItems.push({ id: newId, target: draft.target, unit: draft.unit, question: draft.question, choices: draft.choices, correctIndex: draft.correctIndex });
+      freshData.conceptDraftItems = (freshData.conceptDraftItems || []).filter(i => i.id !== id);
+
+      await fetch(sheetSyncUrl, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(freshData) });
+    }
+
+    applyAllData(freshData);
+    renderStudents();
+    renderDashboard();
+  } catch(err){
+    alert('승인 처리 중 오류가 발생했어요: ' + (err.message || err));
+  }
 }
 
-function rejectConceptDraft(id){
-  conceptDraftItems = conceptDraftItems.filter(i => i.id !== id);
-  renderConceptDraftList();
-  scheduleSync();
+async function rejectConceptDraft(id){
+  if(!sheetSyncUrl){ alert('먼저 구글시트 연동을 설정해주세요.'); return; }
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+
+    freshData.conceptDraftItems = (freshData.conceptDraftItems || []).filter(i => i.id !== id);
+
+    await fetch(sheetSyncUrl, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(freshData) });
+
+    applyAllData(freshData);
+    renderStudents();
+    renderDashboard();
+  } catch(err){
+    alert('거부 처리 중 오류가 발생했어요: ' + (err.message || err));
+  }
 }
 
-function approveAllConceptDrafts(){
+async function approveAllConceptDrafts(){
   if(conceptDraftItems.length === 0) return;
   if(!confirm(`대기 중인 문제 ${conceptDraftItems.length}개를 전부 승인할까요?`)) return;
-  conceptDraftItems.forEach(draft => {
-    conceptBankItems.push({ id: nextConceptItemId++, target: draft.target, unit: draft.unit, question: draft.question, choices: draft.choices, correctIndex: draft.correctIndex });
-  });
-  conceptDraftItems = [];
-  renderConceptDraftList();
-  renderConceptItemList();
-  scheduleSync();
+  if(!sheetSyncUrl){ alert('먼저 구글시트 연동을 설정해주세요.'); return; }
+
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+
+    freshData.conceptBankItems = freshData.conceptBankItems || [];
+    let nextId = freshData.conceptBankItems.length ? Math.max(...freshData.conceptBankItems.map(i => i.id || 0)) + 1 : 1;
+
+    (freshData.conceptDraftItems || []).forEach(draft => {
+      freshData.conceptBankItems.push({ id: nextId++, target: draft.target, unit: draft.unit, question: draft.question, choices: draft.choices, correctIndex: draft.correctIndex });
+    });
+    freshData.conceptDraftItems = [];
+
+    await fetch(sheetSyncUrl, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(freshData) });
+
+    applyAllData(freshData);
+    renderStudents();
+    renderDashboard();
+  } catch(err){
+    alert('전체 승인 처리 중 오류가 발생했어요: ' + (err.message || err));
+  }
 }
 
 function renderConceptTodaySubmissions(){
