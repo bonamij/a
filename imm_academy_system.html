@@ -949,17 +949,34 @@
             <div class="sub">새벽 자동생성이 어떤 단원에서 문제를 만들지 정해요. 체크된 단원만 사용돼요.</div>
           </div>
         </div>
-        <div class="inline-form">
+
+        <div class="field">
+          <label>대상</label>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="btn small ghost active" id="cu-mode-class" onclick="setCuMode('class')">반 전체</button>
+            <button type="button" class="btn small ghost" id="cu-mode-individual" onclick="setCuMode('individual')">개별 학생</button>
+          </div>
+        </div>
+
+        <div id="cu-class-wrap">
           <div class="field">
             <label for="cu-class-select">반</label>
             <select id="cu-class-select" onchange="renderCurriculumUnitList()"><option value="">반을 선택하세요</option></select>
           </div>
-          <button type="button" class="btn small ghost" style="align-self:flex-end;" onclick="importDefaultCurriculumUnits()">📥 기본 18개 단원 가져오기</button>
         </div>
+
+        <div id="cu-individual-wrap" style="display:none;">
+          <div class="field">
+            <label>학생 선택 (여러 명 가능)</label>
+            <div id="cu-student-checks" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+          </div>
+        </div>
+
+        <button type="button" class="btn small ghost" onclick="importDefaultCurriculumUnits()">📥 기본 18개 단원 가져오기 (선택한 대상에 적용)</button>
         <div id="curriculumUnitListBody" style="display:flex; flex-direction:column; gap:8px; margin-top:12px;"></div>
 
         <div style="background:var(--cream-alt); border-radius:10px; padding:14px; margin-top:14px;">
-          <label style="display:block; font-size:12.5px; font-weight:700; color:var(--brand-dark); margin-bottom:8px; font-family:'Noto Sans KR',sans-serif;">➕ 새 단원 직접 추가</label>
+          <label style="display:block; font-size:12.5px; font-weight:700; color:var(--brand-dark); margin-bottom:8px; font-family:'Noto Sans KR',sans-serif;">➕ 새 단원 직접 추가 (위에서 선택한 대상에게)</label>
           <div class="field" style="margin-bottom:8px;">
             <input type="text" id="cu-name" placeholder="단원 이름 (예: 8-1 이차방정식의 풀이)" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px;">
           </div>
@@ -2606,25 +2623,71 @@ function refreshConceptClassSelects(){
   const prevCuClass = cuClassSel.value;
   cuClassSel.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
   if(classNames.includes(prevCuClass)) cuClassSel.value = prevCuClass;
+
+  const cuChecksWrap = document.getElementById('cu-student-checks');
+  if(cuChecksWrap){
+    cuChecksWrap.innerHTML = students.map(s => `
+      <label style="display:flex; align-items:center; gap:5px; background:var(--cream-alt); border-radius:8px; padding:6px 10px; font-size:12.5px; font-family:'Noto Sans KR',sans-serif; cursor:pointer;">
+        <input type="checkbox" class="cu-student-check" value="${s.id}"> ${escapeHtml(s.name)}
+      </label>
+    `).join('');
+  }
+
   renderCurriculumUnitList();
 
   renderConceptDailyCountList(classNames);
 }
 
+function setCuMode(mode){
+  document.getElementById('cu-mode-class').classList.toggle('active', mode === 'class');
+  document.getElementById('cu-mode-individual').classList.toggle('active', mode === 'individual');
+  document.getElementById('cu-class-wrap').style.display = mode === 'class' ? 'block' : 'none';
+  document.getElementById('cu-individual-wrap').style.display = mode === 'individual' ? 'block' : 'none';
+  renderCurriculumUnitList();
+}
+
+function getCurrentCuTarget_(){
+  const isClassMode = document.getElementById('cu-mode-class').classList.contains('active');
+  if(isClassMode){
+    const className = document.getElementById('cu-class-select').value;
+    if(!className) return null;
+    return { type:'class', className };
+  }
+  const studentIds = Array.from(document.querySelectorAll('.cu-student-check:checked')).map(el => Number(el.value));
+  if(studentIds.length === 0) return null;
+  return { type:'individual', studentIds };
+}
+
+function curriculumTargetLabel_(target){
+  if(!target) return '(대상 없음)';
+  if(target.type === 'class') return `🏷️ ${target.className}`;
+  const names = (target.studentIds || []).map(id => {
+    const s = students.find(x => x.id === id);
+    return s ? s.name : '(삭제된 학생)';
+  });
+  return `👤 ${names.join(', ')}`;
+}
+
 function renderCurriculumUnitList(){
   const wrap = document.getElementById('curriculumUnitListBody');
-  const classSel = document.getElementById('cu-class-select');
-  if(!wrap || !classSel) return;
-  const className = classSel.value;
+  if(!wrap) return;
+  const isClassMode = document.getElementById('cu-mode-class').classList.contains('active');
 
-  if(!className){
-    wrap.innerHTML = `<div class="report-empty">반을 먼저 선택해주세요.</div>`;
-    return;
+  let units;
+  if(isClassMode){
+    const className = document.getElementById('cu-class-select').value;
+    if(!className){
+      wrap.innerHTML = `<div class="report-empty">반을 먼저 선택해주세요.</div>`;
+      return;
+    }
+    units = conceptCurriculumUnits.filter(u => u.target && u.target.type === 'class' && u.target.className === className);
+  } else {
+    units = conceptCurriculumUnits.filter(u => u.target && u.target.type === 'individual');
   }
+  units = units.slice().sort((a,b) => a.id - b.id);
 
-  const units = conceptCurriculumUnits.filter(u => u.className === className).sort((a,b) => a.id - b.id);
   if(units.length === 0){
-    wrap.innerHTML = `<div class="report-empty">이 반에 등록된 단원이 없어요. "기본 18개 단원 가져오기"를 눌러보세요.</div>`;
+    wrap.innerHTML = `<div class="report-empty">등록된 단원이 없어요. ${isClassMode ? '"기본 18개 단원 가져오기"를 눌러보세요.' : '학생을 선택하고 단원을 추가해보세요.'}</div>`;
     return;
   }
 
@@ -2632,6 +2695,7 @@ function renderCurriculumUnitList(){
     <div style="display:flex; align-items:flex-start; gap:8px; background:${u.active ? 'var(--cream-alt)' : '#fff'}; border:1px solid var(--line); border-radius:8px; padding:10px 12px;">
       <input type="checkbox" ${u.active ? 'checked' : ''} onchange="toggleCurriculumUnitActive(${u.id}, this.checked)" style="width:17px; height:17px; margin-top:2px; flex-shrink:0;">
       <div style="flex:1; min-width:0;">
+        <div style="font-size:11px; color:var(--ink-soft); margin-bottom:2px;">${curriculumTargetLabel_(u.target)}</div>
         <div style="font-size:12.5px; font-weight:700; color:${u.active ? 'var(--brand-dark)' : 'var(--ink-soft)'};">${escapeHtml(u.unitName)}</div>
         <div style="font-size:11px; color:var(--ink-soft); margin-top:2px;">${escapeHtml(u.summary)}</div>
       </div>
@@ -2641,15 +2705,17 @@ function renderCurriculumUnitList(){
 }
 
 function importDefaultCurriculumUnits(){
-  const classSel = document.getElementById('cu-class-select');
-  const className = classSel.value;
-  if(!className){ alert('먼저 반을 선택해주세요.'); return; }
+  const target = getCurrentCuTarget_();
+  if(!target){ alert('먼저 반을 선택하거나(반 전체) 학생을 한 명 이상 선택해주세요(개별 학생).'); return; }
 
-  const existingNames = new Set(conceptCurriculumUnits.filter(u => u.className === className).map(u => u.unitName));
+  const isSameTarget = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const existingNames = new Set(
+    conceptCurriculumUnits.filter(u => u.target && isSameTarget(u.target, target)).map(u => u.unitName)
+  );
   let added = 0;
   DEFAULT_CURRICULUM_UNITS.forEach(u => {
     if(existingNames.has(u.unitName)) return; // 이미 있으면 중복 추가 안 함
-    conceptCurriculumUnits.push({ id: nextCurriculumUnitId++, className, unitName: u.unitName, summary: u.summary, active: true });
+    conceptCurriculumUnits.push({ id: nextCurriculumUnitId++, target, unitName: u.unitName, summary: u.summary, active: true });
     added++;
   });
 
@@ -2659,15 +2725,14 @@ function importDefaultCurriculumUnits(){
 }
 
 function addCurriculumUnit(){
-  const classSel = document.getElementById('cu-class-select');
-  const className = classSel.value;
+  const target = getCurrentCuTarget_();
   const unitName = document.getElementById('cu-name').value.trim();
   const summary = document.getElementById('cu-summary').value.trim();
 
-  if(!className){ alert('먼저 반을 선택해주세요.'); return; }
+  if(!target){ alert('먼저 반을 선택하거나(반 전체) 학생을 한 명 이상 선택해주세요(개별 학생).'); return; }
   if(!unitName || !summary){ alert('단원 이름과 요약을 모두 입력해주세요.'); return; }
 
-  conceptCurriculumUnits.push({ id: nextCurriculumUnitId++, className, unitName, summary, active: true });
+  conceptCurriculumUnits.push({ id: nextCurriculumUnitId++, target, unitName, summary, active: true });
 
   document.getElementById('cu-name').value = '';
   document.getElementById('cu-summary').value = '';
@@ -2728,8 +2793,20 @@ function renderConceptItemList(){
   const filter = filterEl.value;
 
   let list = conceptBankItems.slice();
-  if(filter !== 'all') list = list.filter(i => i.className === filter);
-  list.sort((a,b) => a.className.localeCompare(b.className) || a.id - b.id);
+  if(filter !== 'all'){
+    list = list.filter(i => {
+      if(!i.target) return false;
+      if(i.target.type === 'class') return i.target.className === filter;
+      if(i.target.type === 'individual'){
+        return (i.target.studentIds || []).some(id => {
+          const s = students.find(x => x.id === id);
+          return s && s.className === filter;
+        });
+      }
+      return false;
+    });
+  }
+  list.sort((a,b) => a.id - b.id);
 
   document.getElementById('conceptItemCountSub').textContent =
     `등록된 문제 ${conceptBankItems.length}개 (표시 중 ${list.length}개)`;
@@ -2742,7 +2819,7 @@ function renderConceptItemList(){
   listEl.innerHTML = list.map(item => `
     <li>
       <div class="left">
-        <span class="date" style="font-family:'Noto Sans KR',sans-serif;">🏷️ ${escapeHtml(item.className)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</span>
+        <span class="date" style="font-family:'Noto Sans KR',sans-serif;">${curriculumTargetLabel_(item.target)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</span>
         <strong style="font-size:13px;">${escapeHtml(item.question)}</strong>
         <span style="font-size:12px; color:var(--ink-soft);">보기: ${item.choices.map((c,i) => i === item.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)}✓</strong>` : escapeHtml(c)).join(' / ')}</span>
       </div>
@@ -2752,16 +2829,23 @@ function renderConceptItemList(){
 }
 
 // 날짜(일수) 기준으로 그 반의 오늘 출제 문항을 결정 (문제은행을 순서대로 순환)
-function getTodaysConceptItems(className){
-  const classItems = conceptBankItems.filter(i => i.className === className).sort((a,b) => a.id - b.id);
-  if(classItems.length === 0) return [];
-  const perDay = conceptDailyCounts[className] || 5;
+function itemMatchesStudent_(item, student){
+  if(!item.target) return false;
+  if(item.target.type === 'individual') return (item.target.studentIds || []).includes(student.id);
+  if(item.target.type === 'class') return item.target.className === student.className;
+  return false;
+}
+
+function getTodaysConceptItemsForStudent(student){
+  const relevantItems = conceptBankItems.filter(i => itemMatchesStudent_(i, student)).sort((a,b) => a.id - b.id);
+  if(relevantItems.length === 0) return [];
+  const perDay = conceptDailyCounts[student.className] || 5;
   const dayIndex = Math.floor(Date.now() / 86400000);
-  const total = classItems.length;
+  const total = relevantItems.length;
   const startIdx = (dayIndex * perDay) % total;
   const result = [];
   for(let i = 0; i < Math.min(perDay, total); i++){
-    result.push(classItems[(startIdx + i) % total]);
+    result.push(relevantItems[(startIdx + i) % total]);
   }
   return result;
 }
@@ -2778,9 +2862,9 @@ function renderConceptDraftList(){
     return;
   }
 
-  listEl.innerHTML = conceptDraftItems.slice().sort((a,b) => a.className.localeCompare(b.className) || a.id - b.id).map(item => `
+  listEl.innerHTML = conceptDraftItems.slice().sort((a,b) => a.id - b.id).map(item => `
     <div style="background:var(--cream-alt); border-radius:8px; padding:12px;">
-      <div style="font-size:11px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; margin-bottom:5px;">🏷️ ${escapeHtml(item.className)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</div>
+      <div style="font-size:11px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; margin-bottom:5px;">${curriculumTargetLabel_(item.target)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</div>
       <div style="font-size:13px; font-weight:700; margin-bottom:6px;">${escapeHtml(item.question)}</div>
       <div style="font-size:12px; color:var(--ink-soft); margin-bottom:8px;">보기: ${item.choices.map((c,i) => i === item.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)}✓</strong>` : escapeHtml(c)).join(' / ')}</div>
       <div style="display:flex; gap:6px;">
@@ -2794,7 +2878,7 @@ function renderConceptDraftList(){
 function approveConceptDraft(id){
   const draft = conceptDraftItems.find(i => i.id === id);
   if(!draft) return;
-  conceptBankItems.push({ id: nextConceptItemId++, className: draft.className, unit: draft.unit, question: draft.question, choices: draft.choices, correctIndex: draft.correctIndex });
+  conceptBankItems.push({ id: nextConceptItemId++, target: draft.target, unit: draft.unit, question: draft.question, choices: draft.choices, correctIndex: draft.correctIndex });
   conceptDraftItems = conceptDraftItems.filter(i => i.id !== id);
   renderConceptDraftList();
   renderConceptItemList();
@@ -2811,7 +2895,7 @@ function approveAllConceptDrafts(){
   if(conceptDraftItems.length === 0) return;
   if(!confirm(`대기 중인 문제 ${conceptDraftItems.length}개를 전부 승인할까요?`)) return;
   conceptDraftItems.forEach(draft => {
-    conceptBankItems.push({ id: nextConceptItemId++, className: draft.className, unit: draft.unit, question: draft.question, choices: draft.choices, correctIndex: draft.correctIndex });
+    conceptBankItems.push({ id: nextConceptItemId++, target: draft.target, unit: draft.unit, question: draft.question, choices: draft.choices, correctIndex: draft.correctIndex });
   });
   conceptDraftItems = [];
   renderConceptDraftList();
@@ -2827,13 +2911,12 @@ function renderConceptTodaySubmissions(){
   const now = new Date();
   const todayIso = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   const todayRecords = conceptTestRecords.filter(r => r.date === todayIso);
-  const submittedIds = new Set(todayRecords.map(r => r.studentId));
-  const eligibleStudents = students.filter(s => s.className && getTodaysConceptItems(s.className).length > 0);
+  const eligibleStudents = students.filter(s => getTodaysConceptItemsForStudent(s).length > 0);
 
   subEl.textContent = `오늘(${todayIso}) 대상 ${eligibleStudents.length}명 중 ${todayRecords.length}명 제출`;
 
   if(eligibleStudents.length === 0){
-    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">오늘 출제된 반이 없어요. 반별로 문제를 등록해주세요.</li>`;
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">오늘 출제된 학생이 없어요. 커리큘럼 단원을 등록해주세요.</li>`;
     return;
   }
 
@@ -4728,6 +4811,7 @@ function init(){
   setProgressMode('individual');
   setHwAssignMode('class');
   setGmMode('class');
+  setCuMode('class');
   switchTab('dashboard');
   renderDashboard();
   renderStudents();
