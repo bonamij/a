@@ -941,49 +941,62 @@
     </section>
 
     <section class="panel" id="panel-conceptbank">
-
       <div class="card">
         <div class="card-head">
           <div>
-            <h3>📖 커리큘럼 단원 관리</h3>
-            <div class="sub">새벽 자동생성이 어떤 단원에서 문제를 만들지 정해요. 체크된 단원만 사용돼요.</div>
+            <h3>🧩 개념빈칸 문제 추가</h3>
+            <div class="sub">반별로 문제은행을 쌓아두면, 매일 자동으로 순서대로 돌아가며 학생들에게 나가요. 학생은 보기 중에서 클릭해서 답을 골라요.</div>
           </div>
         </div>
-
-        <div class="field">
-          <label>대상</label>
-          <div style="display:flex; gap:6px;">
-            <button type="button" class="btn small ghost active" id="cu-mode-class" onclick="setCuMode('class')">반 전체</button>
-            <button type="button" class="btn small ghost" id="cu-mode-individual" onclick="setCuMode('individual')">개별 학생</button>
+        <form id="conceptItemForm" onsubmit="addConceptItem(event)">
+          <div class="inline-form">
+            <div class="field">
+              <label for="ci-class-select">반</label>
+              <select id="ci-class-select" required><option value="">반을 선택하세요</option></select>
+            </div>
+            <div class="field">
+              <label for="ci-unit">단원 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(선택)</span></label>
+              <input type="text" id="ci-unit" placeholder="예: 이차방정식">
+            </div>
           </div>
-        </div>
-
-        <div id="cu-class-wrap">
           <div class="field">
-            <label for="cu-class-select">반</label>
-            <select id="cu-class-select" onchange="renderCurriculumUnitList()"><option value="">반을 선택하세요</option></select>
+            <label for="ci-question">문제 (빈칸 부분에 ___ 표시)</label>
+            <input type="text" id="ci-question" placeholder="예: 피타고라스 정리: 직각삼각형에서 a² + b² = ___" style="width:100%;" required>
           </div>
-        </div>
-
-        <div id="cu-individual-wrap" style="display:none;">
           <div class="field">
-            <label>학생 선택 (여러 명 가능)</label>
-            <div id="cu-student-checks" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+            <label>보기 (2개는 필수, 3번째는 선택) · 정답 옆 동그라미를 체크하세요</label>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="radio" name="ci-correct" value="0" checked style="width:16px; height:16px; flex-shrink:0;">
+                <input type="text" id="ci-choice-0" placeholder="보기 1" required style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:6px;">
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="radio" name="ci-correct" value="1" style="width:16px; height:16px; flex-shrink:0;">
+                <input type="text" id="ci-choice-1" placeholder="보기 2" required style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:6px;">
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="radio" name="ci-correct" value="2" style="width:16px; height:16px; flex-shrink:0;">
+                <input type="text" id="ci-choice-2" placeholder="보기 3 (선택)" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:6px;">
+              </div>
+            </div>
           </div>
+          <button type="submit" class="btn" style="margin-top:8px;">문제 추가</button>
+        </form>
+
+        <div style="background:var(--cream-alt); border-radius:10px; padding:14px; margin-top:16px;">
+          <label for="ci-bulk-paste" style="display:block; font-size:12.5px; font-weight:700; color:var(--brand-dark); margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;">⚡ 여러 문제 한 번에 넣기</label>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 8px; font-family:'Noto Sans KR',sans-serif;">위에서 반을 먼저 선택하고, 한 줄에 문제 하나씩 "문제 | 보기1 | 보기2 | (보기3) | 정답번호" 형식으로 입력하세요. 정답번호는 정답이 몇 번째 보기인지예요(1부터 시작). 예:<br>
+            <span class="mono" style="font-size:11px;">피타고라스 정리: a²+b²=___ | b² | c² | a² | 2<br>일차함수 y=ax+b에서 a는 ___를 뜻한다 | 절편 | 기울기 | 2</span></p>
+          <textarea id="ci-bulk-paste" rows="5" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-family:'Space Mono',monospace; font-size:12px;" placeholder="문제 | 보기1 | 보기2 | 보기3 | 정답번호"></textarea>
+          <button type="button" class="btn small ghost" style="margin-top:8px;" onclick="bulkAddConceptItems()">↓ 선택된 반에 한꺼번에 추가</button>
         </div>
 
-        <button type="button" class="btn small ghost" onclick="importDefaultCurriculumUnits()">📥 기본 18개 단원 가져오기 (선택한 대상에 적용)</button>
-        <div id="curriculumUnitListBody" style="display:flex; flex-direction:column; gap:8px; margin-top:12px;"></div>
-
-        <div style="background:var(--cream-alt); border-radius:10px; padding:14px; margin-top:14px;">
-          <label style="display:block; font-size:12.5px; font-weight:700; color:var(--brand-dark); margin-bottom:8px; font-family:'Noto Sans KR',sans-serif;">➕ 새 단원 직접 추가 (위에서 선택한 대상에게)</label>
-          <div class="field" style="margin-bottom:8px;">
-            <input type="text" id="cu-name" placeholder="단원 이름 (예: 8-1 이차방정식의 풀이)" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px;">
-          </div>
-          <div class="field" style="margin-bottom:8px;">
-            <textarea id="cu-summary" rows="2" placeholder="개념 요약 (예: 인수분해를 이용해 이차방정식의 해를 구한다...)" style="width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-family:'Noto Sans KR',sans-serif; font-size:12.5px;"></textarea>
-          </div>
-          <button type="button" class="btn small" onclick="addCurriculumUnit()">단원 추가</button>
+        <div style="background:var(--cream-alt); border-radius:10px; padding:14px; margin-top:12px;">
+          <label style="display:block; font-size:12.5px; font-weight:700; color:var(--brand-dark); margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;">📷 AI로 사진에서 문제 만들기</label>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 8px; font-family:'Noto Sans KR',sans-serif;">위에서 반을 먼저 선택하고, 개념 설명이 있는 페이지 사진을 올리면 AI가 빈칸 객관식 문제를 만들어줘요. 원본 문제를 그대로 베끼지 않고, 같은 개념을 새로 물어보는 문제로 만들도록 되어있어요. 만들어진 문제는 검토하고 수정한 뒤 추가하시면 돼요.</p>
+          <input type="file" id="ci-photo-file" accept="image/*" multiple style="margin-bottom:8px;">
+          <div><button type="button" class="btn small ghost" onclick="analyzeConceptPhoto()">🔍 AI로 문제 만들기</button></div>
+          <div id="ciPhotoAnalysisResult" style="margin-top:12px;"></div>
         </div>
       </div>
 
@@ -1003,24 +1016,15 @@
             <h3>📋 문제은행 목록</h3>
             <div class="sub" id="conceptItemCountSub">등록된 문제 0개</div>
           </div>
-          <div class="field">
-            <label for="conceptItemFilterClass">반 필터</label>
-            <select id="conceptItemFilterClass" onchange="renderConceptItemList()"><option value="all">전체</option></select>
+          <div style="display:flex; align-items:flex-end; gap:10px;">
+            <div class="field" style="margin-bottom:0;">
+              <label for="conceptItemFilterClass">반 필터</label>
+              <select id="conceptItemFilterClass" onchange="renderConceptItemList()"><option value="all">전체</option></select>
+            </div>
+            <button type="button" class="btn small danger-text" onclick="deleteAllConceptItems()">🗑️ 전체 삭제</button>
           </div>
         </div>
         <ul class="recent-list" id="conceptItemListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <h3>📋 AI 검토 대기함</h3>
-            <div class="sub" id="conceptDraftCountSub">대기 중인 문제 0개</div>
-          </div>
-          <button type="button" class="btn small ghost" onclick="approveAllConceptDrafts()">✅ 전체 승인</button>
-        </div>
-        <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 10px; font-family:'Noto Sans KR',sans-serif;">새벽에 AI가 자동으로 만든 문제가 여기 먼저 쌓여요. 승인해야 학생한테 나가요.</p>
-        <div id="conceptDraftListBody" style="display:flex; flex-direction:column; gap:10px;"></div>
       </div>
 
       <div class="card">
@@ -1502,10 +1506,6 @@ let nextConceptItemId = 1;
 let conceptDailyCounts = {};
 let conceptTestRecords = [];
 let nextConceptRecordId = 1;
-let conceptDraftItems = [];
-let nextConceptDraftId = 1;
-let conceptCurriculumUnits = [];
-let nextCurriculumUnitId = 1;
 const ATT_STATUSES = [
   { key:'출석', cls:'present' },
   { key:'지각', cls:'late' },
@@ -1540,28 +1540,6 @@ let examAnalysis = [];
 let nextExamId = 1;
 
 let parentMessages = [];
-
-// "기본 18개 단원 가져오기" 버튼에 쓰이는 기본 커리큘럼 (중2-2 개념노트 기반)
-const DEFAULT_CURRICULUM_UNITS = [
-  { unitName:"1-1 이등변삼각형", summary:"이등변삼각형: 두 변의 길이가 같은 삼각형. 꼭지각(길이가 같은 두 변이 이루는 각)/밑변(꼭지각의 대변)/밑각. 두 밑각의 크기는 같다. 꼭지각의 이등분선은 밑변을 수직이등분한다. 두 내각이 같으면 이등변삼각형(역)." },
-  { unitName:"1-2 직각삼각형의 합동조건", summary:"직각삼각형에서 직각의 대변=빗변. RHA합동(빗변+한 예각), RHS합동(빗변+다른 한 변). 각의 이등분선 위의 점은 그 각을 이루는 두 변까지 거리가 같다(역도 성립)." },
-  { unitName:"1-3 삼각형의 외심과 내심", summary:"외심=외접원 중심=세 변의 수직이등분선의 교점, OA=OB=OC. 직각삼각형의 외심=빗변의 중점. 내심=내접원 중심=세 내각의 이등분선의 교점, ID=IE=IF, 항상 내부에 위치." },
-  { unitName:"2-1 평행사변형", summary:"두 쌍의 대변이 각각 평행. 대변 길이 같음/대각 크기 같음/두 대각선이 서로를 이등분. 되는 조건 5가지 중 하나만 만족해도 평행사변형." },
-  { unitName:"2-2 여러 가지 사각형", summary:"직사각형(네 내각 90도, 대각선 길이 같고 이등분), 마름모(네 변 길이 같음, 대각선 수직이등분), 정사각형(둘 다), 사다리꼴/등변사다리꼴." },
-  { unitName:"2-3 평행선과 넓이", summary:"밑변 공통+평행선 사이=넓이 같음. 높이가 같으면 넓이비=밑변비. 등적변형." },
-  { unitName:"3-1 닮음의 뜻과 성질", summary:"닮음비, 둘레의 비=닮음비, 넓이의 비=닮음비의 제곱, 부피의 비=닮음비의 세제곱." },
-  { unitName:"3-2 삼각형의 닮음조건", summary:"SSS닮음(세 변의 비), SAS닮음(두 변의 비+끼인각), AA닮음(두 각). 직각삼각형에서 한 예각이 같으면 AA닮음." },
-  { unitName:"4-1 삼각형과 평행선", summary:"BC∥DE이면 AB:AD=AC:AE=BC:DE (역도 성립). 내각/외각의 이등분선과 변의 비." },
-  { unitName:"4-2 중점연결정리", summary:"두 변의 중점을 이은 선분은 나머지 변과 평행, 길이는 1/2. 사다리꼴에서 MN=(AD+BC)/2." },
-  { unitName:"4-3 평행선 사이의 선분의 길이의 비", summary:"l∥m∥n이면 a:b=a′:b′ (역은 성립하지 않음)." },
-  { unitName:"4-4 삼각형의 무게중심", summary:"세 중선의 교점=무게중심, 2:1로 나눔, 중선은 넓이를 이등분, 6개 삼각형 넓이 모두 같음(1/6씩)." },
-  { unitName:"5-1 피타고라스 정리", summary:"a²+b²=c² (직각삼각형). c²=a²+b²이면 직각, c²>a²+b²이면 둔각, c²<a²+b²이면 예각삼각형." },
-  { unitName:"5-2 피타고라스 정리의 활용", summary:"두 대각선이 직교하는 사각형: AB²+CD²=AD²+BC². 반원 넓이: S1+S2=S3." },
-  { unitName:"6-1 경우의 수", summary:"동시에 일어나지 않음(또는)=덧셈법칙 a+b, 동시에 일어남(그리고)=곱셈법칙 a×b." },
-  { unitName:"6-2 여러 가지 경우의 수", summary:"한 줄 세우기 n!, 대표뽑기(자격 다름=n(n-1), 자격 같음=n(n-1)/2), 자연수 만들기(맨 앞 0 불가)." },
-  { unitName:"7-1 확률의 뜻과 성질", summary:"확률=해당 경우의 수/전체 경우의 수, 0≤p≤1, 여사건 확률=1-p." },
-  { unitName:"7-2 확률의 계산", summary:"또는(동시에 안 일어남)=덧셈 p+q, 동시에(독립)=곱셈 p×q, 비복원추출=종속시행." },
-];
 
 const TAB_TITLES = {
   home:'홈', dashboard:'대시보드', students:'학생 명단', progress:'진도 관리', attendance:'출결 관리', daily:'데일리 테스트',
@@ -1936,10 +1914,9 @@ function renderStudents(){
     renderHomeworkList();
     renderAnswerKeyList();
   }
-  if(document.getElementById('cu-class-select')){
+  if(document.getElementById('ci-class-select')){
     refreshConceptClassSelects();
     renderConceptItemList();
-    renderConceptDraftList();
     renderConceptTodaySubmissions();
   }
   if(document.getElementById('m-student')){
@@ -2608,166 +2585,20 @@ function renderGeneralMakeupList(){
    개념빈칸 테스트
 ========================================================= */
 function refreshConceptClassSelects(){
-  const cuClassSel = document.getElementById('cu-class-select');
+  const classSel = document.getElementById('ci-class-select');
   const filterSel = document.getElementById('conceptItemFilterClass');
-  if(!cuClassSel) return;
+  if(!classSel) return;
 
+  const prevClass = classSel.value, prevFilter = filterSel.value;
   const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
 
-  if(filterSel){
-    const prevFilter = filterSel.value;
-    filterSel.innerHTML = `<option value="all">전체</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-    if(prevFilter === 'all' || classNames.includes(prevFilter)) filterSel.value = prevFilter;
-  }
+  classSel.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  if(classNames.includes(prevClass)) classSel.value = prevClass;
 
-  const prevCuClass = cuClassSel.value;
-  cuClassSel.innerHTML = `<option value="">반을 선택하세요</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-  if(classNames.includes(prevCuClass)) cuClassSel.value = prevCuClass;
-
-  const cuChecksWrap = document.getElementById('cu-student-checks');
-  if(cuChecksWrap){
-    cuChecksWrap.innerHTML = students.map(s => `
-      <label style="display:flex; align-items:center; gap:5px; background:var(--cream-alt); border-radius:8px; padding:6px 10px; font-size:12.5px; font-family:'Noto Sans KR',sans-serif; cursor:pointer;">
-        <input type="checkbox" class="cu-student-check" value="${s.id}"> ${escapeHtml(s.name)}
-      </label>
-    `).join('');
-  }
-
-  renderCurriculumUnitList();
+  filterSel.innerHTML = `<option value="all">전체</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  if(prevFilter === 'all' || classNames.includes(prevFilter)) filterSel.value = prevFilter;
 
   renderConceptDailyCountList(classNames);
-}
-
-function setCuMode(mode){
-  document.getElementById('cu-mode-class').classList.toggle('active', mode === 'class');
-  document.getElementById('cu-mode-individual').classList.toggle('active', mode === 'individual');
-  document.getElementById('cu-class-wrap').style.display = mode === 'class' ? 'block' : 'none';
-  document.getElementById('cu-individual-wrap').style.display = mode === 'individual' ? 'block' : 'none';
-  renderCurriculumUnitList();
-}
-
-function getCurrentCuTarget_(){
-  const isClassMode = document.getElementById('cu-mode-class').classList.contains('active');
-  if(isClassMode){
-    const className = document.getElementById('cu-class-select').value;
-    if(!className) return null;
-    return { type:'class', className };
-  }
-  const studentIds = Array.from(document.querySelectorAll('.cu-student-check:checked')).map(el => Number(el.value));
-  if(studentIds.length === 0) return null;
-  return { type:'individual', studentIds };
-}
-
-function curriculumTargetLabel_(target){
-  if(!target) return '(대상 없음)';
-  if(target.type === 'class') return `🏷️ ${target.className}`;
-  const names = (target.studentIds || []).map(id => {
-    const s = students.find(x => x.id === id);
-    return s ? s.name : '(삭제된 학생)';
-  });
-  return `👤 ${names.join(', ')}`;
-}
-
-function renderCurriculumUnitList(){
-  const wrap = document.getElementById('curriculumUnitListBody');
-  if(!wrap) return;
-  const isClassMode = document.getElementById('cu-mode-class').classList.contains('active');
-
-  let units;
-  if(isClassMode){
-    const className = document.getElementById('cu-class-select').value;
-    if(!className){
-      wrap.innerHTML = `<div class="report-empty">반을 먼저 선택해주세요.</div>`;
-      return;
-    }
-    units = conceptCurriculumUnits.filter(u => u.target && u.target.type === 'class' && u.target.className === className);
-  } else {
-    units = conceptCurriculumUnits.filter(u => u.target && u.target.type === 'individual');
-  }
-  units = units.slice().sort((a,b) => a.id - b.id);
-
-  if(units.length === 0){
-    wrap.innerHTML = `<div class="report-empty">등록된 단원이 없어요. ${isClassMode ? '"기본 18개 단원 가져오기"를 눌러보세요.' : '학생을 선택하고 단원을 추가해보세요.'}</div>`;
-    return;
-  }
-
-  wrap.innerHTML = units.map(u => `
-    <div style="display:flex; align-items:flex-start; gap:8px; background:${u.active ? 'var(--cream-alt)' : '#fff'}; border:1px solid var(--line); border-radius:8px; padding:10px 12px;">
-      <input type="checkbox" ${u.active ? 'checked' : ''} onchange="toggleCurriculumUnitActive(${u.id}, this.checked)" style="width:17px; height:17px; margin-top:2px; flex-shrink:0;">
-      <div style="flex:1; min-width:0;">
-        <div style="font-size:11px; color:var(--ink-soft); margin-bottom:2px;">${curriculumTargetLabel_(u.target)}</div>
-        <div style="font-size:12.5px; font-weight:700; color:${u.active ? 'var(--brand-dark)' : 'var(--ink-soft)'};">${escapeHtml(u.unitName)}</div>
-        <div style="font-size:11px; color:var(--ink-soft); margin-top:2px;">${escapeHtml(u.summary)}</div>
-      </div>
-      <button class="btn small danger-text" onclick="deleteCurriculumUnit(${u.id})">삭제</button>
-    </div>
-  `).join('');
-}
-
-function importDefaultCurriculumUnits(){
-  const target = getCurrentCuTarget_();
-  if(!target){ alert('먼저 반을 선택하거나(반 전체) 학생을 한 명 이상 선택해주세요(개별 학생).'); return; }
-
-  const isSameTarget = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-  const existingNames = new Set(
-    conceptCurriculumUnits.filter(u => u.target && isSameTarget(u.target, target)).map(u => u.unitName)
-  );
-  let added = 0;
-  DEFAULT_CURRICULUM_UNITS.forEach(u => {
-    if(existingNames.has(u.unitName)) return; // 이미 있으면 중복 추가 안 함
-    conceptCurriculumUnits.push({ id: nextCurriculumUnitId++, target, unitName: u.unitName, summary: u.summary, active: true });
-    added++;
-  });
-
-  renderCurriculumUnitList();
-  scheduleSync();
-  alert(added > 0 ? `기본 단원 ${added}개를 가져왔어요!` : '이미 기본 단원이 다 들어있어요.');
-}
-
-function addCurriculumUnit(){
-  const target = getCurrentCuTarget_();
-  const unitName = document.getElementById('cu-name').value.trim();
-  const summary = document.getElementById('cu-summary').value.trim();
-
-  if(!target){ alert('먼저 반을 선택하거나(반 전체) 학생을 한 명 이상 선택해주세요(개별 학생).'); return; }
-  if(!unitName || !summary){ alert('단원 이름과 요약을 모두 입력해주세요.'); return; }
-
-  conceptCurriculumUnits.push({ id: nextCurriculumUnitId++, target, unitName, summary, active: true });
-
-  document.getElementById('cu-name').value = '';
-  document.getElementById('cu-summary').value = '';
-
-  renderCurriculumUnitList();
-  scheduleSync();
-}
-
-function toggleCurriculumUnitActive(id, checked){
-  const u = conceptCurriculumUnits.find(x => x.id === id);
-  if(!u) return;
-  u.active = checked;
-  renderCurriculumUnitList();
-  scheduleSync();
-}
-
-async function deleteCurriculumUnit(id){
-  if(!confirm('이 단원을 삭제하시겠습니까? (자동생성 대상에서만 빠지고, 이미 만들어진 문제는 안 지워져요)')) return;
-  if(!sheetSyncUrl){
-    conceptCurriculumUnits = conceptCurriculumUnits.filter(u => u.id !== id);
-    renderCurriculumUnitList();
-    return;
-  }
-  try {
-    const res = await fetch(sheetSyncUrl, { method:'GET' });
-    const freshData = await res.json();
-    assertDataLooksSane_(freshData);
-    freshData.conceptCurriculumUnits = (freshData.conceptCurriculumUnits || []).filter(u => u.id !== id);
-    await fetch(sheetSyncUrl, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(freshData) });
-    applyAllData(freshData);
-    renderStudents();
-    renderDashboard();
-  } catch(err){
-    alert('삭제 중 오류가 발생했어요: ' + (err.message || err));
-  }
 }
 
 function renderConceptDailyCountList(classNames){
@@ -2792,26 +2623,240 @@ function setConceptDailyCount(className, value){
   scheduleSync();
 }
 
+function addConceptItem(e){
+  e.preventDefault();
+  const className = document.getElementById('ci-class-select').value;
+  const unit = document.getElementById('ci-unit').value.trim();
+  const question = document.getElementById('ci-question').value.trim();
+  const choices = [0,1,2].map(i => document.getElementById(`ci-choice-${i}`).value.trim()).filter(Boolean);
+  const correctIndex = Number(document.querySelector('input[name="ci-correct"]:checked').value);
 
-async function deleteConceptItem(id){
-  if(!confirm('이 문제를 삭제하시겠습니까?')) return;
-  if(!sheetSyncUrl){
-    conceptBankItems = conceptBankItems.filter(i => i.id !== id);
-    renderConceptItemList();
+  if(!className || !question || choices.length < 2){
+    alert('반, 문제, 보기 2개 이상을 입력해주세요.');
     return;
   }
-  try {
-    const res = await fetch(sheetSyncUrl, { method:'GET' });
-    const freshData = await res.json();
-    assertDataLooksSane_(freshData);
-    freshData.conceptBankItems = (freshData.conceptBankItems || []).filter(i => i.id !== id);
-    await fetch(sheetSyncUrl, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(freshData) });
-    applyAllData(freshData);
-    renderStudents();
-    renderDashboard();
-  } catch(err){
-    alert('삭제 중 오류가 발생했어요: ' + (err.message || err));
+  if(correctIndex >= choices.length){
+    alert('정답으로 체크한 보기가 비어있어요. 보기를 채우거나 다른 보기를 정답으로 체크해주세요.');
+    return;
   }
+
+  conceptBankItems.push({ id: nextConceptItemId++, className, unit, question, choices, correctIndex });
+
+  document.getElementById('ci-unit').value = '';
+  document.getElementById('ci-question').value = '';
+  [0,1,2].forEach(i => document.getElementById(`ci-choice-${i}`).value = '');
+  document.querySelector('input[name="ci-correct"][value="0"]').checked = true;
+  document.getElementById('ci-question').focus();
+
+  renderConceptItemList();
+  scheduleSync();
+}
+
+// "문제 | 보기1 | 보기2 | (보기3) | 정답번호" 형식 한 줄을 파싱
+function parseConceptBulkLine_(line){
+  const parts = line.split('|').map(p => p.trim()).filter(p => p !== '');
+  if(parts.length < 4) return null;
+  const question = parts[0];
+  const answerIdx = Number(parts[parts.length - 1]) - 1;
+  const choices = parts.slice(1, parts.length - 1);
+  if(choices.length < 2 || choices.length > 3) return null;
+  if(isNaN(answerIdx) || answerIdx < 0 || answerIdx >= choices.length) return null;
+  return { question, choices, correctIndex: answerIdx };
+}
+
+function bulkAddConceptItems(){
+  const className = document.getElementById('ci-class-select').value;
+  const unit = document.getElementById('ci-unit').value.trim();
+  const raw = document.getElementById('ci-bulk-paste').value;
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+
+  if(!className){
+    alert('먼저 위에서 반을 선택해주세요.');
+    return;
+  }
+  if(lines.length === 0){
+    alert('붙여넣을 문제가 없어요.');
+    return;
+  }
+
+  let added = 0;
+  const failedLines = [];
+  lines.forEach(line => {
+    const parsed = parseConceptBulkLine_(line);
+    if(parsed){
+      conceptBankItems.push({ id: nextConceptItemId++, className, unit, question: parsed.question, choices: parsed.choices, correctIndex: parsed.correctIndex });
+      added++;
+    } else {
+      failedLines.push(line);
+    }
+  });
+
+  document.getElementById('ci-bulk-paste').value = failedLines.join('\n');
+  renderConceptItemList();
+  if(added > 0) scheduleSync();
+
+  if(failedLines.length){
+    alert(`${added}개는 추가됐고, ${failedLines.length}줄은 형식을 못 알아봤어요. (입력창에 남겨뒀어요, 형식을 확인해서 다시 눌러주세요)`);
+  } else {
+    alert(`${added}개 문제를 추가했어요!`);
+  }
+}
+
+let lastConceptPhotoAnalysis = null;
+
+async function analyzeConceptPhoto(){
+  const className = document.getElementById('ci-class-select').value;
+  const fileInput = document.getElementById('ci-photo-file');
+  const resultEl = document.getElementById('ciPhotoAnalysisResult');
+  const files = Array.from(fileInput.files || []);
+
+  if(!className){
+    alert('먼저 위에서 반을 선택해주세요.');
+    return;
+  }
+  if(files.length === 0){
+    alert('사진을 먼저 선택해주세요 (여러 장 선택 가능해요).');
+    return;
+  }
+  if(!sheetSyncUrl){
+    alert('구글시트 연동이 꺼져 있어요. "데이터 관리" 탭에서 먼저 연동해주세요.');
+    return;
+  }
+
+  resultEl.innerHTML = `<div class="report-empty">🔍 사진을 최적화하고 AI가 ${files.length}장에서 문제를 만들고 있어요... (몇 초~1분 정도 걸릴 수 있어요)</div>`;
+
+  try {
+    const dataUrls = await Promise.all(files.map(f => compressImageToDataURL(f, 1600, 0.75)));
+    const images = dataUrls.map((dataUrl) => ({
+      data: dataUrl.split(',')[1],
+      mimeType: 'image/jpeg'
+    }));
+
+    let res;
+    try {
+      res = await fetch(sheetSyncUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'generateConceptQuestions', images })
+      });
+    } catch(networkErr){
+      resultEl.innerHTML = `<div class="report-empty">❌ 서버에 연결하지 못했어요.<br><span style="font-size:11px;">오류 내용: ${escapeHtml(networkErr.message || String(networkErr))}</span></div>`;
+      return;
+    }
+
+    if(!res.ok){
+      const bodyText = await res.text().catch(() => '');
+      resultEl.innerHTML = `<div class="report-empty">❌ 서버에서 오류 응답을 보냈어요 (상태 코드 ${res.status}).<br><span style="font-size:11px;">${escapeHtml(bodyText.slice(0, 200))}</span></div>`;
+      return;
+    }
+
+    const result = await res.json();
+
+    if(result.error){
+      resultEl.innerHTML = `<div class="report-empty">❌ ${escapeHtml(result.error)}</div>`;
+      return;
+    }
+
+    const questions = Array.isArray(result.questions) ? result.questions : [];
+    lastConceptPhotoAnalysis = { className, questions };
+
+    if(questions.length === 0){
+      resultEl.innerHTML = `<div class="report-empty">❌ AI가 문제를 만들지 못했어요. 사진이 잘 보이는지 확인하고 다시 시도해주세요.</div>`;
+      return;
+    }
+
+    renderGeneratedConceptQuestions();
+  } catch(err){
+    resultEl.innerHTML = `<div class="report-empty">❌ 분석 요청에 실패했어요.<br><span style="font-size:11px;">오류 내용: ${escapeHtml(err.message || String(err))}</span></div>`;
+  }
+}
+
+function renderGeneratedConceptQuestions(){
+  const resultEl = document.getElementById('ciPhotoAnalysisResult');
+  if(!lastConceptPhotoAnalysis) return;
+  const { questions } = lastConceptPhotoAnalysis;
+
+  resultEl.innerHTML = `
+    <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:600;">✅ AI가 문제 ${questions.length}개를 만들었어요. 내용을 확인·수정하고 원하는 것만 골라 추가하세요.</p>
+    <div style="display:flex; flex-direction:column; gap:12px;" id="ciGeneratedList">
+      ${questions.map((q, qi) => `
+        <div style="background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px;">
+          <label style="display:flex; align-items:center; gap:6px; margin-bottom:6px; font-size:11px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">
+            <input type="checkbox" id="cig-use-${qi}" checked style="width:15px; height:15px;"> 이 문제 포함
+          </label>
+          <input type="text" id="cig-question-${qi}" value="${escapeHtml(q.question || '')}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px; font-size:12.5px;">
+          ${[0,1,2].map(ci => `
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              <input type="radio" name="cig-correct-${qi}" value="${ci}" ${(q.correctIndex || 0) === ci ? 'checked' : ''} style="width:15px; height:15px; flex-shrink:0;">
+              <input type="text" id="cig-choice-${qi}-${ci}" value="${escapeHtml((q.choices || [])[ci] || '')}" placeholder="${ci < 2 ? '보기 ' + (ci+1) : '보기 3 (선택)'}" style="flex:1; padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-size:12.5px;">
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+    </div>
+    <button type="button" class="btn small" style="margin-top:10px;" onclick="applyGeneratedConceptQuestions()">✔️ 체크된 문제 문제은행에 추가</button>
+    <details style="font-size:11px; color:var(--ink-soft); margin-top:8px;">
+      <summary style="cursor:pointer;">🔧 AI 원본 응답 보기 (문제 생길 때 확인용)</summary>
+      <pre style="white-space:pre-wrap; word-break:break-all; background:#fff; padding:8px; border-radius:6px; margin-top:6px; font-family:'Space Mono',monospace; font-size:10.5px;">${escapeHtml(JSON.stringify(lastConceptPhotoAnalysis, null, 2))}</pre>
+    </details>
+  `;
+}
+
+function applyGeneratedConceptQuestions(){
+  if(!lastConceptPhotoAnalysis) return;
+  const { className, questions } = lastConceptPhotoAnalysis;
+  const unit = document.getElementById('ci-unit').value.trim();
+
+  let added = 0;
+  questions.forEach((q, qi) => {
+    const useIt = document.getElementById(`cig-use-${qi}`);
+    if(!useIt || !useIt.checked) return;
+
+    const question = document.getElementById(`cig-question-${qi}`).value.trim();
+    const choices = [0,1,2].map(ci => document.getElementById(`cig-choice-${qi}-${ci}`).value.trim()).filter(Boolean);
+    const correctIndexEl = document.querySelector(`input[name="cig-correct-${qi}"]:checked`);
+    const correctIndex = correctIndexEl ? Number(correctIndexEl.value) : 0;
+
+    if(!question || choices.length < 2 || correctIndex >= choices.length) return;
+
+    conceptBankItems.push({ id: nextConceptItemId++, className, unit, question, choices, correctIndex });
+    added++;
+  });
+
+  renderConceptItemList();
+  if(added > 0) scheduleSync();
+
+  lastConceptPhotoAnalysis = null;
+  document.getElementById('ciPhotoAnalysisResult').innerHTML = '';
+  document.getElementById('ci-photo-file').value = '';
+  alert(`${added}개 문제를 문제은행에 추가했어요!`);
+}
+
+function deleteConceptItem(id){
+  if(!confirm('이 문제를 삭제하시겠습니까?')) return;
+  conceptBankItems = conceptBankItems.filter(i => i.id !== id);
+  renderConceptItemList();
+  scheduleSync();
+}
+
+// 반 필터가 "전체"면 전체 문제를, 특정 반이 선택돼 있으면 그 반 문제만 한 번에 삭제
+function deleteAllConceptItems(){
+  const filterEl = document.getElementById('conceptItemFilterClass');
+  const filter = filterEl ? filterEl.value : 'all';
+
+  const target = filter === 'all' ? conceptBankItems.slice() : conceptBankItems.filter(i => i.className === filter);
+  if(target.length === 0){
+    alert('삭제할 문제가 없어요.');
+    return;
+  }
+
+  const label = filter === 'all' ? '전체' : `"${filter}" 반`;
+  if(!confirm(`${label} 문제 ${target.length}개를 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없어요.`)) return;
+
+  const targetIds = new Set(target.map(i => i.id));
+  conceptBankItems = conceptBankItems.filter(i => !targetIds.has(i.id));
+  renderConceptItemList();
+  scheduleSync();
 }
 
 function renderConceptItemList(){
@@ -2821,20 +2866,8 @@ function renderConceptItemList(){
   const filter = filterEl.value;
 
   let list = conceptBankItems.slice();
-  if(filter !== 'all'){
-    list = list.filter(i => {
-      if(!i.target) return false;
-      if(i.target.type === 'class') return i.target.className === filter;
-      if(i.target.type === 'individual'){
-        return (i.target.studentIds || []).some(id => {
-          const s = students.find(x => x.id === id);
-          return s && s.className === filter;
-        });
-      }
-      return false;
-    });
-  }
-  list.sort((a,b) => a.id - b.id);
+  if(filter !== 'all') list = list.filter(i => i.className === filter);
+  list.sort((a,b) => a.className.localeCompare(b.className) || a.id - b.id);
 
   document.getElementById('conceptItemCountSub').textContent =
     `등록된 문제 ${conceptBankItems.length}개 (표시 중 ${list.length}개)`;
@@ -2847,7 +2880,7 @@ function renderConceptItemList(){
   listEl.innerHTML = list.map(item => `
     <li>
       <div class="left">
-        <span class="date" style="font-family:'Noto Sans KR',sans-serif;">${curriculumTargetLabel_(item.target)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</span>
+        <span class="date" style="font-family:'Noto Sans KR',sans-serif;">🏷️ ${escapeHtml(item.className)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</span>
         <strong style="font-size:13px;">${escapeHtml(item.question)}</strong>
         <span style="font-size:12px; color:var(--ink-soft);">보기: ${item.choices.map((c,i) => i === item.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)}✓</strong>` : escapeHtml(c)).join(' / ')}</span>
       </div>
@@ -2857,124 +2890,18 @@ function renderConceptItemList(){
 }
 
 // 날짜(일수) 기준으로 그 반의 오늘 출제 문항을 결정 (문제은행을 순서대로 순환)
-function itemMatchesStudent_(item, student){
-  if(!item.target) return false;
-  if(item.target.type === 'individual') return (item.target.studentIds || []).includes(student.id);
-  if(item.target.type === 'class') return item.target.className === student.className;
-  return false;
-}
-
-function getTodaysConceptItemsForStudent(student){
-  const relevantItems = conceptBankItems.filter(i => itemMatchesStudent_(i, student)).sort((a,b) => a.id - b.id);
-  if(relevantItems.length === 0) return [];
-  const perDay = conceptDailyCounts[student.className] || 5;
+function getTodaysConceptItems(className){
+  const classItems = conceptBankItems.filter(i => i.className === className).sort((a,b) => a.id - b.id);
+  if(classItems.length === 0) return [];
+  const perDay = conceptDailyCounts[className] || 5;
   const dayIndex = Math.floor(Date.now() / 86400000);
-  const total = relevantItems.length;
+  const total = classItems.length;
   const startIdx = (dayIndex * perDay) % total;
   const result = [];
   for(let i = 0; i < Math.min(perDay, total); i++){
-    result.push(relevantItems[(startIdx + i) % total]);
+    result.push(classItems[(startIdx + i) % total]);
   }
   return result;
-}
-
-function renderConceptDraftList(){
-  const listEl = document.getElementById('conceptDraftListBody');
-  const subEl = document.getElementById('conceptDraftCountSub');
-  if(!listEl || !subEl) return;
-
-  subEl.textContent = `대기 중인 문제 ${conceptDraftItems.length}개`;
-
-  if(conceptDraftItems.length === 0){
-    listEl.innerHTML = `<div class="report-empty">검토 대기 중인 문제가 없어요.</div>`;
-    return;
-  }
-
-  listEl.innerHTML = conceptDraftItems.slice().sort((a,b) => a.id - b.id).map(item => `
-    <div style="background:var(--cream-alt); border-radius:8px; padding:12px;">
-      <div style="font-size:11px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; margin-bottom:5px;">${curriculumTargetLabel_(item.target)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</div>
-      <div style="font-size:13px; font-weight:700; margin-bottom:6px;">${escapeHtml(item.question)}</div>
-      <div style="font-size:12px; color:var(--ink-soft); margin-bottom:8px;">보기: ${item.choices.map((c,i) => i === item.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)}✓</strong>` : escapeHtml(c)).join(' / ')}</div>
-      <div style="display:flex; gap:6px;">
-        <button class="btn small" onclick="approveConceptDraft(${item.id})">✅ 승인</button>
-        <button class="btn small danger-text" onclick="rejectConceptDraft(${item.id})">❌ 거부</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-async function approveConceptDraft(id){
-  if(!sheetSyncUrl){ alert('먼저 구글시트 연동을 설정해주세요.'); return; }
-  try {
-    const res = await fetch(sheetSyncUrl, { method:'GET' });
-    const freshData = await res.json();
-    assertDataLooksSane_(freshData);
-
-    const draft = (freshData.conceptDraftItems || []).find(i => i.id === id);
-    if(!draft){ alert('이미 처리된 문제예요. 새로고침할게요.'); }
-
-    freshData.conceptBankItems = freshData.conceptBankItems || [];
-    if(draft){
-      const newId = freshData.conceptBankItems.length ? Math.max(...freshData.conceptBankItems.map(i => i.id || 0)) + 1 : 1;
-      freshData.conceptBankItems.push({ id: newId, target: draft.target, unit: draft.unit, question: draft.question, choices: draft.choices, correctIndex: draft.correctIndex });
-      freshData.conceptDraftItems = (freshData.conceptDraftItems || []).filter(i => i.id !== id);
-
-      await fetch(sheetSyncUrl, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(freshData) });
-    }
-
-    applyAllData(freshData);
-    renderStudents();
-    renderDashboard();
-  } catch(err){
-    alert('승인 처리 중 오류가 발생했어요: ' + (err.message || err));
-  }
-}
-
-async function rejectConceptDraft(id){
-  if(!sheetSyncUrl){ alert('먼저 구글시트 연동을 설정해주세요.'); return; }
-  try {
-    const res = await fetch(sheetSyncUrl, { method:'GET' });
-    const freshData = await res.json();
-    assertDataLooksSane_(freshData);
-
-    freshData.conceptDraftItems = (freshData.conceptDraftItems || []).filter(i => i.id !== id);
-
-    await fetch(sheetSyncUrl, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(freshData) });
-
-    applyAllData(freshData);
-    renderStudents();
-    renderDashboard();
-  } catch(err){
-    alert('거부 처리 중 오류가 발생했어요: ' + (err.message || err));
-  }
-}
-
-async function approveAllConceptDrafts(){
-  if(conceptDraftItems.length === 0) return;
-  if(!confirm(`대기 중인 문제 ${conceptDraftItems.length}개를 전부 승인할까요?`)) return;
-  if(!sheetSyncUrl){ alert('먼저 구글시트 연동을 설정해주세요.'); return; }
-
-  try {
-    const res = await fetch(sheetSyncUrl, { method:'GET' });
-    const freshData = await res.json();
-    assertDataLooksSane_(freshData);
-
-    freshData.conceptBankItems = freshData.conceptBankItems || [];
-    let nextId = freshData.conceptBankItems.length ? Math.max(...freshData.conceptBankItems.map(i => i.id || 0)) + 1 : 1;
-
-    (freshData.conceptDraftItems || []).forEach(draft => {
-      freshData.conceptBankItems.push({ id: nextId++, target: draft.target, unit: draft.unit, question: draft.question, choices: draft.choices, correctIndex: draft.correctIndex });
-    });
-    freshData.conceptDraftItems = [];
-
-    await fetch(sheetSyncUrl, { method:'POST', headers:{ 'Content-Type':'text/plain' }, body: JSON.stringify(freshData) });
-
-    applyAllData(freshData);
-    renderStudents();
-    renderDashboard();
-  } catch(err){
-    alert('전체 승인 처리 중 오류가 발생했어요: ' + (err.message || err));
-  }
 }
 
 function renderConceptTodaySubmissions(){
@@ -2985,12 +2912,13 @@ function renderConceptTodaySubmissions(){
   const now = new Date();
   const todayIso = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   const todayRecords = conceptTestRecords.filter(r => r.date === todayIso);
-  const eligibleStudents = students.filter(s => getTodaysConceptItemsForStudent(s).length > 0);
+  const submittedIds = new Set(todayRecords.map(r => r.studentId));
+  const eligibleStudents = students.filter(s => s.className && getTodaysConceptItems(s.className).length > 0);
 
   subEl.textContent = `오늘(${todayIso}) 대상 ${eligibleStudents.length}명 중 ${todayRecords.length}명 제출`;
 
   if(eligibleStudents.length === 0){
-    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">오늘 출제된 학생이 없어요. 커리큘럼 단원을 등록해주세요.</li>`;
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">오늘 출제된 반이 없어요. 반별로 문제를 등록해주세요.</li>`;
     return;
   }
 
@@ -4433,8 +4361,6 @@ function collectAllData(){
     generalMakeups, nextGeneralMakeupId,
     adminPushTokens,
     conceptBankItems, nextConceptItemId, conceptDailyCounts, conceptTestRecords, nextConceptRecordId,
-    conceptDraftItems, nextConceptDraftId,
-    conceptCurriculumUnits, nextCurriculumUnitId,
     dailyTests, nextDailyId,
     homeworkAssignments, nextHomeworkAssignmentId,
     answerKeys, nextAnswerKeyId,
@@ -4466,10 +4392,6 @@ function applyAllData(data){
   conceptDailyCounts = data.conceptDailyCounts || {};
   conceptTestRecords = data.conceptTestRecords || [];
   nextConceptRecordId = data.nextConceptRecordId || maxId(conceptTestRecords);
-  conceptDraftItems = data.conceptDraftItems || [];
-  nextConceptDraftId = data.nextConceptDraftId || maxId(conceptDraftItems);
-  conceptCurriculumUnits = data.conceptCurriculumUnits || [];
-  nextCurriculumUnitId = data.nextCurriculumUnitId || maxId(conceptCurriculumUnits);
   dailyTests = data.dailyTests || [];
   nextDailyId = data.nextDailyId || maxId(dailyTests);
   homeworkAssignments = data.homeworkAssignments || [];
@@ -4567,8 +4489,6 @@ function resetAllData(){
   homeworkRecords = []; nextHomeworkId = 1;
   conceptBankItems = []; nextConceptItemId = 1; conceptDailyCounts = {};
   conceptTestRecords = []; nextConceptRecordId = 1;
-  conceptDraftItems = []; nextConceptDraftId = 1;
-  conceptCurriculumUnits = []; nextCurriculumUnitId = 1;
   mistakeRecords = []; nextMistakeId = 1;
   teacherComments = {};
   schoolInfos = []; nextSchoolInfoId = 1;
@@ -4807,8 +4727,6 @@ async function syncToSheet(){
     adminPushTokens = mergeArrays_(freshCheck.adminPushTokens, adminPushTokens);
     conceptBankItems = mergeArrays_(freshCheck.conceptBankItems, conceptBankItems);
     conceptTestRecords = mergeArrays_(freshCheck.conceptTestRecords, conceptTestRecords);
-    conceptDraftItems = mergeArrays_(freshCheck.conceptDraftItems, conceptDraftItems);
-    conceptCurriculumUnits = mergeArrays_(freshCheck.conceptCurriculumUnits, conceptCurriculumUnits);
     dailyTests = mergeArrays_(freshCheck.dailyTests, dailyTests);
     homeworkAssignments = mergeArrays_(freshCheck.homeworkAssignments, homeworkAssignments);
     answerKeys = mergeArrays_(freshCheck.answerKeys, answerKeys);
@@ -4829,8 +4747,6 @@ async function syncToSheet(){
     nextGeneralMakeupId = maxOf(nextGeneralMakeupId, freshCheck.nextGeneralMakeupId);
     nextConceptItemId = maxOf(nextConceptItemId, freshCheck.nextConceptItemId);
     nextConceptRecordId = maxOf(nextConceptRecordId, freshCheck.nextConceptRecordId);
-    nextConceptDraftId = maxOf(nextConceptDraftId, freshCheck.nextConceptDraftId);
-    nextCurriculumUnitId = maxOf(nextCurriculumUnitId, freshCheck.nextCurriculumUnitId);
     nextDailyId = maxOf(nextDailyId, freshCheck.nextDailyId);
     nextHomeworkAssignmentId = maxOf(nextHomeworkAssignmentId, freshCheck.nextHomeworkAssignmentId);
     nextAnswerKeyId = maxOf(nextAnswerKeyId, freshCheck.nextAnswerKeyId);
@@ -4885,7 +4801,6 @@ function init(){
   setProgressMode('individual');
   setHwAssignMode('class');
   setGmMode('class');
-  setCuMode('class');
   switchTab('dashboard');
   renderDashboard();
   renderStudents();
@@ -4908,7 +4823,6 @@ function init(){
   renderAnswerKeyList();
   refreshConceptClassSelects();
   renderConceptItemList();
-  renderConceptDraftList();
   renderConceptTodaySubmissions();
   refreshMistakeStudentSelects();
   renderMistakeList();
