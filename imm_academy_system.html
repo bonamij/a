@@ -1003,11 +1003,11 @@
       <div class="card">
         <div class="card-head">
           <div>
-            <h3>⚙️ 하루 출제 개수</h3>
-            <div class="sub">반마다 하루에 몇 문제씩 낼지 정해요. (기본 5문제)</div>
+            <h3>⚙️ 요일 · 하루 출제 개수 설정</h3>
+            <div class="sub">반마다 테스트를 내보낼 요일과, 그날 몇 문제씩 낼지 정해요. 요일을 하나도 선택 안 하면 매일 나가요. (기본 5문제)</div>
           </div>
         </div>
-        <div id="conceptDailyCountList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        <div id="conceptDailyCountList" style="display:flex; flex-direction:column; gap:14px;"></div>
       </div>
 
       <div class="card">
@@ -1504,6 +1504,7 @@ let adminPushTokens = [];
 let conceptBankItems = [];
 let nextConceptItemId = 1;
 let conceptDailyCounts = {};
+let conceptActiveDays = {}; // { className: [0,1,2,3,4,5,6] } 0=일,1=월...6=토 · 미설정 시 매일
 let conceptTestRecords = [];
 let nextConceptRecordId = 1;
 const ATT_STATUSES = [
@@ -2608,13 +2609,49 @@ function renderConceptDailyCountList(classNames){
     wrap.innerHTML = `<div class="report-empty">반이 아직 없어요. 학생 목록에서 반을 먼저 지정해주세요.</div>`;
     return;
   }
-  wrap.innerHTML = classNames.map(c => `
-    <div style="display:flex; align-items:center; gap:10px;">
-      <span style="width:110px; font-size:13px; font-family:'Noto Sans KR',sans-serif; font-weight:700;">${escapeHtml(c)}</span>
-      <input type="number" min="1" max="30" value="${conceptDailyCounts[c] || 5}" style="width:80px; padding:6px 8px; border:1px solid var(--line); border-radius:6px;" onchange="setConceptDailyCount('${escapeHtml(c).replace(/'/g,"\\'")}', this.value)">
-      <span style="font-size:12px; color:var(--ink-soft);">문제 / 일</span>
-    </div>
-  `).join('');
+  const dayLabels = ['일','월','화','수','목','금','토'];
+  wrap.innerHTML = classNames.map(c => {
+    const selectedDays = conceptActiveDays[c] || []; // 빈 배열 = 매일
+    const safeC = escapeHtml(c).replace(/'/g,"\\'");
+    const isEveryday = selectedDays.length === 0;
+
+    const dayChips = dayLabels.map((label, idx) => {
+      const active = isEveryday || selectedDays.includes(idx);
+      return `<button type="button" class="btn small"
+        style="padding:4px 10px; min-width:34px; ${active ? 'background:var(--brand); color:#fff; border-color:var(--brand);' : 'background:var(--cream-alt); color:var(--ink-soft); border-color:var(--line);'}"
+        onclick="toggleConceptActiveDay('${safeC}', ${idx})">${label}</button>`;
+    }).join('');
+
+    return `
+      <div style="padding:10px 12px; border:1px solid var(--line); border-radius:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
+          <span style="font-size:13px; font-family:'Noto Sans KR',sans-serif; font-weight:700;">${escapeHtml(c)}</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input type="number" min="1" max="30" value="${conceptDailyCounts[c] || 5}" style="width:70px; padding:6px 8px; border:1px solid var(--line); border-radius:6px;" onchange="setConceptDailyCount('${safeC}', this.value)">
+            <span style="font-size:12px; color:var(--ink-soft);">문제 / 일</span>
+          </div>
+        </div>
+        <div style="display:flex; gap:5px; flex-wrap:wrap;">${dayChips}</div>
+        <div style="font-size:11px; color:var(--ink-soft); margin-top:6px; font-family:'Noto Sans KR',sans-serif;">
+          ${isEveryday ? '매일 출제 중' : `${selectedDays.slice().sort((a,b)=>a-b).map(d => dayLabels[d]).join(', ')}요일에 출제`}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// 클릭한 요일을 켜고/끄고. 전부 꺼지면 다시 "매일"로 취급.
+function toggleConceptActiveDay(className, dayIdx){
+  const current = (conceptActiveDays[className] && conceptActiveDays[className].length > 0)
+    ? conceptActiveDays[className].slice()
+    : [0,1,2,3,4,5,6];
+  const pos = current.indexOf(dayIdx);
+  if(pos >= 0) current.splice(pos, 1);
+  else current.push(dayIdx);
+
+  conceptActiveDays[className] = current.length === 0 ? [] : current.sort((a,b) => a - b);
+  const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
+  renderConceptDailyCountList(classNames);
+  scheduleSync();
 }
 
 function setConceptDailyCount(className, value){
@@ -2890,9 +2927,17 @@ function renderConceptItemList(){
 }
 
 // 날짜(일수) 기준으로 그 반의 오늘 출제 문항을 결정 (문제은행을 순서대로 순환)
+// + 요일 설정이 되어있으면, 오늘이 출제일이 아닐 경우 빈 배열 반환
 function getTodaysConceptItems(className){
   const classItems = conceptBankItems.filter(i => i.className === className).sort((a,b) => a.id - b.id);
   if(classItems.length === 0) return [];
+
+  const activeDays = conceptActiveDays[className];
+  if(activeDays && activeDays.length > 0){
+    const todayDow = new Date().getDay(); // 0=일 ... 6=토
+    if(!activeDays.includes(todayDow)) return [];
+  }
+
   const perDay = conceptDailyCounts[className] || 5;
   const dayIndex = Math.floor(Date.now() / 86400000);
   const total = classItems.length;
@@ -4360,7 +4405,7 @@ function collectAllData(){
     attendanceRecords, nextAttendanceId,
     generalMakeups, nextGeneralMakeupId,
     adminPushTokens,
-    conceptBankItems, nextConceptItemId, conceptDailyCounts, conceptTestRecords, nextConceptRecordId,
+    conceptBankItems, nextConceptItemId, conceptDailyCounts, conceptActiveDays, conceptTestRecords, nextConceptRecordId,
     dailyTests, nextDailyId,
     homeworkAssignments, nextHomeworkAssignmentId,
     answerKeys, nextAnswerKeyId,
@@ -4390,6 +4435,7 @@ function applyAllData(data){
   conceptBankItems = data.conceptBankItems || [];
   nextConceptItemId = data.nextConceptItemId || maxId(conceptBankItems);
   conceptDailyCounts = data.conceptDailyCounts || {};
+  conceptActiveDays = data.conceptActiveDays || {};
   conceptTestRecords = data.conceptTestRecords || [];
   nextConceptRecordId = data.nextConceptRecordId || maxId(conceptTestRecords);
   dailyTests = data.dailyTests || [];
@@ -4487,7 +4533,7 @@ function resetAllData(){
   homeworkAssignments = []; nextHomeworkAssignmentId = 1;
   answerKeys = []; nextAnswerKeyId = 1;
   homeworkRecords = []; nextHomeworkId = 1;
-  conceptBankItems = []; nextConceptItemId = 1; conceptDailyCounts = {};
+  conceptBankItems = []; nextConceptItemId = 1; conceptDailyCounts = {}; conceptActiveDays = {};
   conceptTestRecords = []; nextConceptRecordId = 1;
   mistakeRecords = []; nextMistakeId = 1;
   teacherComments = {};
