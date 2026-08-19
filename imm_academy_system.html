@@ -395,6 +395,41 @@
     table{font-size:12.5px;}
     .dash-grid{grid-template-columns:repeat(2,1fr);}
   }
+
+  /* 🧠 AI 학습 성향 분석 리포트 */
+  .airp-cert{ background:linear-gradient(180deg,#FFFDF9,#FFF7EF); border:1px solid var(--line); border-radius:var(--radius); padding:22px; text-align:center; margin-bottom:14px; }
+  .airp-cert .who{ font-size:12.5px; color:var(--ink-soft); margin-top:4px; }
+  .airp-cert .tag-row{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+  .airp-cert .tag{ background:#fff; border:1px solid var(--line); padding:6px 12px; border-radius:100px; font-size:12px; font-family:'Noto Sans KR',sans-serif; font-weight:600; }
+  .airp-cert .tag b{ color:var(--brand-dark); }
+  .airp-grid-2{ display:grid; grid-template-columns:1.1fr 1fr; gap:14px; }
+  @media(max-width:820px){ .airp-grid-2{ grid-template-columns:1fr; } }
+  .airp-donut-wrap{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+  .airp-legend{ flex:1; min-width:160px; display:flex; flex-direction:column; gap:8px; }
+  .airp-legend-item{ display:flex; align-items:center; gap:8px; font-size:12.5px; font-family:'Noto Sans KR',sans-serif; font-weight:600; }
+  .airp-dot{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  .airp-legend-item .pct{ margin-left:auto; font-family:'Space Mono',monospace; font-weight:700; }
+  .airp-sw-title{ font-size:12.5px; font-weight:700; margin:12px 0 8px; font-family:'Noto Sans KR',sans-serif; }
+  .airp-sw-title.good{ color:#1E7A5F; }
+  .airp-sw-title.risk{ color:#B4472B; }
+  .airp-sw-list{ list-style:none; margin:0 0 4px; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .airp-sw-list li{ font-size:12.5px; line-height:1.55; padding:9px 11px; border-radius:8px; font-family:'Noto Sans KR',sans-serif; font-weight:500; }
+  .airp-sw-list.good li{ background:#F0FAF6; border:1px solid #BFE6D6; }
+  .airp-sw-list.risk li{ background:#FDF1EE; border:1px solid #F3CFC4; }
+  .airp-analysis p{ font-size:13.5px; line-height:1.7; margin:0 0 12px; font-family:'Noto Sans KR',sans-serif; font-weight:500; }
+  .airp-analysis p:last-child{ margin-bottom:0; }
+  .airp-sol-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media(max-width:640px){ .airp-sol-grid{ grid-template-columns:1fr; } }
+  .airp-sol-card{ background:var(--cream-alt); border-radius:10px; padding:14px 16px; }
+  .airp-sol-card .lbl{ display:inline-block; font-size:11px; font-weight:800; color:var(--brand-dark); background:var(--brand-soft); padding:3px 10px; border-radius:100px; margin-bottom:8px; }
+  .airp-sol-card p{ margin:0; font-size:12.8px; font-family:'Noto Sans KR',sans-serif; font-weight:500; line-height:1.55; }
+  .airp-parent-item{ display:flex; gap:12px; margin-bottom:12px; align-items:flex-start; }
+  .airp-parent-item:last-child{ margin-bottom:0; }
+  .airp-pnum{ width:22px; height:22px; border-radius:50%; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11.5px; flex-shrink:0; }
+  .airp-parent-item p{ margin:0; font-size:12.8px; font-family:'Noto Sans KR',sans-serif; font-weight:500; padding-top:1px; }
+  .airp-internal{ border:1.5px dashed #C9BBA8; border-radius:var(--radius); padding:16px 18px; background:var(--cream-alt); }
+  .airp-internal h4{ font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); margin:0 0 8px; }
+  .airp-internal p{ font-size:12.8px; color:var(--ink); margin:0; font-family:'Noto Sans KR',sans-serif; font-weight:500; line-height:1.6; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
@@ -420,6 +455,7 @@
     <div class="sidebar-item" data-tab="conceptbank" onclick="switchTab('conceptbank')"><span class="si">🧩</span>개념빈칸 테스트</div>
     <div class="sidebar-item" data-tab="mistakes" onclick="switchTab('mistakes')"><span class="si">📌</span>오답노트</div>
     <div class="sidebar-item" data-tab="report" onclick="switchTab('report')"><span class="si">📄</span>학생 리포트</div>
+    <div class="sidebar-item" data-tab="airp" onclick="switchTab('airp')"><span class="si">🧠</span>AI 학습 리포트</div>
     <div class="sidebar-item" data-tab="middle" onclick="switchTab('middle')"><span class="si">🏫</span>중등부 정보</div>
     <div class="sidebar-section-label">관리</div>
     <div class="sidebar-item" data-tab="backup" onclick="switchTab('backup')"><span class="si">🔧</span>데이터 관리</div>
@@ -1199,6 +1235,84 @@
 
       <div id="reportContent"></div>
     </section>
+    <section class="panel" id="panel-airp">
+      <div class="card no-print">
+        <div class="card-head">
+          <div>
+            <h3>🧠 AI 학습 성향 분석 리포트</h3>
+            <div class="sub">개념퀴즈 데이터(오답률·진도율·주간목표·데일리테스트)는 자동으로 불러오고, 수업 관찰 항목만 아래에서 입력하면 AI가 학습 성향 리포트를 만들어드려요. 생성된 리포트는 구글시트에 저장되고 학부모 포털에서도 볼 수 있어요.</div>
+          </div>
+          <div class="field">
+            <label for="airp-student">학생</label>
+            <select id="airp-student" onchange="onAirpStudentChange()"><option value="">선택</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div id="airpBody" style="display:none;">
+        <div class="card">
+          <div class="card-head"><div><h3>① 개념퀴즈 데이터 (자동 연동)</h3><div class="sub">최근 기록을 기준으로 자동 계산돼요. 별도로 입력할 필요 없어요.</div></div></div>
+          <div id="airpAutoGrid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h3>② 수업 관찰 입력 (선생님 체크)</h3><div class="sub">집중도·발표참여도처럼 데이터로 잡히지 않는 정성 항목을 체크해주세요. 저장해두면 다음에 열었을 때도 남아있어요.</div></div></div>
+          <div class="inline-form" style="align-items:flex-end;">
+            <div class="field">
+              <label for="airp-hwSpeed">숙제 제출 속도</label>
+              <select id="airp-hwSpeed">
+                <option value="빠름(당일 제출)">빠름 (당일 제출)</option>
+                <option value="보통(1~2일 이내)" selected>보통 (1~2일 이내)</option>
+                <option value="느림(마감 임박/누락 잦음)">느림 (마감 임박·누락 잦음)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="airp-mistakeReaction">실수 후 반응</label>
+              <select id="airp-mistakeReaction">
+                <option value="빠르게 회복하고 다시 시도">빠르게 회복하고 다시 시도</option>
+                <option value="잠시 위축되지만 이어서 진행" selected>잠시 위축되지만 이어서 진행</option>
+                <option value="크게 위축되어 시도 자체를 피함">크게 위축되어 시도 자체를 피함</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="airp-stress">학습 스트레스 여부</label>
+              <select id="airp-stress">
+                <option value="특별한 스트레스 신호 없음">특별한 스트레스 신호 없음</option>
+                <option value="경미한 스트레스 신호 있음" selected>경미한 스트레스 신호 있음</option>
+                <option value="스트레스가 뚜렷하게 관찰됨">스트레스가 뚜렷하게 관찰됨</option>
+              </select>
+            </div>
+          </div>
+          <div class="inline-form" style="margin-top:4px;">
+            <div class="field" style="flex:1; min-width:220px;">
+              <label for="airp-focus">수업 집중도 (<span id="airp-focus-v">3</span>/5)</label>
+              <input type="range" id="airp-focus" min="1" max="5" value="3" style="width:100%;" oninput="document.getElementById('airp-focus-v').textContent=this.value">
+            </div>
+            <div class="field" style="flex:1; min-width:220px;">
+              <label for="airp-participation">발표·질문 참여도 (<span id="airp-participation-v">3</span>/5)</label>
+              <input type="range" id="airp-participation" min="1" max="5" value="3" style="width:100%;" oninput="document.getElementById('airp-participation-v').textContent=this.value">
+            </div>
+          </div>
+          <button type="button" class="btn small ghost" style="margin-top:10px;" onclick="saveAirpBehaviorNotes()">💾 관찰 입력 저장</button>
+          <span id="airpNotesSavedAt" style="font-size:11.5px; color:var(--ink-soft); margin-left:8px;"></span>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h3>③ AI 리포트 생성</h3><div class="sub">위 데이터를 바탕으로 학습 성향 리포트를 새로 만들어요. 생성 즉시 구글시트에 저장되고 학부모 포털에도 반영돼요.</div></div></div>
+          <button type="button" class="btn" id="airpGenBtn" onclick="generateAirpReport()">✦ AI 리포트 생성하기</button>
+          <div id="airpErrBox" style="display:none; margin-top:10px; background:#FDF1EE; border:1px solid #F3CFC4; color:#B4472B; padding:10px 14px; border-radius:8px; font-size:13px;"></div>
+        </div>
+
+        <div id="airpReportArea"></div>
+
+        <div class="card">
+          <div class="card-head"><div><h3>지난 리포트 기록</h3></div></div>
+          <ul class="recent-list" id="airpHistoryList" style="flex-direction:column; display:flex; gap:8px;"></ul>
+        </div>
+      </div>
+
+      <div id="airpEmpty" class="placeholder-box"><span class="icon">🧠</span>학생을 선택하면 AI 학습 성향 리포트를 만들 수 있어요.</div>
+    </section>
     <section class="panel" id="panel-middle">
       <div class="card">
         <div class="card-head">
@@ -1508,9 +1622,14 @@ let nextExamId = 1;
 
 let parentMessages = [];
 
+// 🧠 AI 학습 성향 분석 리포트
+let aiLearningReports = []; // { id, studentId, createdAt, auto:{...}, manual:{...}, report:{...} }
+let nextAiReportId = 1;
+let studentBehaviorNotes = {}; // { studentId: { focus, participation, hwSpeed, mistakeReaction, stress, updatedAt } }
+
 const TAB_TITLES = {
   home:'홈', dashboard:'대시보드', students:'학생 명단', progress:'진도 관리', attendance:'출결 관리', daily:'데일리 테스트',
-  homework:'숙제 체크리스트', conceptbank:'개념빈칸 테스트', mistakes:'오답노트', report:'학생 리포트', middle:'중등부 정보', backup:'데이터 관리'
+  homework:'숙제 체크리스트', conceptbank:'개념빈칸 테스트', mistakes:'오답노트', report:'학생 리포트', airp:'AI 학습 리포트', middle:'중등부 정보', backup:'데이터 관리'
 };
 
 function escapeHtml(str){
@@ -1895,6 +2014,7 @@ function renderStudents(){
     refreshReportStudentSelect();
     renderReport();
   }
+  if(document.getElementById('airp-student')) refreshAirpStudentSelect();
   if(document.getElementById('ea-student')){
     refreshMiddleStudentSelects();
     renderExamList();
@@ -3876,6 +3996,366 @@ function renderReport(){
 }
 
 /* =========================================================
+   🧠 AI 학습 성향 분석 리포트
+   - 개념퀴즈 데이터(오답률/진도율/주간목표/데일리테스트)는 conceptTestRecords,
+     dailyTests 등 기존 데이터를 집계해서 자동으로 만들어요.
+   - 집중도/발표참여도 같은 정성 항목은 studentBehaviorNotes 에 저장해두고
+     리포트 생성 시 같이 보내요.
+   - 생성된 리포트는 aiLearningReports 에 쌓이고, 기존 syncToSheet()가
+     다른 데이터랑 똑같이 구글시트에 저장해요 (학부모 포털에서도 그대로 읽어요).
+========================================================= */
+
+// 이 반의 주간 목표(주당 개념퀴즈 제출 횟수) — 학부모 포털의 getConceptWeeklyGoal()과 동일 로직
+function getConceptWeeklyGoalCount(className){
+  const activeDays = conceptActiveDays[className];
+  if(activeDays && activeDays.length > 0) return activeDays.length;
+  return 3;
+}
+function getWeekKeyAirp_(dateLike){
+  const d = new Date(dateLike);
+  const day = (d.getDay() + 6) % 7; // 월요일 = 0
+  d.setDate(d.getDate() - day);
+  d.setHours(0,0,0,0);
+  return d.toISOString().slice(0,10);
+}
+
+function computeStudentAutoMetrics(studentId){
+  const student = students.find(s => s.id === studentId);
+  const now = new Date();
+  const since30 = new Date(now); since30.setDate(now.getDate() - 29);
+  const since30Iso = since30.toISOString().slice(0,10);
+
+  // 오답률: 최근 30일 개념퀴즈 제출 기록 기준
+  const recentConcept = conceptTestRecords.filter(r => r.studentId === studentId && r.date >= since30Iso);
+  let wrongRatePct = null;
+  if(recentConcept.length > 0){
+    const totalQ = recentConcept.reduce((s,r) => s + (r.total || 0), 0);
+    const totalCorrect = recentConcept.reduce((s,r) => s + (r.correct || 0), 0);
+    wrongRatePct = totalQ > 0 ? Math.round((1 - totalCorrect / totalQ) * 100) : null;
+  }
+
+  // 학습 참여 진도율: 최근 30일 중 개념퀴즈를 제출한 날 수 비율
+  const submittedDays = new Set(recentConcept.map(r => r.date)).size;
+  const progressRatePct = Math.round(Math.min(submittedDays / 30, 1) * 100);
+
+  // 주간 목표 달성
+  const weeklyGoal = student ? getConceptWeeklyGoalCount(student.className) : null;
+  const wk = getWeekKeyAirp_(now);
+  const weeklyCount = conceptTestRecords.filter(r => r.studentId === studentId && getWeekKeyAirp_(r.date) === wk).length;
+
+  // 데일리 테스트 평균/추세 (최근 5회)
+  const studentTests = dailyTests.filter(t => t.studentId === studentId).slice().sort((a,b) => a.date.localeCompare(b.date) || a.id - b.id);
+  const recent5 = studentTests.slice(-5);
+  const dailyTestAvg = recent5.length ? Math.round(recent5.reduce((s,t) => s + t.score, 0) / recent5.length) : null;
+  let dailyTestTrend = '기록 부족';
+  if(recent5.length >= 4){
+    const half = Math.floor(recent5.length / 2);
+    const older = recent5.slice(0, half);
+    const newer = recent5.slice(half);
+    const olderAvg = older.reduce((s,t) => s + t.score, 0) / older.length;
+    const newerAvg = newer.reduce((s,t) => s + t.score, 0) / newer.length;
+    const diff = Math.round(newerAvg - olderAvg);
+    dailyTestTrend = diff > 3 ? `상승 추세 (+${diff}점)` : diff < -3 ? `하락 추세 (${diff}점)` : '안정적으로 유지';
+  }
+
+  // 교재 진도 텍스트 (기존 학생 리포트와 동일 로직)
+  let progressText = '기록 없음';
+  if(student){
+    const level = levelOf(student.grade);
+    if(level === '중등부'){
+      const bp = student.bookProgress || {};
+      const parts = Object.entries(bp).filter(([,v]) => v);
+      progressText = parts.length ? parts.map(([b,p]) => `${b} ${p}`).join(' · ') : '기록 없음';
+    } else {
+      const parts = [];
+      if(student.concept) parts.push(`개념+유형 ${student.concept}`);
+      if(student.sen) parts.push(`쎈 ${student.sen}`);
+      if(student.topSProgress) parts.push(`최상위S ${student.topSProgress}`);
+      progressText = parts.length ? parts.join(' · ') : '기록 없음';
+    }
+  }
+
+  return {
+    wrongRatePct, progressRatePct, weeklyGoal, weeklyCount,
+    dailyTestAvg, dailyTestCount: recent5.length, dailyTestTrend, progressText
+  };
+}
+
+function refreshAirpStudentSelect(){
+  const sel = document.getElementById('airp-student');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">선택</option>' +
+    students.slice().sort((a,b) => (a.className||'').localeCompare(b.className||'') || a.name.localeCompare(b.name))
+      .map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.className || '반 미정')})</option>`).join('');
+  if(prev && students.some(s => String(s.id) === prev)) sel.value = prev;
+}
+
+function onAirpStudentChange(){
+  const sel = document.getElementById('airp-student');
+  const studentId = Number(sel.value);
+  const body = document.getElementById('airpBody');
+  const empty = document.getElementById('airpEmpty');
+
+  if(!studentId){
+    body.style.display = 'none';
+    empty.style.display = 'flex';
+    return;
+  }
+  body.style.display = 'block';
+  empty.style.display = 'none';
+
+  renderAirpAutoGrid(studentId);
+
+  const notes = studentBehaviorNotes[studentId] || {};
+  document.getElementById('airp-hwSpeed').value = notes.hwSpeed || '보통(1~2일 이내)';
+  document.getElementById('airp-mistakeReaction').value = notes.mistakeReaction || '잠시 위축되지만 이어서 진행';
+  document.getElementById('airp-stress').value = notes.stress || '경미한 스트레스 신호 있음';
+  document.getElementById('airp-focus').value = notes.focus || 3;
+  document.getElementById('airp-focus-v').textContent = notes.focus || 3;
+  document.getElementById('airp-participation').value = notes.participation || 3;
+  document.getElementById('airp-participation-v').textContent = notes.participation || 3;
+  document.getElementById('airpNotesSavedAt').textContent = notes.updatedAt ? `마지막 저장: ${new Date(notes.updatedAt).toLocaleString('ko-KR')}` : '';
+
+  document.getElementById('airpErrBox').style.display = 'none';
+  renderAirpLatestReport(studentId);
+  renderAirpHistory(studentId);
+}
+
+function renderAirpAutoGrid(studentId){
+  const m = computeStudentAutoMetrics(studentId);
+  const gridEl = document.getElementById('airpAutoGrid');
+  const rows = [
+    { label:'최근 오답률(30일)', value: m.wrongRatePct != null ? `${m.wrongRatePct}%` : '기록 없음' },
+    { label:'학습 참여 진도율(30일)', value: `${m.progressRatePct}%` },
+    { label:'주간 목표 달성', value: m.weeklyGoal != null ? `${m.weeklyCount}/${m.weeklyGoal}회` : '기록 없음' },
+    { label:`데일리테스트 평균(${m.dailyTestCount}회)`, value: m.dailyTestAvg != null ? `${m.dailyTestAvg}점` : '기록 없음' },
+    { label:'데일리테스트 추세', value: m.dailyTestTrend },
+    { label:'교재 진도', value: m.progressText }
+  ];
+  gridEl.innerHTML = rows.map(r => `
+    <div class="dash-stat-card"><div><div class="ds-label">${escapeHtml(r.label)}</div><div class="ds-value" style="font-size:16px;">${escapeHtml(r.value)}</div></div></div>
+  `).join('');
+}
+
+function saveAirpBehaviorNotes(){
+  const sel = document.getElementById('airp-student');
+  const studentId = Number(sel.value);
+  if(!studentId) return;
+  studentBehaviorNotes[studentId] = {
+    hwSpeed: document.getElementById('airp-hwSpeed').value,
+    mistakeReaction: document.getElementById('airp-mistakeReaction').value,
+    stress: document.getElementById('airp-stress').value,
+    focus: Number(document.getElementById('airp-focus').value),
+    participation: Number(document.getElementById('airp-participation').value),
+    updatedAt: new Date().toISOString()
+  };
+  document.getElementById('airpNotesSavedAt').textContent = `마지막 저장: ${new Date().toLocaleString('ko-KR')}`;
+  scheduleSync();
+}
+
+async function generateAirpReport(){
+  const sel = document.getElementById('airp-student');
+  const studentId = Number(sel.value);
+  const errBox = document.getElementById('airpErrBox');
+  errBox.style.display = 'none';
+
+  if(!studentId){
+    errBox.textContent = '학생을 먼저 선택해주세요.';
+    errBox.style.display = 'block';
+    return;
+  }
+  if(!sheetSyncUrl){
+    errBox.textContent = '구글 시트 연동 URL이 설정되어 있지 않아요. "데이터 관리" 탭에서 먼저 설정해주세요.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  // 저장 안 된 관찰 입력이 있으면 생성 전에 같이 저장해요.
+  saveAirpBehaviorNotes();
+
+  const student = students.find(s => s.id === studentId);
+  const auto = computeStudentAutoMetrics(studentId);
+  const notes = studentBehaviorNotes[studentId] || {};
+  const manual = {
+    hwSpeed: notes.hwSpeed || '',
+    focus: `${notes.focus || 3}/5`,
+    participation: `${notes.participation || 3}/5`,
+    mistakeReaction: notes.mistakeReaction || '',
+    stress: notes.stress || ''
+  };
+
+  const btn = document.getElementById('airpGenBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ AI가 리포트를 작성하고 있어요...';
+
+  try {
+    let res;
+    try {
+      res = await fetch(sheetSyncUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          action: 'generateLearningReport',
+          student: { name: student.name, grade: student.grade, school: student.school, className: student.className },
+          auto, manual
+        })
+      });
+    } catch(networkErr){
+      errBox.textContent = '서버에 연결하지 못했어요: ' + (networkErr.message || String(networkErr));
+      errBox.style.display = 'block';
+      return;
+    }
+
+    if(!res.ok){
+      const bodyText = await res.text().catch(() => '');
+      errBox.textContent = `서버에서 오류 응답을 보냈어요 (상태 코드 ${res.status}). ${bodyText.slice(0,200)}`;
+      errBox.style.display = 'block';
+      return;
+    }
+
+    const result = await res.json();
+    if(result.error){
+      errBox.textContent = '리포트 생성 중 오류: ' + result.error;
+      errBox.style.display = 'block';
+      return;
+    }
+
+    aiLearningReports.push({
+      id: nextAiReportId++,
+      studentId,
+      createdAt: new Date().toISOString(),
+      auto, manual,
+      report: result
+    });
+
+    renderAirpLatestReport(studentId);
+    renderAirpHistory(studentId);
+    scheduleSync();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✦ AI 리포트 생성하기';
+  }
+}
+
+const AIRP_PALETTE = ["#F2701C","#2E9E8F","#8A6FE0","#E0546B","#C8850F","#4C8DE8","#3FB077"];
+
+function renderAirpReportCard(entry, opts){
+  opts = opts || {};
+  const r = entry.report;
+  const student = students.find(s => s.id === entry.studentId);
+  const total = r.profile.reduce((s,p) => s + p.percent, 0) || 100;
+  let acc = 0;
+  const R = 60, CX = 76, CY = 76, STROKE = 22;
+  const C = 2 * Math.PI * R;
+  const segs = r.profile.map((p,i) => {
+    const frac = p.percent / total;
+    const seg = { ...p, color: AIRP_PALETTE[i % AIRP_PALETTE.length], len: frac * C };
+    return seg;
+  });
+  let dashOffset = 0;
+  const circles = segs.map(s => {
+    const gap = C - s.len;
+    const circle = `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${s.color}" stroke-width="${STROKE}" stroke-dasharray="${s.len} ${gap}" stroke-dashoffset="${-dashOffset}" transform="rotate(-90 ${CX} ${CY})"/>`;
+    dashOffset += s.len;
+    return circle;
+  }).join('');
+  const dominant = [...r.profile].sort((a,b) => b.percent - a.percent)[0];
+  const dateStr = new Date(entry.createdAt).toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
+
+  return `
+    <div class="card">
+      <div class="airp-cert">
+        <h3 style="font-size:16px;">AI 학습 성향 코칭 리포트</h3>
+        <div class="who">${escapeHtml(student ? student.name : '')} · 생성일 ${dateStr}</div>
+        <div class="tag-row">
+          <div class="tag">학년 <b>${escapeHtml(student ? student.grade : '')}</b></div>
+          <div class="tag">학교 <b>${escapeHtml(student ? (student.school || '-') : '')}</b></div>
+          <div class="tag">반 <b>${escapeHtml(student ? (student.className || '-') : '')}</b></div>
+        </div>
+      </div>
+
+      <div class="airp-grid-2">
+        <div>
+          <h4 style="font-size:13.5px; margin-bottom:10px;">◐ 학습 성향 프로파일</h4>
+          <div class="airp-donut-wrap">
+            <svg width="152" height="152" viewBox="0 0 152 152">
+              ${circles}
+              <text x="76" y="72" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)" font-family="'Noto Sans KR',sans-serif">주요 성향</text>
+              <text x="76" y="90" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)" font-family="'Noto Sans KR',sans-serif">${escapeHtml(dominant.type)}</text>
+            </svg>
+            <div class="airp-legend">
+              ${segs.map(s => `<div class="airp-legend-item"><span class="airp-dot" style="background:${s.color}"></span><span>${escapeHtml(s.type)}</span><span class="pct">${s.percent}%</span></div>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="font-size:13.5px; margin-bottom:6px;">◇ 강점 및 보완점</h4>
+          <div class="airp-sw-title good">✓ 학습 강점</div>
+          <ul class="airp-sw-list good">${r.strengths.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
+          <div class="airp-sw-title risk">! 주의·위험 요소</div>
+          <ul class="airp-sw-list risk">${r.risks.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
+        </div>
+      </div>
+
+      <h4 style="font-size:13.5px; margin:16px 0 8px;">◆ 전문가 종합 분석</h4>
+      <div class="airp-analysis">${r.analysis.split(/\n\n+/).map(p => `<p>${escapeHtml(p)}</p>`).join('')}</div>
+
+      <h4 style="font-size:13.5px; margin:16px 0 8px;">맞춤형 학습 솔루션</h4>
+      <div class="airp-sol-grid">
+        ${Object.entries(r.solutions).map(([k,v]) => `<div class="airp-sol-card"><span class="lbl">${escapeHtml(k)}</span><p>${escapeHtml(v)}</p></div>`).join('')}
+      </div>
+
+      <h4 style="font-size:13.5px; margin:16px 0 8px;">♥ 학부모 코칭 가이드</h4>
+      ${r.parentGuide.map((g,i) => `<div class="airp-parent-item"><div class="airp-pnum">${i+1}</div><p>${escapeHtml(g)}</p></div>`).join('')}
+
+      ${opts.hideInternal ? '' : `
+      <div class="airp-internal" style="margin-top:16px;">
+        <h4>❝ 학원 내부용 · 상담 스크립트 가이드</h4>
+        <p>${escapeHtml(r.internalScript)}</p>
+      </div>`}
+
+      ${opts.showDelete ? `<button type="button" class="btn small danger-text" style="margin-top:14px;" onclick="deleteAirpReport(${entry.id})">이 리포트 삭제</button>` : ''}
+    </div>
+  `;
+}
+
+function renderAirpLatestReport(studentId){
+  const area = document.getElementById('airpReportArea');
+  const list = aiLearningReports.filter(r => r.studentId === studentId).slice().sort((a,b) => b.id - a.id);
+  if(list.length === 0){
+    area.innerHTML = `<div class="card"><div class="placeholder-box"><span class="icon">🧠</span>아직 생성된 리포트가 없어요. 위에서 "AI 리포트 생성하기"를 눌러보세요.</div></div>`;
+    return;
+  }
+  area.innerHTML = renderAirpReportCard(list[0], { showDelete:true });
+}
+
+function renderAirpHistory(studentId){
+  const listEl = document.getElementById('airpHistoryList');
+  const list = aiLearningReports.filter(r => r.studentId === studentId).slice().sort((a,b) => b.id - a.id);
+  if(list.length <= 1){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">${list.length === 0 ? '기록 없음' : '가장 최근 리포트만 있어요'}</li>`;
+    return;
+  }
+  listEl.innerHTML = list.slice(1).map(entry => `
+    <li>
+      <div class="left"><strong>${new Date(entry.createdAt).toLocaleString('ko-KR')}</strong></div>
+      <button class="btn small danger-text" onclick="deleteAirpReport(${entry.id})">삭제</button>
+    </li>`).join('');
+}
+
+function deleteAirpReport(id){
+  if(!confirm('이 리포트를 삭제할까요?')) return;
+  const entry = aiLearningReports.find(r => r.id === id);
+  aiLearningReports = aiLearningReports.filter(r => r.id !== id);
+  scheduleSync();
+  if(entry){
+    renderAirpLatestReport(entry.studentId);
+    renderAirpHistory(entry.studentId);
+  }
+}
+
+/* =========================================================
    대시보드
 ========================================================= */
 let dashAlertTarget = null;
@@ -4238,7 +4718,8 @@ function collectAllData(){
     schoolInfos, nextSchoolInfoId,
     examAnalysis, nextExamId,
     parentMessages,
-    scheduleItems, nextScheduleId
+    scheduleItems, nextScheduleId,
+    aiLearningReports, nextAiReportId, studentBehaviorNotes
   };
 }
 
@@ -4280,6 +4761,9 @@ function applyAllData(data){
   parentMessages = data.parentMessages || [];
   scheduleItems = data.scheduleItems || [];
   nextScheduleId = data.nextScheduleId || (scheduleItems.length ? Math.max(...scheduleItems.map(s => s.id || 0)) + 1 : 1);
+  aiLearningReports = data.aiLearningReports || [];
+  nextAiReportId = data.nextAiReportId || maxId(aiLearningReports);
+  studentBehaviorNotes = data.studentBehaviorNotes || {};
 
   if(data.academyName){
     const brandEl = document.querySelector('.brand-title');
@@ -4363,6 +4847,7 @@ function resetAllData(){
   teacherComments = {};
   schoolInfos = []; nextSchoolInfoId = 1;
   examAnalysis = []; nextExamId = 1;
+  aiLearningReports = []; nextAiReportId = 1; studentBehaviorNotes = {};
 
   renderStudents();
   renderDashboard();
@@ -4628,9 +5113,11 @@ async function syncToSheet(){
     examAnalysis = mergeArrays_(freshCheck.examAnalysis, examAnalysis);
     parentMessages = mergeArrays_(freshCheck.parentMessages, parentMessages);
     scheduleItems = mergeArrays_(freshCheck.scheduleItems, scheduleItems);
+    aiLearningReports = mergeArrays_(freshCheck.aiLearningReports, aiLearningReports);
 
     teacherComments = mergeObjectKeys_(freshCheck.teacherComments, teacherComments);
     conceptDailyCounts = mergeObjectKeys_(freshCheck.conceptDailyCounts, conceptDailyCounts);
+    studentBehaviorNotes = mergeObjectKeys_(freshCheck.studentBehaviorNotes, studentBehaviorNotes);
 
     const maxOf = (a, b) => Math.max(a || 1, b || 1);
     nextStudentId = maxOf(nextStudentId, freshCheck.nextStudentId);
@@ -4647,6 +5134,7 @@ async function syncToSheet(){
     nextSchoolInfoId = maxOf(nextSchoolInfoId, freshCheck.nextSchoolInfoId);
     nextExamId = maxOf(nextExamId, freshCheck.nextExamId);
     nextScheduleId = maxOf(nextScheduleId, freshCheck.nextScheduleId);
+    nextAiReportId = maxOf(nextAiReportId, freshCheck.nextAiReportId);
 
     renderStudents();
     renderDashboard();
