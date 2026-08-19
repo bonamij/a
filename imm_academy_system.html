@@ -200,6 +200,20 @@
   .btn.danger-text{background:transparent; color:#B8391F; border:1px solid transparent;}
   .btn.danger-text:hover{background:rgba(184,57,31,0.1);}
 
+  /* 전역 저장 확인 토스트 */
+  .global-toast{
+    position:fixed; left:50%; bottom:26px; transform:translate(-50%, 20px);
+    background:#2A211A; color:#fff; padding:12px 20px; border-radius:10px;
+    font-size:13.5px; font-weight:700; font-family:'Noto Sans KR',sans-serif;
+    box-shadow:0 8px 24px rgba(0,0,0,0.25); z-index:200;
+    opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;
+    max-width:90vw; text-align:center;
+  }
+  .global-toast.show{ opacity:1; transform:translate(-50%, 0); }
+  .global-toast.ok{ background:#2E7D3E; }
+  .global-toast.error{ background:#B8391F; }
+  .global-toast.pending{ background:#5B4A36; }
+
   table{width:100%; border-collapse:collapse; font-size:14px;}
   thead th{text-align:left; font-size:11.5px; letter-spacing:.4px; color:var(--ink-soft); border-bottom:2px solid var(--line); padding:8px 10px; font-family:'Noto Sans KR',sans-serif; font-weight:700;}
   tbody td{padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:middle;}
@@ -2614,6 +2628,7 @@ function toggleConceptUnit(className, unitName){
 
   const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
   renderConceptUnitPicker(classNames);
+  showToast('⏳ 저장 중...', 'pending');
   scheduleSync();
 }
 
@@ -2666,12 +2681,14 @@ function toggleConceptActiveDay(className, dayIdx){
   conceptActiveDays[className] = current.length === 0 ? [] : current.sort((a,b) => a - b);
   const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
   renderConceptDailyCountList(classNames);
+  showToast('⏳ 저장 중...', 'pending');
   scheduleSync();
 }
 
 function setConceptDailyCount(className, value){
   const n = Math.max(1, Math.min(30, Number(value) || 5));
   conceptDailyCounts[className] = n;
+  showToast('⏳ 저장 중...', 'pending');
   scheduleSync();
 }
 
@@ -4470,6 +4487,28 @@ async function enableAdminPushNotifications(){
 function setSyncStatus(text){
   const el = document.getElementById('sheetSyncStatus');
   if(el) el.textContent = text;
+
+  // "데이터 관리" 탭이 아닌 다른 화면(개념빈칸 테스트 등)에 있어도
+  // 저장 성공/실패를 바로 알 수 있게 화면 아래에 토스트로 띄워줘요.
+  if(text.startsWith('✅')) showToast(text, 'ok');
+  else if(text.startsWith('❌') || text.startsWith('🛑')) showToast(text, 'error');
+  else if(text.startsWith('⚠️')) showToast(text, 'error');
+}
+
+let toastHideTimer = null;
+function showToast(text, type){
+  let toast = document.getElementById('globalToast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'globalToast';
+    toast.className = 'global-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = text;
+  toast.className = 'global-toast show ' + (type || '');
+  clearTimeout(toastHideTimer);
+  const duration = type === 'error' ? 5000 : 3200;
+  toastHideTimer = setTimeout(() => { toast.classList.remove('show'); }, duration);
 }
 
 function saveSheetSyncUrl(){
