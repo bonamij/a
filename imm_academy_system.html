@@ -1004,6 +1004,17 @@
       <div class="card">
         <div class="card-head">
           <div>
+            <h3>🕐 검토 대기함</h3>
+            <div class="sub" id="conceptDraftCountSub">AI가 밤사이 자동으로 만든 문제예요. 승인해야 학생에게 나가요.</div>
+          </div>
+          <button type="button" class="btn small ghost" id="conceptDraftRejectAllBtn" onclick="rejectAllConceptDrafts()" style="display:none;">전체 거절</button>
+        </div>
+        <ul class="recent-list" id="conceptDraftListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
             <h3>⚙️ 요일 · 하루 출제 개수 설정</h3>
             <div class="sub">반마다 테스트를 내보낼 요일과, 그날 몇 문제씩 낼지 정해요. 요일을 하나도 선택 안 하면 매일 나가요. (기본 5문제)</div>
           </div>
@@ -1582,6 +1593,8 @@ let adminPushTokens = [];
 
 let conceptBankItems = [];
 let nextConceptItemId = 1;
+let conceptDraftItems = []; // AI가 자동 생성해서 넣어두는 "검토 대기" 문제들 (승인 전까지 학생에게 안 나감)
+let nextConceptDraftId = 1;
 let conceptDailyCounts = {};
 let conceptActiveDays = {}; // { className: [0,1,2,3,4,5,6] } 0=일,1=월...6=토 · 미설정 시 매일
 let conceptEnabledUnits = {}; // { className: ["1-1 이등변삼각형", ...] } 빈 배열/미설정 = 전체 범위
@@ -2003,6 +2016,7 @@ function renderStudents(){
   if(document.getElementById('conceptItemFilterClass')){
     refreshConceptClassSelects();
     renderConceptItemList();
+    renderConceptDraftList();
     renderConceptTodaySubmissions();
   }
   if(document.getElementById('m-student')){
@@ -2867,6 +2881,92 @@ function renderConceptItemList(){
       <button class="btn small danger-text" onclick="deleteConceptItem(${item.id})">삭제</button>
     </li>
   `).join('');
+}
+
+/* =========================================================
+   🕐 검토 대기함 (conceptDraftItems)
+   - concept_daily_autogen_gemini.gs 가 밤사이 자동으로 만들어서
+     conceptDraftItems 에 넣어둔 문제를 보여주고, 승인하면 문제은행
+     (conceptBankItems)으로 옮겨서 학생들에게 나가게 해요.
+   - target이 {type:'class', className} 형태면 그 반 문제은행으로,
+     {type:'individual', studentIds} 형태는 반 단위 문제은행 구조랑
+     안 맞아서 지금은 승인을 막고 안내 문구만 보여줘요.
+========================================================= */
+function conceptDraftTargetLabel_(target){
+  if(!target) return '(대상 정보 없음)';
+  if(target.type === 'class') return target.className || '(반 미정)';
+  if(target.type === 'individual') return '개별학생(' + (target.studentIds || []).join(',') + ')';
+  return '(알 수 없음)';
+}
+
+function renderConceptDraftList(){
+  const listEl = document.getElementById('conceptDraftListBody');
+  const subEl = document.getElementById('conceptDraftCountSub');
+  const rejectAllBtn = document.getElementById('conceptDraftRejectAllBtn');
+  if(!listEl || !subEl) return;
+
+  const list = conceptDraftItems.slice().sort((a,b) => (a.createdAt || '').localeCompare(b.createdAt || '') || a.id - b.id);
+  subEl.textContent = list.length > 0
+    ? `AI가 자동으로 만든 문제 ${list.length}개가 승인을 기다리고 있어요.`
+    : '대기 중인 문제가 없어요. AI가 밤사이 새 문제를 만들면 여기에 나타나요.';
+  if(rejectAllBtn) rejectAllBtn.style.display = list.length > 0 ? 'inline-block' : 'none';
+
+  if(list.length === 0){
+    listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">대기 중인 문제가 없어요.</li>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(item => {
+    const canApprove = item.target && item.target.type === 'class' && item.target.className;
+    return `
+    <li>
+      <div class="left">
+        <span class="date" style="font-family:'Noto Sans KR',sans-serif;">🏷️ ${escapeHtml(conceptDraftTargetLabel_(item.target))}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</span>
+        <strong style="font-size:13px;">${escapeHtml(item.question)}</strong>
+        <span style="font-size:12px; color:var(--ink-soft);">보기: ${item.choices.map((c,i) => i === item.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)}✓</strong>` : escapeHtml(c)).join(' / ')}</span>
+        ${!canApprove ? `<span style="font-size:11px; color:#B4472B; display:block; margin-top:2px;">⚠️ 개별학생 대상이라 자동 승인이 안 돼요. 필요하면 "문제은행"에 직접 반을 지정해 추가해주세요.</span>` : ''}
+      </div>
+      <div style="display:flex; gap:6px; flex-shrink:0;">
+        ${canApprove ? `<button class="btn small" onclick="approveConceptDraft(${item.id})">✅ 승인</button>` : ''}
+        <button class="btn small danger-text" onclick="rejectConceptDraft(${item.id})">거절</button>
+      </div>
+    </li>`;
+  }).join('');
+}
+
+function approveConceptDraft(id){
+  const item = conceptDraftItems.find(i => i.id === id);
+  if(!item) return;
+  if(!item.target || item.target.type !== 'class' || !item.target.className){
+    alert('개별학생 대상 문제는 자동 승인을 지원하지 않아요.');
+    return;
+  }
+  conceptBankItems.push({
+    id: nextConceptItemId++,
+    className: item.target.className,
+    unit: item.unit || '',
+    question: item.question,
+    choices: item.choices,
+    correctIndex: item.correctIndex
+  });
+  conceptDraftItems = conceptDraftItems.filter(i => i.id !== id);
+  renderConceptDraftList();
+  renderConceptItemList();
+  scheduleSync();
+}
+
+function rejectConceptDraft(id){
+  conceptDraftItems = conceptDraftItems.filter(i => i.id !== id);
+  renderConceptDraftList();
+  scheduleSync();
+}
+
+function rejectAllConceptDrafts(){
+  if(conceptDraftItems.length === 0) return;
+  if(!confirm(`대기 중인 문제 ${conceptDraftItems.length}개를 전부 거절할까요?`)) return;
+  conceptDraftItems = [];
+  renderConceptDraftList();
+  scheduleSync();
 }
 
 // 날짜(일수) 기준으로 그 반의 오늘 출제 문항을 결정 (문제은행을 순서대로 순환)
@@ -4708,7 +4808,7 @@ function collectAllData(){
     attendanceRecords, nextAttendanceId,
     generalMakeups, nextGeneralMakeupId,
     adminPushTokens,
-    conceptBankItems, nextConceptItemId, conceptDailyCounts, conceptActiveDays, conceptEnabledUnits, conceptTestRecords, nextConceptRecordId,
+    conceptBankItems, nextConceptItemId, conceptDraftItems, nextConceptDraftId, conceptDailyCounts, conceptActiveDays, conceptEnabledUnits, conceptTestRecords, nextConceptRecordId,
     dailyTests, nextDailyId,
     homeworkAssignments, nextHomeworkAssignmentId,
     answerKeys, nextAnswerKeyId,
@@ -4738,6 +4838,8 @@ function applyAllData(data){
   adminPushTokens = data.adminPushTokens || [];
   conceptBankItems = data.conceptBankItems || [];
   nextConceptItemId = data.nextConceptItemId || maxId(conceptBankItems);
+  conceptDraftItems = data.conceptDraftItems || [];
+  nextConceptDraftId = data.nextConceptDraftId || maxId(conceptDraftItems);
   conceptDailyCounts = data.conceptDailyCounts || {};
   conceptActiveDays = data.conceptActiveDays || {};
   conceptEnabledUnits = data.conceptEnabledUnits || {};
@@ -4841,7 +4943,7 @@ function resetAllData(){
   homeworkAssignments = []; nextHomeworkAssignmentId = 1;
   answerKeys = []; nextAnswerKeyId = 1;
   homeworkRecords = []; nextHomeworkId = 1;
-  conceptBankItems = []; nextConceptItemId = 1; conceptDailyCounts = {}; conceptActiveDays = {}; conceptEnabledUnits = {};
+  conceptBankItems = []; nextConceptItemId = 1; conceptDraftItems = []; nextConceptDraftId = 1; conceptDailyCounts = {}; conceptActiveDays = {}; conceptEnabledUnits = {};
   conceptTestRecords = []; nextConceptRecordId = 1;
   mistakeRecords = []; nextMistakeId = 1;
   teacherComments = {};
@@ -5103,6 +5205,7 @@ async function syncToSheet(){
     generalMakeups = mergeArrays_(freshCheck.generalMakeups, generalMakeups);
     adminPushTokens = mergeArrays_(freshCheck.adminPushTokens, adminPushTokens);
     conceptBankItems = mergeArrays_(freshCheck.conceptBankItems, conceptBankItems);
+    conceptDraftItems = mergeArrays_(freshCheck.conceptDraftItems, conceptDraftItems);
     conceptTestRecords = mergeArrays_(freshCheck.conceptTestRecords, conceptTestRecords);
     dailyTests = mergeArrays_(freshCheck.dailyTests, dailyTests);
     homeworkAssignments = mergeArrays_(freshCheck.homeworkAssignments, homeworkAssignments);
@@ -5125,6 +5228,7 @@ async function syncToSheet(){
     nextAttendanceId = maxOf(nextAttendanceId, freshCheck.nextAttendanceId);
     nextGeneralMakeupId = maxOf(nextGeneralMakeupId, freshCheck.nextGeneralMakeupId);
     nextConceptItemId = maxOf(nextConceptItemId, freshCheck.nextConceptItemId);
+    nextConceptDraftId = maxOf(nextConceptDraftId, freshCheck.nextConceptDraftId);
     nextConceptRecordId = maxOf(nextConceptRecordId, freshCheck.nextConceptRecordId);
     nextDailyId = maxOf(nextDailyId, freshCheck.nextDailyId);
     nextHomeworkAssignmentId = maxOf(nextHomeworkAssignmentId, freshCheck.nextHomeworkAssignmentId);
@@ -5203,6 +5307,7 @@ function init(){
   renderAnswerKeyList();
   refreshConceptClassSelects();
   renderConceptItemList();
+  renderConceptDraftList();
   renderConceptTodaySubmissions();
   refreshMistakeStudentSelects();
   renderMistakeList();
