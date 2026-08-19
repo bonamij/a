@@ -180,6 +180,35 @@
   @media (max-width:480px){
     .report-grid{grid-template-columns:1fr;}
   }
+
+  /* 🧠 AI 학습 성향 분석 리포트 */
+  .airp-cert{ background:linear-gradient(180deg,#FFFDF9,#FFF7EF); border:1px solid var(--line); border-radius:var(--radius); padding:20px; text-align:center; margin-bottom:14px; }
+  .airp-cert .who{ font-size:12.5px; color:var(--ink-soft); margin-top:4px; }
+  .airp-grid-2{ display:grid; grid-template-columns:1.1fr 1fr; gap:14px; }
+  @media(max-width:640px){ .airp-grid-2{ grid-template-columns:1fr; } }
+  .airp-donut-wrap{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .airp-legend{ flex:1; min-width:150px; display:flex; flex-direction:column; gap:8px; }
+  .airp-legend-item{ display:flex; align-items:center; gap:8px; font-size:12.5px; font-family:'Noto Sans KR',sans-serif; font-weight:600; }
+  .airp-dot{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  .airp-legend-item .pct{ margin-left:auto; font-family:'Space Mono',monospace; font-weight:700; }
+  .airp-sw-title{ font-size:12.5px; font-weight:700; margin:12px 0 8px; font-family:'Noto Sans KR',sans-serif; }
+  .airp-sw-title.good{ color:#1E7A5F; }
+  .airp-sw-title.risk{ color:#B4472B; }
+  .airp-sw-list{ list-style:none; margin:0 0 4px; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .airp-sw-list li{ font-size:12.5px; line-height:1.55; padding:9px 11px; border-radius:8px; font-family:'Noto Sans KR',sans-serif; font-weight:500; }
+  .airp-sw-list.good li{ background:#F0FAF6; border:1px solid #BFE6D6; }
+  .airp-sw-list.risk li{ background:#FDF1EE; border:1px solid #F3CFC4; }
+  .airp-analysis p{ font-size:13.5px; line-height:1.7; margin:0 0 12px; font-family:'Noto Sans KR',sans-serif; font-weight:500; }
+  .airp-analysis p:last-child{ margin-bottom:0; }
+  .airp-sol-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media(max-width:480px){ .airp-sol-grid{ grid-template-columns:1fr; } }
+  .airp-sol-card{ background:var(--cream-alt); border-radius:10px; padding:14px 16px; }
+  .airp-sol-card .lbl{ display:inline-block; font-size:11px; font-weight:800; color:var(--brand-dark); background:var(--brand-soft); padding:3px 10px; border-radius:100px; margin-bottom:8px; }
+  .airp-sol-card p{ margin:0; font-size:12.8px; font-family:'Noto Sans KR',sans-serif; font-weight:500; line-height:1.55; }
+  .airp-parent-item{ display:flex; gap:12px; margin-bottom:12px; align-items:flex-start; }
+  .airp-parent-item:last-child{ margin-bottom:0; }
+  .airp-pnum{ width:22px; height:22px; border-radius:50%; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11.5px; flex-shrink:0; }
+  .airp-parent-item p{ margin:0; font-size:12.8px; font-family:'Noto Sans KR',sans-serif; font-weight:500; padding-top:1px; }
 </style>
 </head>
 <body>
@@ -370,6 +399,77 @@ function getUnitPerformanceData(studentId, data){
   return { avgScoreByUnit, mistakeByUnit, allUnits, classify };
 }
 
+/* =========================================================================
+   🧠 AI 학습 성향 분석 리포트 (학부모 화면)
+   - 관리자 앱(imm_academy_system.html)에서 생성한 aiLearningReports 중
+     이 학생의 가장 최근 리포트를 그대로 보여줘요. (원장님 상담용 내부 스크립트는
+     학부모 화면에는 표시하지 않아요)
+   ========================================================================= */
+const AIRP_PALETTE = ["#F2701C","#2E9E8F","#8A6FE0","#E0546B","#C8850F","#4C8DE8","#3FB077"];
+
+function renderAiReportSection(student, data){
+  const list = (data.aiLearningReports || []).filter(r => r.studentId === student.id).slice().sort((a,b) => b.id - a.id);
+  if(list.length === 0){
+    return `<div class="report-empty">아직 생성된 AI 학습 성향 리포트가 없어요. 다음 상담 때 선생님께 요청해보세요!</div>`;
+  }
+  const entry = list[0];
+  const r = entry.report;
+  if(!r || !Array.isArray(r.profile)) return `<div class="report-empty">리포트를 불러오지 못했어요.</div>`;
+
+  const total = r.profile.reduce((s,p) => s + p.percent, 0) || 100;
+  const R = 60, CX = 76, CY = 76, STROKE = 22;
+  const C = 2 * Math.PI * R;
+  let dashOffset = 0;
+  const segs = r.profile.map((p,i) => ({ ...p, color: AIRP_PALETTE[i % AIRP_PALETTE.length], len: (p.percent/total) * C }));
+  const circles = segs.map(s => {
+    const gap = C - s.len;
+    const circle = `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${s.color}" stroke-width="${STROKE}" stroke-dasharray="${s.len} ${gap}" stroke-dashoffset="${-dashOffset}" transform="rotate(-90 ${CX} ${CY})"/>`;
+    dashOffset += s.len;
+    return circle;
+  }).join('');
+  const dominant = [...r.profile].sort((a,b) => b.percent - a.percent)[0];
+  const dateStr = new Date(entry.createdAt).toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
+
+  return `
+    <div class="airp-cert">
+      <div style="font-size:11px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:700; margin-bottom:4px;">생성일 ${dateStr}</div>
+      <div class="who" style="font-size:15px; font-weight:800; color:var(--ink);">${escapeHtml(student.name)} 학생의 학습 성향</div>
+    </div>
+    <div class="airp-grid-2">
+      <div>
+        <div style="font-size:13px; font-weight:700; margin-bottom:8px; font-family:'Noto Sans KR',sans-serif;">◐ 학습 성향 프로파일</div>
+        <div class="airp-donut-wrap">
+          <svg width="152" height="152" viewBox="0 0 152 152">
+            ${circles}
+            <text x="76" y="72" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)" font-family="'Noto Sans KR',sans-serif">주요 성향</text>
+            <text x="76" y="90" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)" font-family="'Noto Sans KR',sans-serif">${escapeHtml(dominant.type)}</text>
+          </svg>
+          <div class="airp-legend">
+            ${segs.map(s => `<div class="airp-legend-item"><span class="airp-dot" style="background:${s.color}"></span><span>${escapeHtml(s.type)}</span><span class="pct">${s.percent}%</span></div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="airp-sw-title good">✓ 학습 강점</div>
+        <ul class="airp-sw-list good">${r.strengths.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
+        <div class="airp-sw-title risk">! 주의·위험 요소</div>
+        <ul class="airp-sw-list risk">${r.risks.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
+      </div>
+    </div>
+
+    <div style="font-size:13px; font-weight:700; margin:14px 0 8px; font-family:'Noto Sans KR',sans-serif;">◆ 전문가 종합 분석</div>
+    <div class="airp-analysis">${r.analysis.split(/\n\n+/).map(p => `<p>${escapeHtml(p)}</p>`).join('')}</div>
+
+    <div style="font-size:13px; font-weight:700; margin:14px 0 8px; font-family:'Noto Sans KR',sans-serif;">맞춤형 학습 솔루션</div>
+    <div class="airp-sol-grid">
+      ${Object.entries(r.solutions).map(([k,v]) => `<div class="airp-sol-card"><span class="lbl">${escapeHtml(k)}</span><p>${escapeHtml(v)}</p></div>`).join('')}
+    </div>
+
+    <div style="font-size:13px; font-weight:700; margin:14px 0 8px; font-family:'Noto Sans KR',sans-serif;">♥ 학부모 코칭 가이드</div>
+    ${r.parentGuide.map((g,i) => `<div class="airp-parent-item"><div class="airp-pnum">${i+1}</div><p>${escapeHtml(g)}</p></div>`).join('')}
+  `;
+}
+
 function renderReport(data, student){
   const wrap = document.getElementById('reportView');
   const BOOKS_MIDDLE = ['개념편','라이트','유형집','기초다지기'];
@@ -528,6 +628,11 @@ function renderReport(data, student){
         <h4>🧩 개념빈칸 테스트</h4>
         <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px; font-family:'Noto Sans KR',sans-serif; font-weight:500;">수업 전 오늘의 개념을 빈칸채우기로 확인해봐요. 보기를 고르면 바로 정답을 알려줘요.</p>
         <div id="conceptQuizArea">${renderConceptQuizDashboard(student, data)}</div>
+      </div>
+
+      <div class="report-section" id="aiReportSection">
+        <h4>🧠 AI 학습 성향 분석 리포트</h4>
+        ${renderAiReportSection(student, data)}
       </div>
 
       <div class="report-section">
