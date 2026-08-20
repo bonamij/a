@@ -1007,9 +1007,16 @@
             <h3>🕐 검토 대기함</h3>
             <div class="sub" id="conceptDraftCountSub">AI가 밤사이 자동으로 만든 문제예요. 승인해야 학생에게 나가요.</div>
           </div>
-          <button type="button" class="btn small ghost" id="conceptDraftRejectAllBtn" onclick="rejectAllConceptDrafts()" style="display:none;">전체 거절</button>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="btn small" id="conceptDraftApproveAllBtn" onclick="approveAllConceptDrafts()" style="display:none;">✅ 전체 승인</button>
+            <button type="button" class="btn small ghost" id="conceptDraftRejectAllBtn" onclick="rejectAllConceptDrafts()" style="display:none;">전체 거절</button>
+          </div>
         </div>
         <ul class="recent-list" id="conceptDraftListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
+        <div id="conceptDraftApprovedBox" style="display:none; margin-top:10px; padding-top:10px; border-top:1px dashed var(--line, #ddd);">
+          <div style="font-size:12px; color:var(--ink-soft); margin-bottom:6px;">✅ 방금 승인한 문제</div>
+          <ul id="conceptDraftApprovedList" style="flex-direction:column; display:flex; gap:6px; list-style:none; padding:0; margin:0;"></ul>
+        </div>
       </div>
 
       <div class="card">
@@ -2899,10 +2906,20 @@ function conceptDraftTargetLabel_(target){
   return '(알 수 없음)';
 }
 
+// 2026-08-21 수정: 예전엔 정답 보기 옆에 "✓" 표시를 해뒀는데, 이게 "이 문제가 승인됐다"는
+// 표시처럼 보여서 헷갈리셨어요. 그래서 정답 표시는 체크(✓) 없이 굵은 글씨 + "(정답)" 라벨로
+// 바꾸고, 진짜 승인한 문제만 화면 아래쪽에 ✅ 체크 표시와 함께 따로 보여주도록 고쳤어요.
+// (승인 직후엔 브라우저 메모리에만 잠깐 남아있는 목록이라, 페이지를 새로고침하면 사라져요 —
+// 실제 승인 결과는 "문제은행 목록"에서 항상 확인할 수 있어요.)
+let recentlyApprovedConceptDrafts = [];
+
 function renderConceptDraftList(){
   const listEl = document.getElementById('conceptDraftListBody');
   const subEl = document.getElementById('conceptDraftCountSub');
   const rejectAllBtn = document.getElementById('conceptDraftRejectAllBtn');
+  const approveAllBtn = document.getElementById('conceptDraftApproveAllBtn');
+  const approvedBox = document.getElementById('conceptDraftApprovedBox');
+  const approvedListEl = document.getElementById('conceptDraftApprovedList');
   if(!listEl || !subEl) return;
 
   const list = conceptDraftItems.slice().sort((a,b) => (a.createdAt || '').localeCompare(b.createdAt || '') || a.id - b.id);
@@ -2910,28 +2927,43 @@ function renderConceptDraftList(){
     ? `AI가 자동으로 만든 문제 ${list.length}개가 승인을 기다리고 있어요.`
     : '대기 중인 문제가 없어요. AI가 밤사이 새 문제를 만들면 여기에 나타나요.';
   if(rejectAllBtn) rejectAllBtn.style.display = list.length > 0 ? 'inline-block' : 'none';
+  if(approveAllBtn) approveAllBtn.style.display = list.some(i => i.target && i.target.type === 'class' && i.target.className) ? 'inline-block' : 'none';
 
   if(list.length === 0){
     listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">대기 중인 문제가 없어요.</li>`;
-    return;
+  } else {
+    listEl.innerHTML = list.map(item => {
+      const canApprove = item.target && item.target.type === 'class' && item.target.className;
+      return `
+      <li>
+        <div class="left">
+          <span class="date" style="font-family:'Noto Sans KR',sans-serif;">🏷️ ${escapeHtml(conceptDraftTargetLabel_(item.target))}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</span>
+          <strong style="font-size:13px;">${escapeHtml(item.question)}</strong>
+          <span style="font-size:12px; color:var(--ink-soft);">보기: ${item.choices.map((c,i) => i === item.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)} (정답)</strong>` : escapeHtml(c)).join(' / ')}</span>
+          ${!canApprove ? `<span style="font-size:11px; color:#B4472B; display:block; margin-top:2px;">⚠️ 개별학생 대상이라 자동 승인이 안 돼요. 필요하면 "문제은행"에 직접 반을 지정해 추가해주세요.</span>` : ''}
+        </div>
+        <div style="display:flex; gap:6px; flex-shrink:0;">
+          ${canApprove ? `<button class="btn small" onclick="approveConceptDraft(${item.id})">✅ 승인</button>` : ''}
+          <button class="btn small danger-text" onclick="rejectConceptDraft(${item.id})">거절</button>
+        </div>
+      </li>`;
+    }).join('');
   }
 
-  listEl.innerHTML = list.map(item => {
-    const canApprove = item.target && item.target.type === 'class' && item.target.className;
-    return `
-    <li>
-      <div class="left">
-        <span class="date" style="font-family:'Noto Sans KR',sans-serif;">🏷️ ${escapeHtml(conceptDraftTargetLabel_(item.target))}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</span>
-        <strong style="font-size:13px;">${escapeHtml(item.question)}</strong>
-        <span style="font-size:12px; color:var(--ink-soft);">보기: ${item.choices.map((c,i) => i === item.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)}✓</strong>` : escapeHtml(c)).join(' / ')}</span>
-        ${!canApprove ? `<span style="font-size:11px; color:#B4472B; display:block; margin-top:2px;">⚠️ 개별학생 대상이라 자동 승인이 안 돼요. 필요하면 "문제은행"에 직접 반을 지정해 추가해주세요.</span>` : ''}
-      </div>
-      <div style="display:flex; gap:6px; flex-shrink:0;">
-        ${canApprove ? `<button class="btn small" onclick="approveConceptDraft(${item.id})">✅ 승인</button>` : ''}
-        <button class="btn small danger-text" onclick="rejectConceptDraft(${item.id})">거절</button>
-      </div>
-    </li>`;
-  }).join('');
+  if(approvedBox && approvedListEl){
+    if(recentlyApprovedConceptDrafts.length === 0){
+      approvedBox.style.display = 'none';
+      approvedListEl.innerHTML = '';
+    } else {
+      approvedBox.style.display = 'block';
+      approvedListEl.innerHTML = recentlyApprovedConceptDrafts.slice().reverse().map(rec => `
+        <li style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft);">
+          <span style="color:#2E8B57;">✅</span>
+          <span>${escapeHtml(rec.label)}${rec.unit ? ` · ${escapeHtml(rec.unit)}` : ''} — ${escapeHtml(rec.question)}</span>
+        </li>
+      `).join('');
+    }
+  }
 }
 
 function approveConceptDraft(id){
@@ -2950,6 +2982,48 @@ function approveConceptDraft(id){
     correctIndex: item.correctIndex
   });
   conceptDraftItems = conceptDraftItems.filter(i => i.id !== id);
+  recentlyApprovedConceptDrafts.push({
+    label: conceptDraftTargetLabel_(item.target),
+    unit: item.unit || '',
+    question: item.question
+  });
+  if(recentlyApprovedConceptDrafts.length > 30) recentlyApprovedConceptDrafts.shift();
+  renderConceptDraftList();
+  renderConceptItemList();
+  scheduleSync();
+}
+
+// 2026-08-21 추가: 대기 중인 문제를 한 번에 전부 승인해요 (개별학생 대상처럼 자동승인이
+// 안 되는 항목은 건너뛰고 그대로 대기함에 남겨둬요). 승인/동기화는 한 번만 실행해서
+// 47개씩 눌러도 느려지지 않게 했어요.
+function approveAllConceptDrafts(){
+  const approvable = conceptDraftItems.filter(i => i.target && i.target.type === 'class' && i.target.className);
+  if(approvable.length === 0){
+    alert('자동 승인 가능한 문제가 없어요 (개별학생 대상만 남아있을 수 있어요).');
+    return;
+  }
+  if(!confirm(`대기 중인 문제 ${approvable.length}개를 전부 승인할까요? (승인하면 바로 학생들에게 나가요)`)) return;
+
+  approvable.forEach(item => {
+    conceptBankItems.push({
+      id: nextConceptItemId++,
+      className: item.target.className,
+      unit: item.unit || '',
+      question: item.question,
+      choices: item.choices,
+      correctIndex: item.correctIndex
+    });
+    recentlyApprovedConceptDrafts.push({
+      label: conceptDraftTargetLabel_(item.target),
+      unit: item.unit || '',
+      question: item.question
+    });
+  });
+  if(recentlyApprovedConceptDrafts.length > 30) recentlyApprovedConceptDrafts = recentlyApprovedConceptDrafts.slice(-30);
+
+  const approvedIds = new Set(approvable.map(i => i.id));
+  conceptDraftItems = conceptDraftItems.filter(i => !approvedIds.has(i.id));
+
   renderConceptDraftList();
   renderConceptItemList();
   scheduleSync();
