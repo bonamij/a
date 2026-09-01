@@ -5035,10 +5035,13 @@ function resetAllData(){
 /* =========================================================
    구글시트 연동
 ========================================================= */
-let sheetSyncUrl = '';
-try { sheetSyncUrl = localStorage.getItem('academySheetSyncUrl') || ''; } catch(err) { sheetSyncUrl = ''; }
+
 
 // 구글시트에서 불러온 데이터가 정상인지 확인 (비어있거나 깨진 데이터를 실수로 덮어쓰지 않기 위한 안전장치)
+const DEFAULT_SHEET_SYNC_URL = 'https://script.google.com/macros/s/AKfycby248HXB7pvkzJ1gBjmLux0myAH2otNNt2A4Vp0edu0HAW49W42-8-uJzN_aKnbP6Uf/exec';
+let sheetSyncUrl = '';
+try { sheetSyncUrl = localStorage.getItem('academySheetSyncUrl') || DEFAULT_SHEET_SYNC_URL; } catch(err) { sheetSyncUrl = DEFAULT_SHEET_SYNC_URL; }
+
 function assertDataLooksSane_(data){
   if(!data || typeof data !== 'object' || !Array.isArray(data.students)){
     throw new Error('방금 불러온 데이터가 이상해서 안전하게 저장을 중단했어요. 잠시 후 다시 시도해주세요.');
