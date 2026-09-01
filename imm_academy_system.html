@@ -3616,12 +3616,12 @@ function toggleHomeworkDone(assignmentId, studentId){
   if(!a) return;
   a.doneBy = a.doneBy || [];
   const idx = a.doneBy.indexOf(studentId);
-  if(idx === -1) a.doneBy.push(studentId); else a.doneBy.splice(idx, 1);
+  if(idx === -1) a.doneBy.push(studentId); else a.doneBy.splice(idx, 1); const targetStudents = getAssignmentTargetStudents(a); const isFullyDone = targetStudents.length > 0 && targetStudents.every(st => a.doneBy.includes(st.id)); if(isFullyDone){ if(!a.completedAt) a.completedAt = new Date().toISOString(); } else { a.completedAt = null; } cleanupOldCompletedHomework();
   renderHomeworkAssignments();
   scheduleSync();
 }
 
-function renderHomeworkAssignments(){
+function cleanupOldCompletedHomework(){ const sevenDaysMs = 7*24*60*60*1000; const now = Date.now(); homeworkAssignments = homeworkAssignments.filter(a2 => { if(!a2.completedAt) return true; return (now - new Date(a2.completedAt).getTime()) < sevenDaysMs; }); } function cleanupOldCompletedHomework(){ const sevenDaysMs = 7*24*60*60*1000; const now = Date.now(); homeworkAssignments = homeworkAssignments.filter(a2 => { if(!a2.completedAt) return true; return (now - new Date(a2.completedAt).getTime()) < sevenDaysMs; }); } function renderHomeworkAssignments(){ cleanupOldCompletedHomework(); cleanupOldCompletedHomework();
   const listEl = document.getElementById('hwaListBody');
   const filterEl = document.getElementById('hwaFilterClass');
   if(!listEl || !filterEl) return;
