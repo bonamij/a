@@ -3621,7 +3621,7 @@ function toggleHomeworkDone(assignmentId, studentId){
   scheduleSync();
 }
 
-function cleanupOldCompletedHomework(){ const sevenDaysMs = 7*24*60*60*1000; const now = Date.now(); homeworkAssignments = homeworkAssignments.filter(a2 => { if(!a2.completedAt) return true; return (now - new Date(a2.completedAt).getTime()) < sevenDaysMs; }); } function cleanupOldCompletedHomework(){ const sevenDaysMs = 7*24*60*60*1000; const now = Date.now(); homeworkAssignments = homeworkAssignments.filter(a2 => { if(!a2.completedAt) return true; return (now - new Date(a2.completedAt).getTime()) < sevenDaysMs; }); } function renderHomeworkAssignments(){ cleanupOldCompletedHomework(); cleanupOldCompletedHomework();
+function cleanupOldCompletedHomework(){ const sevenDaysMs = 7*24*60*60*1000; const now = Date.now(); homeworkAssignments = homeworkAssignments.filter(a2 => { if(!a2.completedAt) return true; return (now - new Date(a2.completedAt).getTime()) < sevenDaysMs; }); }  function renderHomeworkAssignments(){   cleanupOldCompletedHomework();
   const listEl = document.getElementById('hwaListBody');
   const filterEl = document.getElementById('hwaFilterClass');
   if(!listEl || !filterEl) return;
