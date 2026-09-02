@@ -2755,22 +2755,48 @@ function renderConceptUnitPicker(classNames){
 }
 
 // 소단원 칩 클릭 시 켜고/끄고. 전부 켜지면 "전체"로 취급(빈 배열)
-function toggleConceptUnit(className, unitName){
+function applyConceptUnitToggle_(data, className, unitName){
   const allUnits = CONCEPT_CURRICULUM.flatMap(ch => ch.units);
-  const current = (conceptEnabledUnits[className] && conceptEnabledUnits[className].length > 0)
-    ? conceptEnabledUnits[className].slice()
+  data.conceptEnabledUnits = data.conceptEnabledUnits || {};
+  const current = (data.conceptEnabledUnits[className] && data.conceptEnabledUnits[className].length > 0)
+    ? data.conceptEnabledUnits[className].slice()
     : allUnits.slice(); // 지금까지 "전체"였으면 전체 목록에서 시작해서 하나씩 뺄 수 있게
 
   const pos = current.indexOf(unitName);
   if(pos >= 0) current.splice(pos, 1);
   else current.push(unitName);
 
-  conceptEnabledUnits[className] = (current.length === allUnits.length) ? [] : current;
+  data.conceptEnabledUnits[className] = (current.length === allUnits.length) ? [] : current;
+}
 
+async function toggleConceptUnit(className, unitName){
+  // 화면은 바로 반응하도록 로컬 상태도 먼저 업데이트
+  applyConceptUnitToggle_({ conceptEnabledUnits }, className, unitName);
   const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
   renderConceptUnitPicker(classNames);
+
+  if(!sheetSyncUrl) return;
+
   showToast('⏳ 저장 중...', 'pending');
-  scheduleSync();
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+    applyConceptUnitToggle_(freshData, className, unitName);
+
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    applyAllData(freshData);
+    renderConceptUnitPicker(classNames);
+    setSyncStatus(`✅ 저장되고 최신 데이터와 합쳐졌어요. (${new Date().toLocaleString('ko-KR')})`);
+  } catch(err){
+    alert('범위 저장에 실패했어요. 인터넷 연결을 확인해주세요. 다시 시도해주세요.');
+    setSyncStatus('⚠️ 범위 저장 실패');
+  }
 }
 
 function renderConceptDailyCountList(classNames){
@@ -2811,26 +2837,73 @@ function renderConceptDailyCountList(classNames){
 }
 
 // 클릭한 요일을 켜고/끄고. 전부 꺼지면 다시 "매일"로 취급.
-function toggleConceptActiveDay(className, dayIdx){
-  const current = (conceptActiveDays[className] && conceptActiveDays[className].length > 0)
-    ? conceptActiveDays[className].slice()
+function applyConceptActiveDayToggle_(data, className, dayIdx){
+  data.conceptActiveDays = data.conceptActiveDays || {};
+  const current = (data.conceptActiveDays[className] && data.conceptActiveDays[className].length > 0)
+    ? data.conceptActiveDays[className].slice()
     : [0,1,2,3,4,5,6];
   const pos = current.indexOf(dayIdx);
   if(pos >= 0) current.splice(pos, 1);
   else current.push(dayIdx);
 
-  conceptActiveDays[className] = current.length === 0 ? [] : current.sort((a,b) => a - b);
-  const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
-  renderConceptDailyCountList(classNames);
-  showToast('⏳ 저장 중...', 'pending');
-  scheduleSync();
+  data.conceptActiveDays[className] = current.length === 0 ? [] : current.sort((a,b) => a - b);
 }
 
-function setConceptDailyCount(className, value){
+async function toggleConceptActiveDay(className, dayIdx){
+  applyConceptActiveDayToggle_({ conceptActiveDays }, className, dayIdx);
+  const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
+  renderConceptDailyCountList(classNames);
+
+  if(!sheetSyncUrl) return;
+
+  showToast('⏳ 저장 중...', 'pending');
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+    applyConceptActiveDayToggle_(freshData, className, dayIdx);
+
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    applyAllData(freshData);
+    renderConceptDailyCountList(classNames);
+    setSyncStatus(`✅ 저장되고 최신 데이터와 합쳐졌어요. (${new Date().toLocaleString('ko-KR')})`);
+  } catch(err){
+    alert('요일 저장에 실패했어요. 인터넷 연결을 확인해주세요. 다시 시도해주세요.');
+    setSyncStatus('⚠️ 요일 저장 실패');
+  }
+}
+
+async function setConceptDailyCount(className, value){
   const n = Math.max(1, Math.min(30, Number(value) || 5));
   conceptDailyCounts[className] = n;
+
+  if(!sheetSyncUrl) return;
+
   showToast('⏳ 저장 중...', 'pending');
-  scheduleSync();
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+    freshData.conceptDailyCounts = freshData.conceptDailyCounts || {};
+    freshData.conceptDailyCounts[className] = n;
+
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    applyAllData(freshData);
+    setSyncStatus(`✅ 저장되고 최신 데이터와 합쳐졌어요. (${new Date().toLocaleString('ko-KR')})`);
+  } catch(err){
+    alert('문제 수 저장에 실패했어요. 인터넷 연결을 확인해주세요. 다시 시도해주세요.');
+    setSyncStatus('⚠️ 문제 수 저장 실패');
+  }
 }
 
 async function deleteConceptItem(id){
