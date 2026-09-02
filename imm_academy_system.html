@@ -2833,15 +2833,40 @@ function setConceptDailyCount(className, value){
   scheduleSync();
 }
 
-function deleteConceptItem(id){
+async function deleteConceptItem(id){
   if(!confirm('이 문제를 삭제하시겠습니까?')) return;
-  conceptBankItems = conceptBankItems.filter(i => i.id !== id);
-  renderConceptItemList();
-  scheduleSync();
+
+  if(!sheetSyncUrl){
+    conceptBankItems = conceptBankItems.filter(i => i.id !== id);
+    renderConceptItemList();
+    return;
+  }
+
+  showToast('⏳ 삭제 중...', 'pending');
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+    freshData.conceptBankItems = (freshData.conceptBankItems || []).filter(i => i.id !== id);
+
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    applyAllData(freshData);
+    renderConceptItemList();
+    renderConceptDraftList();
+    setSyncStatus(`✅ 삭제되고 최신 데이터와 합쳐졌어요. (${new Date().toLocaleString('ko-KR')})`);
+  } catch(err){
+    alert('삭제 중 저장에 실패했어요. 인터넷 연결을 확인해주세요.');
+    setSyncStatus('⚠️ 삭제 저장 실패');
+  }
 }
 
 // 반 필터가 "전체"면 전체 문제를, 특정 반이 선택돼 있으면 그 반 문제만 한 번에 삭제
-function deleteAllConceptItems(){
+async function deleteAllConceptItems(){
   const filterEl = document.getElementById('conceptItemFilterClass');
   const filter = filterEl ? filterEl.value : 'all';
 
@@ -2855,9 +2880,34 @@ function deleteAllConceptItems(){
   if(!confirm(`${label} 문제 ${target.length}개를 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없어요.`)) return;
 
   const targetIds = new Set(target.map(i => i.id));
-  conceptBankItems = conceptBankItems.filter(i => !targetIds.has(i.id));
-  renderConceptItemList();
-  scheduleSync();
+
+  if(!sheetSyncUrl){
+    conceptBankItems = conceptBankItems.filter(i => !targetIds.has(i.id));
+    renderConceptItemList();
+    return;
+  }
+
+  showToast('⏳ 삭제 중...', 'pending');
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+    freshData.conceptBankItems = (freshData.conceptBankItems || []).filter(i => !targetIds.has(i.id));
+
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    applyAllData(freshData);
+    renderConceptItemList();
+    renderConceptDraftList();
+    setSyncStatus(`✅ 삭제되고 최신 데이터와 합쳐졌어요. (${new Date().toLocaleString('ko-KR')})`);
+  } catch(err){
+    alert('삭제 중 저장에 실패했어요. 인터넷 연결을 확인해주세요.');
+    setSyncStatus('⚠️ 삭제 저장 실패');
+  }
 }
 
 function renderConceptItemList(){
@@ -2966,45 +3016,15 @@ function renderConceptDraftList(){
   }
 }
 
-function approveConceptDraft(id){
+async function approveConceptDraft(id){
   const item = conceptDraftItems.find(i => i.id === id);
   if(!item) return;
   if(!item.target || item.target.type !== 'class' || !item.target.className){
     alert('개별학생 대상 문제는 자동 승인을 지원하지 않아요.');
     return;
   }
-  conceptBankItems.push({
-    id: nextConceptItemId++,
-    className: item.target.className,
-    unit: item.unit || '',
-    question: item.question,
-    choices: item.choices,
-    correctIndex: item.correctIndex
-  });
-  conceptDraftItems = conceptDraftItems.filter(i => i.id !== id);
-  recentlyApprovedConceptDrafts.push({
-    label: conceptDraftTargetLabel_(item.target),
-    unit: item.unit || '',
-    question: item.question
-  });
-  if(recentlyApprovedConceptDrafts.length > 30) recentlyApprovedConceptDrafts.shift();
-  renderConceptDraftList();
-  renderConceptItemList();
-  scheduleSync();
-}
 
-// 2026-08-21 추가: 대기 중인 문제를 한 번에 전부 승인해요 (개별학생 대상처럼 자동승인이
-// 안 되는 항목은 건너뛰고 그대로 대기함에 남겨둬요). 승인/동기화는 한 번만 실행해서
-// 47개씩 눌러도 느려지지 않게 했어요.
-function approveAllConceptDrafts(){
-  const approvable = conceptDraftItems.filter(i => i.target && i.target.type === 'class' && i.target.className);
-  if(approvable.length === 0){
-    alert('자동 승인 가능한 문제가 없어요 (개별학생 대상만 남아있을 수 있어요).');
-    return;
-  }
-  if(!confirm(`대기 중인 문제 ${approvable.length}개를 전부 승인할까요? (승인하면 바로 학생들에게 나가요)`)) return;
-
-  approvable.forEach(item => {
+  if(!sheetSyncUrl){
     conceptBankItems.push({
       id: nextConceptItemId++,
       className: item.target.className,
@@ -3013,34 +3033,183 @@ function approveAllConceptDrafts(){
       choices: item.choices,
       correctIndex: item.correctIndex
     });
-    recentlyApprovedConceptDrafts.push({
-      label: conceptDraftTargetLabel_(item.target),
+    conceptDraftItems = conceptDraftItems.filter(i => i.id !== id);
+    recentlyApprovedConceptDrafts.push({ label: conceptDraftTargetLabel_(item.target), unit: item.unit || '', question: item.question });
+    if(recentlyApprovedConceptDrafts.length > 30) recentlyApprovedConceptDrafts.shift();
+    renderConceptDraftList();
+    renderConceptItemList();
+    return;
+  }
+
+  showToast('⏳ 승인 중...', 'pending');
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+    freshData.conceptBankItems = freshData.conceptBankItems || [];
+    freshData.conceptDraftItems = freshData.conceptDraftItems || [];
+    const newId = freshData.conceptBankItems.length ? Math.max(...freshData.conceptBankItems.map(i => i.id || 0)) + 1 : 1;
+
+    freshData.conceptBankItems.push({
+      id: newId,
+      className: item.target.className,
       unit: item.unit || '',
-      question: item.question
+      question: item.question,
+      choices: item.choices,
+      correctIndex: item.correctIndex
     });
-  });
-  if(recentlyApprovedConceptDrafts.length > 30) recentlyApprovedConceptDrafts = recentlyApprovedConceptDrafts.slice(-30);
+    // 승인한 항목은 검토 대기함에서 확실히 제거 (다른 기기에서 새로 생긴 초안은 그대로 살려둠)
+    freshData.conceptDraftItems = freshData.conceptDraftItems.filter(i => i.id !== id);
 
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    applyAllData(freshData);
+    recentlyApprovedConceptDrafts.push({ label: conceptDraftTargetLabel_(item.target), unit: item.unit || '', question: item.question });
+    if(recentlyApprovedConceptDrafts.length > 30) recentlyApprovedConceptDrafts.shift();
+    renderConceptDraftList();
+    renderConceptItemList();
+    setSyncStatus(`✅ 승인되고 최신 데이터와 합쳐졌어요. (${new Date().toLocaleString('ko-KR')})`);
+  } catch(err){
+    alert('승인 중 저장에 실패했어요. 인터넷 연결을 확인해주세요.');
+    setSyncStatus('⚠️ 승인 저장 실패');
+  }
+}
+
+// 2026-08-21 추가: 대기 중인 문제를 한 번에 전부 승인해요 (개별학생 대상처럼 자동승인이
+// 안 되는 항목은 건너뛰고 그대로 대기함에 남겨둬요). 승인/동기화는 한 번만 실행해서
+// 47개씩 눌러도 느려지지 않게 했어요.
+async function approveAllConceptDrafts(){
+  const approvable = conceptDraftItems.filter(i => i.target && i.target.type === 'class' && i.target.className);
+  if(approvable.length === 0){
+    alert('자동 승인 가능한 문제가 없어요 (개별학생 대상만 남아있을 수 있어요).');
+    return;
+  }
+  if(!confirm(`대기 중인 문제 ${approvable.length}개를 전부 승인할까요? (승인하면 바로 학생들에게 나가요)`)) return;
   const approvedIds = new Set(approvable.map(i => i.id));
-  conceptDraftItems = conceptDraftItems.filter(i => !approvedIds.has(i.id));
 
-  renderConceptDraftList();
-  renderConceptItemList();
-  scheduleSync();
+  if(!sheetSyncUrl){
+    approvable.forEach(item => {
+      conceptBankItems.push({
+        id: nextConceptItemId++,
+        className: item.target.className,
+        unit: item.unit || '',
+        question: item.question,
+        choices: item.choices,
+        correctIndex: item.correctIndex
+      });
+      recentlyApprovedConceptDrafts.push({ label: conceptDraftTargetLabel_(item.target), unit: item.unit || '', question: item.question });
+    });
+    if(recentlyApprovedConceptDrafts.length > 30) recentlyApprovedConceptDrafts = recentlyApprovedConceptDrafts.slice(-30);
+    conceptDraftItems = conceptDraftItems.filter(i => !approvedIds.has(i.id));
+    renderConceptDraftList();
+    renderConceptItemList();
+    return;
+  }
+
+  showToast('⏳ 전체 승인 중...', 'pending');
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+    freshData.conceptBankItems = freshData.conceptBankItems || [];
+    freshData.conceptDraftItems = freshData.conceptDraftItems || [];
+    let newId = freshData.conceptBankItems.length ? Math.max(...freshData.conceptBankItems.map(i => i.id || 0)) + 1 : 1;
+
+    approvable.forEach(item => {
+      freshData.conceptBankItems.push({
+        id: newId++,
+        className: item.target.className,
+        unit: item.unit || '',
+        question: item.question,
+        choices: item.choices,
+        correctIndex: item.correctIndex
+      });
+      recentlyApprovedConceptDrafts.push({ label: conceptDraftTargetLabel_(item.target), unit: item.unit || '', question: item.question });
+    });
+    if(recentlyApprovedConceptDrafts.length > 30) recentlyApprovedConceptDrafts = recentlyApprovedConceptDrafts.slice(-30);
+    freshData.conceptDraftItems = freshData.conceptDraftItems.filter(i => !approvedIds.has(i.id));
+
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    applyAllData(freshData);
+    renderConceptDraftList();
+    renderConceptItemList();
+    setSyncStatus(`✅ 전체 승인되고 최신 데이터와 합쳐졌어요. (${new Date().toLocaleString('ko-KR')})`);
+  } catch(err){
+    alert('전체 승인 중 저장에 실패했어요. 인터넷 연결을 확인해주세요.');
+    setSyncStatus('⚠️ 전체 승인 저장 실패');
+  }
 }
 
-function rejectConceptDraft(id){
-  conceptDraftItems = conceptDraftItems.filter(i => i.id !== id);
-  renderConceptDraftList();
-  scheduleSync();
+async function rejectConceptDraft(id){
+  if(!sheetSyncUrl){
+    conceptDraftItems = conceptDraftItems.filter(i => i.id !== id);
+    renderConceptDraftList();
+    return;
+  }
+
+  showToast('⏳ 거절 처리 중...', 'pending');
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+    freshData.conceptDraftItems = (freshData.conceptDraftItems || []).filter(i => i.id !== id);
+
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    applyAllData(freshData);
+    renderConceptDraftList();
+    setSyncStatus(`✅ 거절되고 최신 데이터와 합쳐졌어요. (${new Date().toLocaleString('ko-KR')})`);
+  } catch(err){
+    alert('거절 처리 중 저장에 실패했어요. 인터넷 연결을 확인해주세요.');
+    setSyncStatus('⚠️ 거절 저장 실패');
+  }
 }
 
-function rejectAllConceptDrafts(){
+async function rejectAllConceptDrafts(){
   if(conceptDraftItems.length === 0) return;
+  const rejectedIds = new Set(conceptDraftItems.map(i => i.id));
   if(!confirm(`대기 중인 문제 ${conceptDraftItems.length}개를 전부 거절할까요?`)) return;
-  conceptDraftItems = [];
-  renderConceptDraftList();
-  scheduleSync();
+
+  if(!sheetSyncUrl){
+    conceptDraftItems = [];
+    renderConceptDraftList();
+    return;
+  }
+
+  showToast('⏳ 전체 거절 처리 중...', 'pending');
+  try {
+    const res = await fetch(sheetSyncUrl, { method:'GET' });
+    const freshData = await res.json();
+    assertDataLooksSane_(freshData);
+    // 지금 화면에 보이던 항목만 거절 (그 사이 새로 들어온 AI 초안은 그대로 살려둠)
+    freshData.conceptDraftItems = (freshData.conceptDraftItems || []).filter(i => !rejectedIds.has(i.id));
+
+    await fetch(sheetSyncUrl, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(freshData)
+    });
+
+    applyAllData(freshData);
+    renderConceptDraftList();
+    setSyncStatus(`✅ 전체 거절되고 최신 데이터와 합쳐졌어요. (${new Date().toLocaleString('ko-KR')})`);
+  } catch(err){
+    alert('전체 거절 처리 중 저장에 실패했어요. 인터넷 연결을 확인해주세요.');
+    setSyncStatus('⚠️ 전체 거절 저장 실패');
+  }
 }
 
 // 날짜(일수) 기준으로 그 반의 오늘 출제 문항을 결정 (문제은행을 순서대로 순환)
