@@ -948,7 +948,7 @@ async function finishConceptQuiz(){
     const freshRes = await fetch(SHEET_URL, { method:'GET' });
     const freshData = await freshRes.json();
 
-    const doubleCheckRes = await fetch(SHEET_URL, { method:'GET' }); const doubleCheckData = await doubleCheckRes.json(); if(doubleCheckData && Array.isArray(doubleCheckData.conceptTestRecords)){ freshData.conceptTestRecords = doubleCheckData.conceptTestRecords; } const doubleCheckRes = await fetch(SHEET_URL, { method:'GET' }); const doubleCheckData = await doubleCheckRes.json(); if(doubleCheckData && Array.isArray(doubleCheckData.conceptTestRecords)){ freshData.conceptTestRecords = doubleCheckData.conceptTestRecords; } freshData.conceptTestRecords = freshData.conceptTestRecords || [];
+    const doubleCheckRes = await fetch(SHEET_URL, { method:'GET' }); const doubleCheckData = await doubleCheckRes.json(); if(doubleCheckData && Array.isArray(doubleCheckData.conceptTestRecords)){ freshData.conceptTestRecords = doubleCheckData.conceptTestRecords; } freshData.conceptTestRecords = freshData.conceptTestRecords || [];
     const nextId = freshData.conceptTestRecords.length
       ? Math.max(...freshData.conceptTestRecords.map(r => r.id || 0)) + 1 : 1;
 
