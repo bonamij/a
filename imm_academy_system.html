@@ -2769,6 +2769,7 @@ function renderConceptWeeklyGrid(){
   const filter = filterEl ? filterEl.value : 'all';
   const weekDates = getThisWeekDatesKST_();
   const dayLabels = ['월','화','수','목','금','토','일'];
+  const dowOrder = [1, 2, 3, 4, 5, 6, 0]; // weekDates[i]의 요일이 getUTCDay() 기준 몇인지 (월요일부터)
   const todayIso = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
   const targetStudents = students
@@ -2783,7 +2784,26 @@ function renderConceptWeeklyGrid(){
 
   const doneSet = new Set(conceptTestRecords.map(r => `${r.studentId}_${r.date}`));
 
-  let html = '<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;">';
+  // 🌟 이번 주 "예정된 요일"을 하루도 안 빠뜨린 학생 찾기 (반마다 요일 설정이 다를 수 있어서
+  // 반별 conceptActiveDays를 기준으로 계산해요. 아직 안 온 날은 당연히 제외하고, 지금까지
+  // 예정됐던 날만 봐요.)
+  const perfectStudents = targetStudents.filter(s => {
+    const activeDays = (conceptActiveDays[s.className] && conceptActiveDays[s.className].length > 0)
+      ? conceptActiveDays[s.className]
+      : [0, 1, 2, 3, 4, 5, 6];
+    const scheduledSoFar = weekDates.filter((d, i) => activeDays.includes(dowOrder[i]) && d <= todayIso);
+    return scheduledSoFar.length > 0 && scheduledSoFar.every(d => doneSet.has(`${s.id}_${d}`));
+  });
+
+  let html = '';
+  if(perfectStudents.length > 0){
+    html += `<div style="background:var(--brand-soft); border-radius:10px; padding:12px 14px; margin-bottom:14px;">
+      <div style="font-weight:700; color:var(--brand-dark); margin-bottom:4px;">🌟 이번 주 예정된 테스트 하나도 안 빠뜨린 학생 (${perfectStudents.length}명)</div>
+      <div style="font-size:13px; color:var(--ink);">${perfectStudents.map(s => escapeHtml(s.name) + (s.className ? ` (${escapeHtml(s.className)})` : '')).join(', ')}</div>
+    </div>`;
+  }
+
+  html += '<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;">';
   html += '<thead><tr><th style="text-align:left; padding:7px 10px; border-bottom:2px solid var(--line); white-space:nowrap;">학생</th>';
   weekDates.forEach((d, i) => {
     const isToday = d === todayIso;
@@ -2793,7 +2813,8 @@ function renderConceptWeeklyGrid(){
 
   targetStudents.forEach(s => {
     const doneDays = weekDates.filter(d => doneSet.has(`${s.id}_${d}`)).length;
-    html += `<tr><td style="padding:7px 10px; border-bottom:1px solid var(--line); white-space:nowrap;">${escapeHtml(s.name)} <span style="color:var(--ink-soft); font-size:11px;">(${escapeHtml(s.className || '-')})</span></td>`;
+    const isPerfect = perfectStudents.includes(s);
+    html += `<tr>${isPerfect ? '<td style="padding:7px 10px; border-bottom:1px solid var(--line); white-space:nowrap;">🌟 ' : '<td style="padding:7px 10px; border-bottom:1px solid var(--line); white-space:nowrap;">'}${escapeHtml(s.name)} <span style="color:var(--ink-soft); font-size:11px;">(${escapeHtml(s.className || '-')})</span></td>`;
     weekDates.forEach(d => {
       const done = doneSet.has(`${s.id}_${d}`);
       const isFuture = d > todayIso;
