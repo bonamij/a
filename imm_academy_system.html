@@ -1055,6 +1055,20 @@
         </div>
         <ul class="recent-list" id="conceptTodayListBody" style="flex-direction:column; display:flex; gap:8px;"></ul>
       </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>📅 이번 주 테스트 현황</h3>
+            <div class="sub">학생별로 이번 주(월~일) 며칠 풀었는지 한눈에 볼 수 있어요.</div>
+          </div>
+          <div class="filter-row">
+            <label for="conceptWeeklyFilterClass">반 필터</label>
+            <select id="conceptWeeklyFilterClass" onchange="renderConceptWeeklyGrid()"><option value="all">전체</option></select>
+          </div>
+        </div>
+        <div id="conceptWeeklyGridBody"></div>
+      </div>
     </section>
     <section class="panel" id="panel-homework">
       <div class="card">
@@ -2025,6 +2039,7 @@ function renderStudents(){
     renderConceptItemList();
     renderConceptDraftList();
     renderConceptTodaySubmissions();
+    renderConceptWeeklyGrid();
   }
   if(document.getElementById('m-student')){
     refreshMistakeStudentSelects();
@@ -2705,16 +2720,90 @@ const CONCEPT_CURRICULUM = [
 
 function refreshConceptClassSelects(){
   const filterSel = document.getElementById('conceptItemFilterClass');
+  const weeklyFilterSel = document.getElementById('conceptWeeklyFilterClass');
   if(!filterSel) return;
 
   const prevFilter = filterSel.value;
+  const prevWeeklyFilter = weeklyFilterSel ? weeklyFilterSel.value : 'all';
   const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
 
   filterSel.innerHTML = `<option value="all">전체</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
   if(prevFilter === 'all' || classNames.includes(prevFilter)) filterSel.value = prevFilter;
 
+  if(weeklyFilterSel){
+    weeklyFilterSel.innerHTML = `<option value="all">전체</option>` + classNames.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if(prevWeeklyFilter === 'all' || classNames.includes(prevWeeklyFilter)) weeklyFilterSel.value = prevWeeklyFilter;
+  }
+
   renderConceptDailyCountList(classNames);
   renderConceptUnitPicker(classNames);
+  renderConceptWeeklyGrid();
+}
+
+// 이번 주(월~일, 한국시간 기준) 날짜 7개를 'YYYY-MM-DD'로 반환
+function getThisWeekDatesKST_(){
+  const kstNow = new Date(Date.now() + 9 * 3600 * 1000);
+  const dow = kstNow.getUTCDay(); // 0=일 ... 6=토 (KST로 이미 옮긴 시각 기준)
+  const diffToMonday = (dow === 0) ? -6 : (1 - dow);
+  const monday = new Date(kstNow);
+  monday.setUTCDate(kstNow.getUTCDate() + diffToMonday);
+
+  const dates = [];
+  for(let i = 0; i < 7; i++){
+    const d = new Date(monday);
+    d.setUTCDate(monday.getUTCDate() + i);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    dates.push(`${y}-${m}-${day}`);
+  }
+  return dates;
+}
+
+// 반/학생별로 이번 주 요일마다 개념빈칸 테스트를 제출했는지 한눈에 보여주는 표
+function renderConceptWeeklyGrid(){
+  const container = document.getElementById('conceptWeeklyGridBody');
+  if(!container) return;
+
+  const filterEl = document.getElementById('conceptWeeklyFilterClass');
+  const filter = filterEl ? filterEl.value : 'all';
+  const weekDates = getThisWeekDatesKST_();
+  const dayLabels = ['월','화','수','목','금','토','일'];
+  const todayIso = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+
+  const targetStudents = students
+    .filter(s => filter === 'all' || s.className === filter)
+    .slice()
+    .sort((a, b) => (a.className || '').localeCompare(b.className || '') || a.name.localeCompare(b.name));
+
+  if(targetStudents.length === 0){
+    container.innerHTML = `<div class="report-empty">해당하는 학생이 없어요.</div>`;
+    return;
+  }
+
+  const doneSet = new Set(conceptTestRecords.map(r => `${r.studentId}_${r.date}`));
+
+  let html = '<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13px;">';
+  html += '<thead><tr><th style="text-align:left; padding:7px 10px; border-bottom:2px solid var(--line); white-space:nowrap;">학생</th>';
+  weekDates.forEach((d, i) => {
+    const isToday = d === todayIso;
+    html += `<th style="padding:7px 4px; border-bottom:2px solid var(--line); text-align:center; min-width:34px; ${isToday ? 'color:var(--brand-dark);' : ''}">${dayLabels[i]}${isToday ? '<br><span style=\"font-size:10px;\">오늘</span>' : ''}</th>`;
+  });
+  html += '<th style="padding:7px 10px; border-bottom:2px solid var(--line); text-align:center; white-space:nowrap;">주간</th></tr></thead><tbody>';
+
+  targetStudents.forEach(s => {
+    const doneDays = weekDates.filter(d => doneSet.has(`${s.id}_${d}`)).length;
+    html += `<tr><td style="padding:7px 10px; border-bottom:1px solid var(--line); white-space:nowrap;">${escapeHtml(s.name)} <span style="color:var(--ink-soft); font-size:11px;">(${escapeHtml(s.className || '-')})</span></td>`;
+    weekDates.forEach(d => {
+      const done = doneSet.has(`${s.id}_${d}`);
+      const isFuture = d > todayIso;
+      html += `<td style="text-align:center; padding:7px 4px; border-bottom:1px solid var(--line);">${done ? '✅' : (isFuture ? '<span style="color:var(--line);">·</span>' : '<span style="color:var(--ink-soft);">–</span>')}</td>`;
+    });
+    html += `<td style="text-align:center; padding:7px 10px; border-bottom:1px solid var(--line); font-weight:700; color:${doneDays >= 3 ? 'var(--brand-dark)' : 'var(--ink-soft)'};">${doneDays}/7</td></tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
 }
 
 // 반마다 자동 출제 대상 소단원을 체크박스(칩)로 고르는 화면
@@ -3298,7 +3387,8 @@ function getTodaysConceptItems(className){
   }
 
   const perDay = conceptDailyCounts[className] || 5;
-  const dayIndex = Math.floor(Date.now() / 86400000);
+  // 2026-09-08 수정: 학생 화면과 동일하게 한국시간(KST) 자정 기준으로 통일
+  const dayIndex = Math.floor((Date.now() + 9 * 3600 * 1000) / 86400000);
   const total = classItems.length;
   const startIdx = (dayIndex * perDay) % total;
   const result = [];
@@ -5628,6 +5718,7 @@ function init(){
   renderConceptItemList();
   renderConceptDraftList();
   renderConceptTodaySubmissions();
+  renderConceptWeeklyGrid();
   refreshMistakeStudentSelects();
   renderMistakeList();
   renderMistakeChart();
