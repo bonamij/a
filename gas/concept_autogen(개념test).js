@@ -185,7 +185,12 @@ function generateDailyConceptQuestions(){
   }
 }
 
+// 2026-09-15: 새 저장 구조(Store.js)로 옮긴 뒤에는 웹앱 주소를 거치지 않고 저장소를 직접 읽고 써요.
+// (웹앱 주소는 이제 비밀번호가 있어야 열려서, 예전처럼 주소로 받아오면 막혀요)
 function fetchConceptAppData_(){
+  if(isMigrated_()){
+    try { return assembleLegacy_(); } catch(e){ Logger.log('저장소 읽기 실패: ' + e.message); return null; }
+  }
   const res = UrlFetchApp.fetch(CONCEPT_AUTOGEN_CONFIG.SHEET_URL, { method: 'get', muteHttpExceptions: true });
   if(res.getResponseCode() !== 200) return null;
   try {
@@ -196,6 +201,12 @@ function fetchConceptAppData_(){
 }
 
 function saveConceptAppData_(data){
+  if(isMigrated_()){
+    // 전체를 덮어쓰지 않고, 새로 생긴 항목(검토 대기 문제)만 추가돼요
+    const result = withLock_(() => commitOps_(legacyOpsFromFullData_(data), 'autogen'));
+    Logger.log(`저장소에 반영: 변경 ${result.applied.length}건, 거절 ${result.rejected.length}건`);
+    return;
+  }
   UrlFetchApp.fetch(CONCEPT_AUTOGEN_CONFIG.SHEET_URL, {
     method: 'post',
     contentType: 'text/plain',

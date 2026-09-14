@@ -1,56 +1,8 @@
 const GEMINI_API_KEY = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
 
-function doGet(e) {
-  const sheet = getDataSheet();
-  const json = sheet.getRange('A1').getValue() || '{}';
-  return ContentService.createTextOutput(json)
-    .setMimeType(ContentService.MimeType.JSON);
-}
+// 2026-09-15: doGet / doPost 는 Router.js 로 옮겼어요.
+// (인증, 새 저장 구조(Store.js), 옛 버전 앱 호환을 한곳에서 처리)
 
-function doPost(e) {
-  const body = JSON.parse(e.postData.contents);
-
-  if (body.action === 'analyzeExam') {
-    return handleAnalyzeExam(body);
-  }
-
-  if (body.action === 'generateLearningReport') {
-    return handleGenerateLearningReport(body);
-  }
-
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const dataSheet = getDataSheet();
-
-  // 🔔 덮어쓰기 전에, 알림 비교용으로 기존 데이터를 먼저 읽어둬요
-  const oldJson = dataSheet.getRange('A1').getValue() || '{}';
-  let oldData = {};
-  try { oldData = JSON.parse(oldJson); } catch (e2) { oldData = {}; }
-
-  dataSheet.getRange('A1').setValue(e.postData.contents);
-
-let data = {};
-  try {
-    data = JSON.parse(e.postData.contents);
-  } catch (err) {
-    Logger.log('JSON 파싱 오류: ' + err.message);
-  }
-
-  try {
-    updateAttendanceSheets(ss, data);
-  } catch (err) {
-    Logger.log('출결 시트 업데이트 오류: ' + err.message);
-  }
-
-  try {
-    notifyNewHomework_(oldData, data);
-    notifyNewGeneralMakeup_(oldData, data);
-    notifyNewParentMessage_(oldData, data);
-  } catch (notifyErr) {
-    Logger.log('알림 발송 중 오류: ' + notifyErr.message);
-  }
-  return ContentService.createTextOutput(JSON.stringify({ ok: true }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
 // 2026-08-19 수정: 사진분석(시험지)이랑 텍스트전용 작업(개념문제 생성, AI 학습 리포트)이
 // 그동안 전부 'gemini-flash-latest' 모델 하나로만 호출돼서, 무료 등급 쿼터(모델별로 따로
 // 배정됨)를 전부 같이 나눠 쓰고 있었어요. 그래서 개념문제 생성을 많이 돌리면 AI 리포트도
@@ -272,6 +224,11 @@ function getFcmAccessToken_() {
 
 function sendPushToTokens(tokens, title, body, url) {
   if (!tokens || tokens.length === 0) return;
+  // 🧪 테스트용 시트 사본에서는 스크립트 속성 PUSH_DISABLED=true 로 실제 알림 발송을 막아요
+  if (PropertiesService.getScriptProperties().getProperty('PUSH_DISABLED') === 'true') {
+    Logger.log('[알림 꺼짐] ' + title + ' → 토큰 ' + tokens.length + '개 (PUSH_DISABLED)');
+    return;
+  }
   const accessToken = getFcmAccessToken_();
   tokens.forEach(function (token) {
     const payload = {
