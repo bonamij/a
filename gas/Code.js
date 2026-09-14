@@ -14,6 +14,10 @@ function doPost(e) {
     return handleAnalyzeExam(body);
   }
 
+  if (body.action === 'generateLearningReport') {
+    return handleGenerateLearningReport(body);
+  }
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const dataSheet = getDataSheet();
 
@@ -47,13 +51,21 @@ let data = {};
   return ContentService.createTextOutput(JSON.stringify({ ok: true }))
     .setMimeType(ContentService.MimeType.JSON);
 }
-function callGeminiWithRetry(payload, maxAttempts) {
+// 2026-08-19 수정: 사진분석(시험지)이랑 텍스트전용 작업(개념문제 생성, AI 학습 리포트)이
+// 그동안 전부 'gemini-flash-latest' 모델 하나로만 호출돼서, 무료 등급 쿼터(모델별로 따로
+// 배정됨)를 전부 같이 나눠 쓰고 있었어요. 그래서 개념문제 생성을 많이 돌리면 AI 리포트도
+// 같이 막히고, 그 반대도 마찬가지였어요.
+// 이제 model 파라미터를 추가해서, 텍스트전용 작업은 'gemini-flash-lite-latest'라는 다른
+// 모델(무료 등급에서 분당/일일 요청 한도가 더 넉넉한 편)로 보내서 별도의 쿼터를 쓰게 했어요.
+// 사진분석(handleAnalyzeExam)은 기존처럼 model 인자를 안 넘기면 그대로 'gemini-flash-latest'를 써요.
+function callGeminiWithRetry(payload, maxAttempts, model) {
   maxAttempts = maxAttempts || 4;
+  model = model || 'gemini-flash-latest';
   let response;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     response = UrlFetchApp.fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' + GEMINI_API_KEY,
+      'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + GEMINI_API_KEY,
       {
         method: 'post',
         contentType: 'application/json',
@@ -68,8 +80,20 @@ function callGeminiWithRetry(payload, maxAttempts) {
       return response;
     }
 
+    // 2026-08-19 수정: 429여도 "하루 한도(RPD) 자체가 소진"된 경우엔 아무리 기다렸다
+    // 재시도해도 절대 성공하지 않아요(자정 리셋 전까지). 그런데도 예전 로직은 이 경우에도
+    // 매번 더 길게 기다리며 최대 4번씩 재시도해서, 스크립트 실행시간만 낭비하고 있었어요.
+    // 응답 본문에 "PerDay"가 들어있으면(하루 한도 초과 표시) 바로 포기해서 시간을 아껴요.
+    if (code === 429) {
+      let bodyText = '';
+      try { bodyText = response.getContentText(); } catch (e) {}
+      if (bodyText.indexOf('PerDay') !== -1) {
+        return response; // 하루 한도 소진 - 재시도 없이 바로 반환
+      }
+    }
+
     if ((code === 503 || code === 429) && attempt < maxAttempts) {
-      Utilities.sleep(attempt * 3000);
+      Utilities.sleep(attempt * 8000); // 429(쿼터 초과) 때 더 넉넉하게 기다리도록 늘림
       continue;
     }
 
@@ -77,6 +101,18 @@ function callGeminiWithRetry(payload, maxAttempts) {
   }
 
   return response;
+}
+
+// 429 응답이 "하루 한도(RPD) 소진"인지 판별하는 헬퍼 (스크립트 여러 곳에서 재사용)
+function isGeminiDailyQuotaExhausted_(response) {
+  try {
+    if (!response || typeof response.getResponseCode !== 'function') return false;
+    if (response.getResponseCode() !== 429) return false;
+    const text = response.getContentText();
+    return text.indexOf('PerDay') !== -1 || text.indexOf('generate_content_free_tier_requests') !== -1;
+  } catch (e) {
+    return false;
+  }
 }
 
 function handleAnalyzeExam(body) {
@@ -107,7 +143,7 @@ function handleAnalyzeExam(body) {
   const payload = {
     contents: [{ parts: parts }],
     generationConfig: {
-      maxOutputTokens: 2048,
+      maxOutputTokens: 8192,
       thinkingConfig: { thinkingBudget: 0 }
     }
   };
@@ -214,8 +250,13 @@ function updateAttendanceSheets(ss, data) {
 /* =========================================================
    ① 서비스 계정 키 (아래 중괄호 안에 다운받은 JSON 파일 내용을 통째로 붙여넣으세요)
 ========================================================= */
-const SERVICE_ACCOUNT_KEY_JSON = JSON.parse(PropertiesService.getScriptProperties().getProperty('SERVICE_ACCOUNT_KEY_JSON'));
-
+// 🔐 2026-09-15: 서비스 계정 키를 코드에 직접 두지 않고 스크립트 속성에서 불러와요.
+// (스크립트 속성 FCM_SERVICE_ACCOUNT_JSON 에 다운받은 JSON 내용을 통째로 넣어두세요)
+const SERVICE_ACCOUNT_KEY_JSON = (function () {
+  const raw = PropertiesService.getScriptProperties().getProperty('FCM_SERVICE_ACCOUNT_JSON');
+  if (!raw) return { private_key: '', client_email: '' };
+  try { return JSON.parse(raw); } catch (e) { return { private_key: '', client_email: '' }; }
+})();
 const FIREBASE_PROJECT_ID = 'im-math';
 
 function getFcmAccessToken_() {
@@ -339,4 +380,105 @@ function notifyNewParentMessage_(oldData, newData) {
     newMessages.map(function (m) { return m.studentName + ': ' + m.message; }).join(' / '),
     './imm_academy_system.html'
   );
+}
+
+/* =========================================================
+   🧠 AI 학습 성향 분석 리포트 생성
+   - 기존 GEMINI_API_KEY / callGeminiWithRetry() 를 그대로 재사용해요.
+   - 사진 없이 텍스트만 보내서 리포트 JSON을 받아옵니다.
+   - 이 함수는 시트에 아무것도 저장하지 않아요 (읽기 전용 AI 호출).
+     생성된 리포트를 실제로 저장하는 건 관리자 앱의 기존 자동 동기화
+     (syncToSheet)가 담당해요 — 다른 데이터랑 똑같은 방식.
+========================================================= */
+function handleGenerateLearningReport(body) {
+  const student = body.student || {};
+  const auto = body.auto || {};
+  const manual = body.manual || {};
+
+  const systemPrompt = '당신은 수학학원의 AI 학습 성향 분석 코치입니다. 주어진 학생 데이터를 바탕으로 학습 성향 코칭 리포트를 작성합니다.\n' +
+    '반드시 순수 JSON 객체 하나만 반환하세요. 코드블록 표시(백틱)나 설명 문구 없이 JSON만 출력합니다.\n' +
+    'JSON 스키마:\n' +
+    '{\n' +
+    '  "profile": [ {"type": "성향유형명(2~4자, 예: 반복형/안정추구형/불안형/의존형/감각형/도전형/분석형 등 상황에 맞게)", "percent": 정수} ... 5개, percent 합계는 정확히 100 ],\n' +
+    '  "strengths": ["학습 강점 문장", ... 3~4개, 각 60~110자],\n' +
+    '  "risks": ["주의/위험 요소 문장", ... 3~5개, 각 60~110자],\n' +
+    '  "analysis": "전문가 종합 분석. 3~4개 문단을 \\n\\n으로 구분한 하나의 문자열. 각 문단 2~4문장. 데이터에 근거해 구체적으로.",\n' +
+    '  "solutions": {\n' +
+    '    "복습방법": "구체적 실행 방법 2~3문장",\n' +
+    '    "암기방법": "구체적 실행 방법 2~3문장",\n' +
+    '    "학습루틴": "구체적 실행 방법 2~3문장",\n' +
+    '    "집중력향상": "구체적 실행 방법 2~3문장"\n' +
+    '  },\n' +
+    '  "parentGuide": ["학부모용 코칭 팁 문장", ... 정확히 3개, 각 60~120자],\n' +
+    '  "internalScript": "학원 원장님/강사가 학부모 상담 시 참고할 톤의 요약 스크립트 문단, 150~250자"\n' +
+    '}\n' +
+    '어조는 따뜻하지만 전문적이고 구체적으로, 실제 학원 상담 리포트처럼 작성하세요. 반드시 위 스키마의 키 이름을 정확히 지키세요.';
+
+  const userPrompt = '다음은 한 학생의 학습 데이터입니다.\n\n' +
+    '[기본 정보]\n' +
+    '이름: ' + (student.name || '') + ' / 학년: ' + (student.grade || '') + ' / 학교: ' + (student.school || '') + ' / 반: ' + (student.className || '') + '\n\n' +
+    '[개념퀴즈 시스템 자동 연동 데이터]\n' +
+    '- 최근 오답률: ' + (auto.wrongRatePct != null ? auto.wrongRatePct + '%' : '기록 없음') + '\n' +
+    '- 학습 참여 진도율(최근 30일 제출일 비율): ' + (auto.progressRatePct != null ? auto.progressRatePct + '%' : '기록 없음') + '\n' +
+    '- 주간 목표 달성: ' + (auto.weeklyGoal != null ? (auto.weeklyCount + '/' + auto.weeklyGoal) : '기록 없음') + '\n' +
+    '- 데일리 테스트 평균(최근 ' + (auto.dailyTestCount || 0) + '회): ' + (auto.dailyTestAvg != null ? auto.dailyTestAvg + '점' : '기록 없음') + '\n' +
+    '- 데일리 테스트 추세: ' + (auto.dailyTestTrend || '기록 없음') + '\n' +
+    '- 교재 진도: ' + (auto.progressText || '기록 없음') + '\n\n' +
+    '[수업 관찰 보완 입력 (선생님 체크)]\n' +
+    '- 숙제 제출 속도: ' + (manual.hwSpeed || '입력 없음') + '\n' +
+    '- 수업 집중도: ' + (manual.focus || '입력 없음') + '\n' +
+    '- 발표·질문 참여도: ' + (manual.participation || '입력 없음') + '\n' +
+    '- 실수 후 반응: ' + (manual.mistakeReaction || '입력 없음') + '\n' +
+    '- 학습 스트레스 여부: ' + (manual.stress || '입력 없음') + '\n\n' +
+    '위 데이터를 바탕으로 스키마에 맞는 JSON 리포트를 작성해주세요.';
+
+  const payload = {
+    contents: [{ parts: [{ text: systemPrompt + '\n\n' + userPrompt }] }],
+    generationConfig: { temperature: 0.6, maxOutputTokens: 8192 }
+  };
+
+  try {
+    // 2026-08-19 수정: 개념문제 자동생성 스크립트와 같은 모델('gemini-flash-latest')을 같이
+    // 쓰면 그쪽에서 쿼터를 많이 쓸 때 리포트 생성도 같이 막혀요. 그래서 리포트처럼 사진 없는
+    // 텍스트 전용 작업은 별도 쿼터를 쓰는 'gemini-flash-lite-latest' 모델로 보내요.
+    const rawResponse = callGeminiWithRetry(payload, 4, 'gemini-flash-lite-latest');
+    const responseCode = rawResponse.getResponseCode();
+    const rawText = rawResponse.getContentText();
+
+    if (responseCode !== 200) {
+      const friendlyMsg = isGeminiDailyQuotaExhausted_(rawResponse)
+        ? 'AI 무료 사용량(하루 한도)이 오늘 다 소진됐어요. 태평양시간 자정(한국시간 오후 4~5시경) 이후 초기화되니 그때 다시 시도해주세요.'
+        : 'AI 서버 오류 (코드 ' + responseCode + '): ' + rawText.slice(0, 400);
+      return ContentService.createTextOutput(JSON.stringify({ error: friendlyMsg }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    let analysisText = '';
+    try {
+      const result = JSON.parse(rawText);
+      analysisText = result.candidates[0].content.parts[0].text;
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ error: 'AI 응답을 읽는 데 실패했어요. 원문: ' + rawText.slice(0, 400) }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return ContentService.createTextOutput(JSON.stringify({ error: 'AI 응답에서 JSON을 못 찾았어요. AI 원문: ' + analysisText.slice(0, 400) }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    try {
+      JSON.parse(jsonMatch[0]);
+    } catch (parseErr) {
+      return ContentService.createTextOutput(JSON.stringify({ error: 'JSON 해석 실패. AI 원문 일부: ' + jsonMatch[0].slice(0, 400) }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    return ContentService.createTextOutput(jsonMatch[0])
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ error: 'AI 리포트 생성 중 오류: ' + err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }

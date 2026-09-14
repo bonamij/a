@@ -1,0 +1,7 @@
+# 학생 데이터 백업·키는 공개 저장소에 올리지 않기
+*백업*.json
+backup_*.json
+live-snapshot*.json
+gas/.clasp.test.json
+.clasprc.json
+node_modules/
