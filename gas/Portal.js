@@ -79,6 +79,7 @@ function buildParentData_(snap, student) {
       .map(function (h) {
         const copy = Object.assign({}, h);
         copy.doneBy = (h.doneBy || []).filter(function (id) { return String(id) === sid; });
+        copy.doneAt = pickKey_(h.doneAt, sid);
         if (copy.target && copy.target.type === 'individual') copy.target = { type: 'individual', studentIds: [student.id] };
         return copy;
       }),
@@ -95,7 +96,8 @@ function buildParentData_(snap, student) {
     conceptBankItems: a.conceptBankItems.filter(function (i) { return student.className && i.className === student.className; }),
     conceptDailyCounts: pickKey_(m.conceptDailyCounts, student.className),
     conceptActiveDays: pickKey_(m.conceptActiveDays, student.className),
-    groupAvgScore: groupAvgScore_(student, a)
+    groupAvgScore: groupAvgScore_(student, a),
+    todayKst: kstToday_()
   };
 }
 
@@ -165,8 +167,15 @@ function parentToggleHomework_(body) {
     if (!a) throw storeError_('NOT_FOUND', '선생님이 이미 삭제한 숙제예요. 새로고침해주세요.');
     if (!targetsStudent_(a, student)) throw storeError_('FORBIDDEN', '이 학생에게 배정된 숙제가 아니에요.');
     const op = { op: 'patch', c: 'homeworkAssignments', id: String(a.id) };
-    if (body.done) op.addToSet = { doneBy: [student.id] };
-    else op.pullFromSet = { doneBy: [student.id] };
+    const sidKey = String(student.id);
+    if (body.done) {
+      op.addToSet = { doneBy: [student.id] };
+      op.mapSet = { doneAt: {} };
+      op.mapSet.doneAt[sidKey] = kstToday_(); // 체크한 날 — 다음날부터 학생 화면에서 숨겨요
+    } else {
+      op.pullFromSet = { doneBy: [student.id] };
+      op.mapUnset = { doneAt: [sidKey] };
+    }
     return [op];
   });
   return { ok: true, rev: out.result.rev };

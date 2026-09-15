@@ -227,6 +227,20 @@ function applyPatch_(data, op) {
     const remove = pull[k] || [];
     data[k] = data[k].filter(function (v) { return remove.indexOf(v) === -1; });
   });
+  // 맵 필드 안의 키 하나만 바꾸기 (예: doneAt[학생id] = 체크한 날) — 다른 학생 기록을 덮어쓰지 않게
+  const mapSet = op.mapSet || {};
+  Object.keys(mapSet).forEach(function (k) {
+    const obj = (data[k] && typeof data[k] === 'object' && !Array.isArray(data[k])) ? Object.assign({}, data[k]) : {};
+    Object.keys(mapSet[k] || {}).forEach(function (kk) { obj[kk] = mapSet[k][kk]; });
+    data[k] = obj;
+  });
+  const mapUnset = op.mapUnset || {};
+  Object.keys(mapUnset).forEach(function (k) {
+    if (!data[k] || typeof data[k] !== 'object' || Array.isArray(data[k])) return;
+    const obj = Object.assign({}, data[k]);
+    (mapUnset[k] || []).forEach(function (kk) { delete obj[kk]; });
+    data[k] = obj;
+  });
 }
 
 function applyOp_(store, op, meta, rev, now, actor) {

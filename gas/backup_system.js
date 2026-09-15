@@ -434,10 +434,20 @@ function installTriggers() {
   const hasBackup = triggers.some(function (t) { return t.getHandlerFunction() === 'backupDataSnapshot'; });
   if (hasBackup) {
     Logger.log('✅ 자동 백업 트리거(backupDataSnapshot)가 이미 있어요.');
-    return;
+  } else {
+    ScriptApp.newTrigger('backupDataSnapshot').timeBased().everyDays(1).atHour(3).inTimezone(BACKUP_CONFIG.TIMEZONE).create();
+    Logger.log('✅ 매일 새벽 3시 자동 백업 트리거를 만들었어요.');
   }
-  ScriptApp.newTrigger('backupDataSnapshot').timeBased().everyDays(1).atHour(3).inTimezone(BACKUP_CONFIG.TIMEZONE).create();
-  Logger.log('✅ 매일 새벽 3시 자동 백업 트리거를 만들었어요.');
+
+  // 개념빈칸 리마인더: 오후 4시 + 저녁 8시 (기존 리마인더 트리거는 지우고 이 두 개로 맞춰요)
+  let removed = 0;
+  triggers.forEach(function (t) {
+    if (t.getHandlerFunction() === 'sendConceptTestReminders') { ScriptApp.deleteTrigger(t); removed++; }
+  });
+  [16, 20].forEach(function (hour) {
+    ScriptApp.newTrigger('sendConceptTestReminders').timeBased().everyDays(1).atHour(hour).inTimezone(BACKUP_CONFIG.TIMEZONE).create();
+  });
+  Logger.log('✅ 개념빈칸 리마인더: 오후 4시, 저녁 8시 (기존 리마인더 ' + removed + '개 교체)');
 }
 
 /** 새로 필요한 권한을 한 번 승인받기 위한 함수 (배포 전에 편집기에서 실행) */

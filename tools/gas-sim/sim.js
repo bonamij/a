@@ -109,6 +109,7 @@ function makeEnv(initialA1) {
     Session: { getEffectiveUser: () => ({ getEmail: () => 'owner@example.com' }), getScriptTimeZone: () => 'Asia/Seoul' },
     ScriptApp: {
       getProjectTriggers: () => triggers.map(h => ({ getHandlerFunction: () => h })),
+      deleteTrigger: t => { const i = triggers.indexOf(t.getHandlerFunction()); if (i >= 0) triggers.splice(i, 1); },
       newTrigger: h => { const chain = { timeBased: () => chain, everyDays: () => chain, atHour: () => chain, inTimezone: () => chain, create: () => { triggers.push(h); return {}; } }; return chain; }
     },
     UrlFetchApp: { fetch: (url, opts) => { fetches.push({ url, opts }); return { getResponseCode: () => 200, getContentText: () => '{}' }; }, getRequest: () => ({}) },
@@ -395,6 +396,46 @@ const noIdMsgs = noId.run('assembleLegacy_()').parentMessages;
 check('N all messages kept with unique ids', noIdMsgs.length === 4 && new Set(noIdMsgs.map(m => String(m.id))).size === 4, noIdMsgs);
 check('N verify passes', noId.run('verifyMigration()').length === 0);
 check('N restore of old id-less backup is a no-op', noId.run(`restoreOpsFromLegacy_(${JSON.stringify(noIdData)}).length`) === 0);
+
+// O. 숙제 체크 날짜 · 리마인더 시간/대상
+const hwEnv = makeEnv(JSON.stringify({
+  students: [
+    { id: 1, name: '가학생', className: '월목중2', pin: '1234', pushTokens: ['t1'] },
+    { id: 2, name: '나학생', className: '월목중2', pin: '5678', pushTokens: ['t2'] }
+  ],
+  homeworkAssignments: [{ id: 1, text: '숙제', date: '2026-09-01', target: { type: 'class', className: '월목중2' }, doneBy: [] }],
+  conceptBankItems: [{ id: 1, className: '월목중2', question: 'q ___', choices: ['a', 'b'], correctIndex: 0 }],
+  conceptDailyCounts: { '월목중2': 3 }, conceptActiveDays: {}, conceptTestRecords: []
+}));
+hwEnv.run('migrateToV2()');
+const tok1 = hwEnv.v2('parentLogin', { name: '가학생', pin: '1234' }).token;
+const tok2 = hwEnv.v2('parentLogin', { name: '나학생', pin: '5678' }).token;
+hwEnv.v2('parentToggleHomework', { token: tok1, studentId: 1, assignmentId: 1, done: true });
+hwEnv.v2('parentToggleHomework', { token: tok2, studentId: 2, assignmentId: 1, done: true });
+const kstToday = hwEnv.run('kstToday_()');
+let hwRow = JSON.parse(hwEnv.itemRow('homeworkAssignments', 1)[6]);
+check('O doneAt recorded for both students', hwRow.doneAt && hwRow.doneAt['1'] === kstToday && hwRow.doneAt['2'] === kstToday, hwRow);
+const plO = hwEnv.v2('parentLoad', { token: tok1, studentId: 1 });
+check('O parent sees only own doneAt + server today', JSON.stringify(plO.data.homeworkAssignments[0].doneAt) === JSON.stringify({ 1: kstToday }) && plO.data.todayKst === kstToday, plO.data.homeworkAssignments[0]);
+hwEnv.v2('parentToggleHomework', { token: tok1, studentId: 1, assignmentId: 1, done: false });
+hwRow = JSON.parse(hwEnv.itemRow('homeworkAssignments', 1)[6]);
+check('O uncheck removes only own record', !('1' in hwRow.doneAt) && hwRow.doneAt['2'] === kstToday && !hwRow.doneBy.includes(1) && hwRow.doneBy.includes(2), hwRow);
+hwEnv.run('installTriggers()'); hwEnv.run('installTriggers()');
+check('O reminder triggers 16/20 without duplicates', hwEnv.triggers.filter(t => t === 'sendConceptTestReminders').length === 2 && hwEnv.triggers.filter(t => t === 'backupDataSnapshot').length === 1, hwEnv.triggers);
+hwEnv.props.PUSH_DISABLED = 'false';
+const kstDow = new Date(Date.now() + 9 * 3600 * 1000).getUTCDay();
+let fbO = hwEnv.fetches.length;
+hwEnv.run('sendConceptTestReminders()');
+check('O reminder to both when nobody did it', hwEnv.fetches.length - fbO === 2, hwEnv.fetches.length - fbO);
+hwEnv.run(`withLock_(() => commitOps_([{ op: 'put', c: 'conceptActiveDays', id: '월목중2', data: [${(kstDow + 1) % 7}] }], 'test'))`);
+fbO = hwEnv.fetches.length;
+hwEnv.run('sendConceptTestReminders()');
+check('O no reminder on a day without questions', hwEnv.fetches.length === fbO);
+hwEnv.run(`withLock_(() => commitOps_([{ op: 'put', c: 'conceptActiveDays', id: '월목중2', data: [${kstDow}] }], 'test'))`);
+hwEnv.v2('parentSubmitQuiz', { token: tok2, studentId: 2, correct: 3, total: 3 });
+fbO = hwEnv.fetches.length;
+hwEnv.run('sendConceptTestReminders()');
+check('O reminder only to the student who has not done it', hwEnv.fetches.length - fbO === 1, hwEnv.fetches.length - fbO);
 
 const small = makeEnv(JSON.stringify(sample));
 small.run('migrateToV2()');

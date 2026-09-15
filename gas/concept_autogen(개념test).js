@@ -401,8 +401,17 @@ function sendConceptTestReminders(){
   let remindedCount = 0;
   let skippedNoToken = 0;
 
+  // 2026-09-15: 한국시간 기준 요일·시각 (오후 4시 / 저녁 8시 두 번 실행돼요)
+  const kstNow = new Date(Date.now() + 9 * 3600 * 1000);
+  const todayDow = kstNow.getUTCDay(); // 0=일 ... 6=토 (포털과 같은 기준)
+  const evening = kstNow.getUTCHours() >= 18;
+
   (data.students || []).forEach(student => {
     if(submittedToday.has(student.id)) return; // 이미 오늘 했으면 건너뜀
+
+    // 관리자 앱에서 출제 요일을 정해둔 반은 그 요일에만 알려요 (포털도 그 요일에만 문제를 내요)
+    const activeDays = (data.conceptActiveDays || {})[student.className];
+    if(activeDays && activeDays.length > 0 && activeDays.indexOf(todayDow) === -1) return;
 
     const items = getTodaysConceptItemsForReminder_(student, data.conceptBankItems || [], data.conceptDailyCounts || {});
     if(items.length === 0) return; // 오늘 낼 문제가 없으면 건너뜀
@@ -414,7 +423,9 @@ function sendConceptTestReminders(){
       sendPushToTokens(
         tokens,
         '🧩 오늘의 개념빈칸 테스트',
-        `아직 안 하셨어요! ${items.length}문제만 풀면 끝나요. 지금 확인해보세요.`,
+        evening
+          ? `🌙 아직 안 풀었어요! 자기 전에 ${items.length}문제만 풀어주세요.`
+          : `아직 안 하셨어요! ${items.length}문제만 풀면 끝나요. 지금 확인해보세요.`,
         './parent_portal.html'
       );
       remindedCount++;
@@ -427,6 +438,9 @@ function sendConceptTestReminders(){
 }
 
 function itemMatchesStudentForReminder_(item, student){
+  // 2026-09-15 수정: 문제은행(conceptBankItems) 문제는 target 대신 className으로 반을 가리켜요.
+  // 예전엔 target만 봐서 "오늘 낼 문제가 없음"으로 판단해 리마인더가 한 번도 안 갔어요.
+  if(item.className) return !!student.className && item.className === student.className;
   if(!item.target) return false;
   if(item.target.type === 'individual') return (item.target.studentIds || []).includes(student.id);
   if(item.target.type === 'class') return item.target.className === student.className;

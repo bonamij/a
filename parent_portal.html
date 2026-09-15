@@ -334,6 +334,7 @@ async function enableStudentPushNotifications(studentId){
     const res = await portalApi_('parentRegisterPushToken', { token: parentToken, studentId, pushToken: token });
     const student = (currentData.students || []).find(s => s.id === studentId);
     if(student) student.pushTokenCount = res.pushTokenCount;
+    try { localStorage.setItem(pushRegisteredKey_(studentId), '1'); } catch(e) {}
     if(statusEl) statusEl.textContent = '✅ 알림이 켜졌어요! 숙제·개념빈칸 알림을 이 기기로 받을 수 있어요.';
     if(btn){ btn.disabled = false; }
     updateStudentPushButtonState(student);
@@ -488,7 +489,52 @@ async function showStudentReport(studentId, force){
   const student = (data.students || []).find(s => s.id === studentId);
   if(!student) return;
   renderReport(data, student);
+  ensurePushSetup_(student);
 }
+
+// 🔔 알림 켜기 안내 (2026-09-15): 폰에서 '허용'을 눌러야만 켜져서, 로그인하면 바로 허용창을 띄우고
+// 아직 안 켜졌으면 리포트 맨 위에 배너로 계속 안내해요
+function pushSupportState_(){
+  const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  if(isIos && !standalone) return 'ios-install';
+  if(!('serviceWorker' in navigator) || !('PushManager' in window) || typeof Notification === 'undefined' || typeof firebase === 'undefined') return 'unsupported';
+  return Notification.permission; // 'default' | 'granted' | 'denied'
+}
+function pushRegisteredKey_(studentId){ return 'academyPushRegistered|' + API_URL + '|' + studentId; }
+function isPushRegisteredHere_(studentId){
+  try { return localStorage.getItem(pushRegisteredKey_(studentId)) === '1'; } catch(err){ return false; }
+}
+let pushAutoAsked_ = false;
+function ensurePushSetup_(student){
+  const state = pushSupportState_();
+  renderPushBanner_(student, state);
+  const refresh = () => renderPushBanner_(student, pushSupportState_());
+  if(state === 'granted' && !isPushRegisteredHere_(student.id)){
+    enableStudentPushNotifications(student.id).then(refresh); // 이미 허용된 기기는 조용히 등록
+  } else if(state === 'default' && !pushAutoAsked_){
+    pushAutoAsked_ = true;
+    enableStudentPushNotifications(student.id).then(refresh); // 로그인하자마자 허용창
+  }
+}
+function renderPushBanner_(student, state){
+  const old = document.getElementById('pushNagBanner');
+  if(old) old.remove();
+  if(state === 'granted') return;
+  const messages = {
+    'default': '🔔 알림을 켜야 개념빈칸 테스트·숙제 알림을 받을 수 있어요.',
+    'denied': '🔕 알림이 막혀 있어요. 휴대폰 설정 → 브라우저(또는 홈 화면 앱) → 알림에서 이 사이트를 허용해주세요.',
+    'ios-install': '📱 아이폰은 Safari 아래 공유 버튼(⬆️) → "홈 화면에 추가"를 한 뒤, 홈 화면의 아이콘으로 열어야 알림을 받을 수 있어요.',
+    'unsupported': '🔕 이 브라우저는 알림을 받을 수 없어요. 안드로이드는 크롬, 아이폰은 홈 화면에 추가한 앱으로 열어주세요.'
+  };
+  const wrap = document.getElementById('reportView');
+  if(!wrap || !messages[state]) return;
+  const button = state === 'default'
+    ? `<br><button type="button" class="btn" style="width:auto; margin-top:8px; padding:8px 16px;" onclick="enableStudentPushNotifications(${student.id}).then(() => renderPushBanner_({ id: ${student.id} }, pushSupportState_()))">🔔 알림 켜기</button>`
+    : '';
+  wrap.insertAdjacentHTML('afterbegin', `<div id="pushNagBanner" style="background:#B8391F; color:#fff; border-radius:12px; padding:14px 16px; margin-bottom:12px; font-size:14px; font-weight:700; font-family:'Noto Sans KR',sans-serif; line-height:1.5;">${messages[state]}${button}</div>`);
+}
+
 
 // 저장된 로그인 증표가 있으면 바로 리포트를 열어요
 (async function autoLogin_(){
@@ -702,6 +748,13 @@ function renderReport(data, student){
     (a.target && a.target.type === 'individual' && a.target.studentIds && a.target.studentIds.includes(student.id))
   ).slice().sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
 
+  // 2026-09-15: 체크한 숙제는 체크한 날까지만 보이고 다음날부터 숨겨요 (관리자 앱에는 그대로 보여요)
+  const hwToday = data.todayKst || todayIso;
+  const visibleHomework = studentHomeworkAssignments.filter(a => {
+    if(!(a.doneBy || []).includes(student.id)) return true;
+    return (a.doneAt || {})[String(student.id)] === hwToday;
+  });
+
   let nextExamInfo = null;
   const isMiddle = levelOf(student.grade) === '중등부';
   if(isMiddle && student.school){
@@ -799,10 +852,10 @@ function renderReport(data, student){
       </div>
 
       <div class="report-section" id="hwChecklistSection">
-        <h4>✅ 숙제 체크리스트${studentHomeworkAssignments.length ? ` · ${studentHomeworkAssignments.filter(a => (a.doneBy||[]).includes(student.id)).length}/${studentHomeworkAssignments.length} 완료` : ''}</h4>
-        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:500;">선생님이 내주신 숙제예요. 다 풀었으면 체크해주세요!</p>
+        <h4>✅ 숙제 체크리스트${visibleHomework.length ? ` · ${visibleHomework.filter(a => (a.doneBy||[]).includes(student.id)).length}/${visibleHomework.length} 완료` : ''}</h4>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:500;">선생님이 내주신 숙제예요. 다 풀었으면 체크해주세요! 체크한 숙제는 다음날부터 목록에서 사라져요.</p>
         <div id="hwChecklistArea">
-          ${studentHomeworkAssignments.length === 0 ? `<div class="report-empty">지금 배정된 숙제가 없어요.</div>` : studentHomeworkAssignments.map(a => {
+          ${visibleHomework.length === 0 ? `<div class="report-empty">지금 할 숙제가 없어요. 👍</div>` : visibleHomework.map(a => {
             const done = (a.doneBy || []).includes(student.id);
             return `
               <label style="display:flex; align-items:flex-start; gap:10px; padding:11px 12px; margin-bottom:8px; border-radius:9px; background:${done ? 'var(--brand-soft)' : 'var(--cream-alt)'}; cursor:pointer;">

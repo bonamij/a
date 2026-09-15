@@ -1019,6 +1019,7 @@
     </section>
 
     <section class="panel" id="panel-conceptbank">
+      <div class="no-push-notice" style="display:none; margin:0 0 12px; padding:12px 14px; border-radius:10px; background:#FDECE7; color:#B4472B; font-size:13px; font-weight:600; font-family:'Noto Sans KR',sans-serif;"></div>
       <div class="card">
         <div class="card-head">
           <div>
@@ -1494,6 +1495,7 @@
         </div>
 
         <div id="sheetSyncStatus" style="font-size:13px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;">서버에 연결하는 중이에요...</div>
+        <div class="no-push-notice" style="display:none; margin:10px 0 0; padding:12px 14px; border-radius:10px; background:#FDECE7; color:#B4472B; font-size:13px; font-weight:600; font-family:'Noto Sans KR',sans-serif;"></div>
         <div id="weakPinNotice" hidden style="margin-top:10px; font-size:12.5px; color:#B4472B; font-family:'Noto Sans KR',sans-serif; font-weight:600;"></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
           <button type="button" class="btn small ghost" onclick="syncNow()">🔄 지금 저장·새로고침</button>
@@ -5898,6 +5900,12 @@ function updateSyncSettingsUi_(){
     weak.hidden = list.length === 0;
     weak.textContent = `⚠️ 비밀번호가 없거나 0000이라 학부모 포털에 로그인할 수 없는 학생: ${list.map(s => s.name).join(', ')} (학생 목록에서 4자리 비밀번호를 정해주세요)`;
   }
+  // 알림을 한 번도 안 켠 학생 (개념빈칸·숙제 알림을 못 받아요)
+  const noPush = students.filter(s => !(s.pushTokens || []).length);
+  document.querySelectorAll('.no-push-notice').forEach(el => {
+    el.style.display = noPush.length ? '' : 'none';
+    el.textContent = `🔕 알림을 아직 안 켠 학생 ${noPush.length}명: ${noPush.map(s => s.name).join(', ')} — 학생 폰에서 포털에 로그인해 "허용"을 눌러야 개념빈칸·숙제 알림이 가요.`;
+  });
 }
 
 async function backupOnServerNow(){
