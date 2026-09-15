@@ -39,6 +39,10 @@ function upgradeRequiredJson_() {
 }
 
 function doGet(e) {
+  // 새 버전 앱이 "이 서버가 새 버전인지" 먼저 확인하는 용도 (데이터는 안 줘요)
+  if (e && e.parameter && e.parameter.probe) {
+    return json_({ ok: true, api: 2, migrated: isMigrated_(), legacyMode: legacyMode_() });
+  }
   if (!isMigrated_()) {
     const json = getDataSheet().getRange('A1').getValue() || '{}';
     return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);

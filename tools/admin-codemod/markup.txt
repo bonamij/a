@@ -1,0 +1,58 @@
+@@CSS@@
+  /* 2026-09-15: 저장 상태 표시 · 관리자 비밀번호 화면 */
+  .save-indicator{ border:1px solid var(--line); background:var(--cream); color:var(--ink); border-radius:999px; padding:6px 12px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
+  .save-indicator.ok{ color:#2E7D3E; border-color:#BFD9C3; }
+  .save-indicator.pending{ color:#5B4A36; }
+  .save-indicator.error{ color:#fff; background:#B8391F; border-color:#B8391F; }
+  .admin-lock{ position:fixed; inset:0; background:rgba(46,32,19,0.55); display:flex; align-items:center; justify-content:center; z-index:9999; padding:16px; }
+  .admin-lock[hidden], .admin-lock [hidden], .test-server-ribbon[hidden], #weakPinNotice[hidden]{ display:none !important; }
+  .admin-lock-card{ background:var(--cream); border-radius:16px; padding:24px 22px; width:100%; max-width:360px; box-shadow:0 10px 30px rgba(0,0,0,.25); display:flex; flex-direction:column; gap:12px; }
+  .admin-lock-title{ font-size:18px; font-weight:800; }
+  .admin-lock-msg{ font-size:13.5px; line-height:1.6; white-space:pre-line; }
+  .admin-lock-card form{ display:flex; flex-direction:column; gap:10px; }
+  .admin-lock-card input{ font-size:16px; padding:12px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); }
+  .test-server-ribbon{ position:fixed; top:0; left:50%; transform:translateX(-50%); background:#B8391F; color:#fff; font-size:12px; font-weight:800; padding:4px 14px; border-radius:0 0 10px 10px; z-index:10000; }
+  @media (max-width:480px){ .save-indicator{ padding:5px 9px; font-size:11.5px; } }
+@@LOCK@@
+  <div class="test-server-ribbon" id="testServerRibbon" hidden>🧪 테스트 서버에 연결됨 (실제 데이터 아님)</div>
+  <div class="admin-lock" id="adminLock" hidden>
+    <div class="admin-lock-card">
+      <div class="admin-lock-title">🔐 아임수학학원 관리자</div>
+      <div class="admin-lock-msg" id="adminLockMsg">관리자 비밀번호를 입력해주세요.</div>
+      <form id="adminLockForm" onsubmit="submitAdminKey(event)">
+        <input type="password" id="adminKeyInput" autocomplete="current-password" placeholder="관리자 비밀번호">
+        <button type="submit" class="btn">들어가기</button>
+      </form>
+      <button type="button" class="btn ghost" id="adminLockRetry" hidden onclick="startSync_()">다시 시도</button>
+    </div>
+  </div>
+@@CARD@@
+<h3>☁️ 서버 연결 · 저장 상태</h3>
+            <div class="sub">데이터는 바뀔 때마다 자동으로 서버(구글시트)에 저장되고, 다른 기기에서 바꾼 내용도 1분마다 가져와요. 지운 항목은 다른 기기에서 되살아나지 않아요. 매일 새벽 3시에 구글 드라이브 "아임수학학원_백업" 폴더로 자동 백업돼요.</div>
+          </div>
+        </div>
+
+        <div id="sheetSyncStatus" style="font-size:13px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;">서버에 연결하는 중이에요...</div>
+        <div id="weakPinNotice" hidden style="margin-top:10px; font-size:12.5px; color:#B4472B; font-family:'Noto Sans KR',sans-serif; font-weight:600;"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+          <button type="button" class="btn small ghost" onclick="syncNow()">🔄 지금 저장·새로고침</button>
+          <button type="button" class="btn small ghost" onclick="backupOnServerNow()">💾 서버에 지금 백업</button>
+          <button type="button" class="btn small ghost" onclick="loadServerBackupList()">📂 서버 백업 목록</button>
+          <button type="button" class="btn small danger-text" onclick="adminLogout()">🔒 이 기기 로그아웃</button>
+        </div>
+        <ul id="serverBackupList" class="recent-list" style="margin-top:10px; flex-direction:column; display:flex; gap:6px;"></ul>
+
+        <details style="margin-top:14px;">
+          <summary style="cursor:pointer; font-size:13px; font-weight:700; color:var(--brand-dark); font-family:'Noto Sans KR',sans-serif;">⚙️ 고급: 서버 주소 바꾸기 (테스트용)</summary>
+          <div class="inline-form" style="margin-top:10px;">
+            <div class="field" style="flex:1 1 220px; min-width:0;">
+              <label for="sheetSyncUrlInput">Apps Script 웹 앱 URL (비워두면 기본 서버)</label>
+              <input type="text" id="sheetSyncUrlInput" placeholder="https://script.google.com/macros/s/....../exec" style="width:100%;">
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+            <button type="button" class="btn small" onclick="saveSheetSyncUrl()">저장 후 다시 불러오기</button>
+            <button type="button" class="btn small ghost" onclick="disconnectSheetSync()">기본 서버로 되돌리기</button>
+          </div>
+        </details>
+@@END@@

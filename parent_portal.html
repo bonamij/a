@@ -244,8 +244,20 @@
 </div>
 
 <script>
-/* ⚙️ 학원 선생님만: 구글 Apps Script 웹 앱 URL을 여기에 넣어주세요 (관리자 앱의 '데이터 관리'에서 쓰신 것과 동일한 주소예요) */
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycby248HXB7pvkzJ1gBjmLux0myAH2otNNt2A4Vp0edu0HAW49W42-8-uJzN_aKnbP6Uf/exec';
+/* ⚙️ 서버(구글 Apps Script 웹 앱) 주소 — 관리자 앱과 같은 주소예요 */
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycby248HXB7pvkzJ1gBjmLux0myAH2otNNt2A4Vp0edu0HAW49W42-8-uJzN_aKnbP6Uf/exec';
+let API_URL = DEFAULT_API_URL;
+(function(){
+  // 테스트용: 내 컴퓨터(localhost)에서 열었을 때만 ?api= 로 서버 주소를 바꿀 수 있어요 (다른 사이트 링크로는 못 바꿔요)
+  const isLocal = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  const override = new URLSearchParams(location.search).get('api');
+  if(isLocal && override){
+    API_URL = override;
+    document.addEventListener('DOMContentLoaded', () => document.body.insertAdjacentHTML('afterbegin', '<div style="position:fixed;top:0;left:50%;transform:translateX(-50%);background:#B8391F;color:#fff;font-size:12px;font-weight:800;padding:4px 14px;border-radius:0 0 10px 10px;z-index:10000;">🧪 테스트 서버</div>'));
+  }
+})();
+const PORTAL_CLIENT_VERSION = 2;
+const PORTAL_SESSION_KEY = 'academyParentSession|' + API_URL;
 
 /* ⚙️ 파이어베이스 설정 — 관리자 앱(imm_academy_system.html), sw.js와 반드시 똑같아야 해요.
    2026-09-07 복구: 로그인 오류를 고치는 과정에서 이 섹션이 통째로 빠졌던 걸 다시 넣었어요. */
@@ -283,7 +295,7 @@ function updateStudentPushButtonState(student){
   const btn = document.getElementById('studentPushBtn');
   const statusEl = document.getElementById('studentPushStatus');
   if(!btn || !student) return;
-  const count = (student.pushTokens || []).length;
+  const count = student.pushTokenCount !== undefined ? student.pushTokenCount : (student.pushTokens || []).length;
   if(count > 0){
     btn.textContent = `🔔 알림 켜짐 (${count}개 기기)`;
     if(statusEl && !statusEl.textContent) statusEl.textContent = '이 기기(브라우저)에 처음 들어오셨거나 알림이 안 오면, 버튼을 다시 눌러 이 기기도 등록해주세요.';
@@ -319,22 +331,9 @@ async function enableStudentPushNotifications(studentId){
     setupForegroundNotifications_(messaging);
     const token = await messaging.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: registration });
 
-    const freshRes = await fetch(SHEET_URL, { method:'GET' });
-    const freshData = await freshRes.json();
-    const student = (freshData.students || []).find(s => s.id === studentId);
-    if(student){
-      student.pushTokens = student.pushTokens || [];
-      if(!student.pushTokens.includes(token)) student.pushTokens.push(token);
-    }
-
-    await fetch(SHEET_URL, {
-      method:'POST',
-      headers: { 'Content-Type':'text/plain' },
-      body: JSON.stringify(freshData)
-    });
-
-    cachedData = freshData;
-    currentData = freshData;
+    const res = await portalApi_('parentRegisterPushToken', { token: parentToken, studentId, pushToken: token });
+    const student = (currentData.students || []).find(s => s.id === studentId);
+    if(student) student.pushTokenCount = res.pushTokenCount;
     if(statusEl) statusEl.textContent = '✅ 알림이 켜졌어요! 숙제·개념빈칸 알림을 이 기기로 받을 수 있어요.';
     if(btn){ btn.disabled = false; }
     updateStudentPushButtonState(student);
@@ -358,12 +357,85 @@ function levelOf(grade){
   return grade.startsWith('초') ? '초등부' : grade.startsWith('중') ? '중등부' : '';
 }
 
-async function fetchData(){
-  if(cachedData) return cachedData;
-  const res = await fetch(SHEET_URL, { method:'GET' });
-  const data = await res.json();
-  cachedData = data;
+let parentToken = '';
+let studentDataCache = {};
+
+function portalError_(code, message){
+  const e = new Error(message || code);
+  e.code = code;
+  return e;
+}
+
+// ⚠️ 옛 서버는 모르는 요청도 "전체 저장"으로 처리해서 데이터를 덮어쓸 수 있어요.
+// 그래서 새 서버인지 먼저 확인하고, 아니면 아무것도 보내지 않아요.
+let serverChecked_ = false;
+async function checkServer_(){
+  if(serverChecked_) return;
+  let data = null;
+  try {
+    const sep = API_URL.includes('?') ? '&' : '?';
+    const res = await fetch(API_URL + sep + 'probe=1', { method:'GET' });
+    data = await res.json();
+  } catch(err){
+    throw portalError_('NETWORK', '서버에 연결하지 못했어요. 인터넷 연결을 확인하시고 잠시 후 다시 시도해주세요.');
+  }
+  if(!data || data.api !== 2 || !data.migrated){
+    throw portalError_('MAINTENANCE', '학원 시스템을 점검하고 있어요. 잠시 후 다시 시도해주세요.');
+  }
+  serverChecked_ = true;
+}
+
+async function portalApi_(action, payload){
+  await checkServer_();
+  let res;
+  try {
+    res = await fetch(API_URL, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(Object.assign({ v: 2, clientVersion: PORTAL_CLIENT_VERSION, action }, payload || {}))
+    });
+  } catch(err){
+    throw portalError_('NETWORK', '서버에 연결하지 못했어요. 인터넷 연결을 확인하시고 잠시 후 다시 시도해주세요.');
+  }
+  let data;
+  try { data = await res.json(); } catch(err){ throw portalError_('BAD_RESPONSE', '서버 응답을 읽지 못했어요. 잠시 후 다시 시도해주세요.'); }
+  if(!data || data.ok !== true){
+    const code = data && data.error;
+    if(code === 'SESSION_EXPIRED' || code === 'AUTH_REQUIRED'){
+      clearParentSession_();
+      showLoginView_(data.message);
+    }
+    throw portalError_(code || 'ERROR', (data && data.message) || '요청을 처리하지 못했어요.');
+  }
   return data;
+}
+
+// 로그인 증표는 이 기기에 30일 동안 기억해요 (PIN을 바꾸면 자동으로 풀려요)
+function saveParentSession_(token, studentId){
+  try { localStorage.setItem(PORTAL_SESSION_KEY, JSON.stringify({ token, studentId })); } catch(err) {}
+}
+function loadParentSession_(){
+  try { return JSON.parse(localStorage.getItem(PORTAL_SESSION_KEY) || 'null'); } catch(err){ return null; }
+}
+function clearParentSession_(){
+  parentToken = '';
+  studentDataCache = {};
+  try { localStorage.removeItem(PORTAL_SESSION_KEY); } catch(err) {}
+}
+
+function showLoginView_(message){
+  document.getElementById('reportView').style.display = 'none';
+  document.getElementById('loginView').style.display = '';
+  const btn = document.getElementById('loginBtn');
+  if(btn){ btn.disabled = false; btn.textContent = '확인'; }
+  const errEl = document.getElementById('loginError');
+  if(errEl) errEl.textContent = message || '';
+}
+
+function parentLogout(){
+  if(!confirm('이 기기에서 로그아웃할까요?')) return;
+  clearParentSession_();
+  showLoginView_('');
 }
 
 async function login(e){
@@ -383,40 +455,55 @@ async function login(e){
   btn.textContent = '확인 중...';
 
   try {
-    const data = await fetchData();
-    const students = data.students || [];
-    const student = students.find(s => s.name === name && s.pin === pin);
-
-    if(!student){
-      errEl.textContent = '일치하는 학생을 찾을 수 없어요. 이름과 비밀번호를 다시 확인해주시거나 학원에 문의해주세요.';
-      btn.disabled = false;
-      btn.textContent = '확인';
-      return;
-    }
-
-    currentData = data;
-    // 가족 연결 코드가 명시적으로 설정된 학생끼리만 형제자매로 묶어요.
-    // (예전에는 비밀번호가 같으면 형제자매로 취급했는데, 서로 다른 가족이 우연히
-    //  같은 비밀번호를 쓰면 다른 학생 정보가 보이는 문제가 있어서 수정했어요.)
-    siblingList = student.familyCode
-      ? students.filter(s => s.familyCode && s.familyCode === student.familyCode)
-      : [student];
-    showStudentReport(student.id);
+    const res = await portalApi_('parentLogin', { name, pin });
+    parentToken = res.token;
+    siblingList = res.students || [];
+    saveParentSession_(res.token, res.studentId);
+    await showStudentReport(res.studentId);
+    document.getElementById('login-pin').value = '';
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('reportView').style.display = 'block';
   } catch(err){
-    errEl.textContent = '데이터를 불러오지 못했어요. 인터넷 연결을 확인하시고 잠시 후 다시 시도해주세요.';
+    errEl.textContent = err.message;
+  } finally {
     btn.disabled = false;
     btn.textContent = '확인';
   }
 }
 
-function showStudentReport(studentId){
-  currentStudentId = studentId;
-  const student = (currentData.students || []).find(s => s.id === studentId);
-  if(!student) return;
-  renderReport(currentData, student);
+// 서버가 이 자녀(와 형제자매) 데이터만 골라서 내려줘요
+async function loadStudentData_(studentId, force){
+  if(!force && studentDataCache[studentId]) return studentDataCache[studentId];
+  const res = await portalApi_('parentLoad', { token: parentToken, studentId });
+  siblingList = res.students || siblingList;
+  studentDataCache[studentId] = res.data;
+  return res.data;
 }
+
+async function showStudentReport(studentId, force){
+  currentStudentId = studentId;
+  const data = await loadStudentData_(studentId, force);
+  currentData = data;
+  cachedData = data;
+  const student = (data.students || []).find(s => s.id === studentId);
+  if(!student) return;
+  renderReport(data, student);
+}
+
+// 저장된 로그인 증표가 있으면 바로 리포트를 열어요
+(async function autoLogin_(){
+  const saved = loadParentSession_();
+  if(!saved || !saved.token) return;
+  parentToken = saved.token;
+  try {
+    await showStudentReport(saved.studentId);
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('reportView').style.display = 'block';
+  } catch(err){
+    const errEl = document.getElementById('loginError');
+    if(errEl && err.code !== 'SESSION_EXPIRED' && err.code !== 'AUTH_REQUIRED') errEl.textContent = err.message;
+  }
+})();
 
 function buildScoreChartSVG(tests, groupAvg){
   const w = 560, h = 200, padL = 38, padR = 18, padT = 18, padB = 34;
@@ -454,6 +541,7 @@ function buildScoreChartSVG(tests, groupAvg){
 }
 
 function computeGroupAvgScore(studentId, data){
+  if(data && data.groupAvgScore !== undefined) return data.groupAvgScore; // 서버가 계산해서 보내줘요
   const students = data.students || [];
   const student = students.find(s => s.id === studentId);
   if(!student) return null;
@@ -633,7 +721,7 @@ function renderReport(data, student){
 
   const siblingTabsHtml = siblingList.length > 1 ? `
     <div class="sibling-tabs">
-      ${siblingList.map(s => `<button type="button" class="sibling-tab ${s.id === student.id ? 'active' : ''}" onclick="showStudentReport(${s.id})">${escapeHtml(s.name)}</button>`).join('')}
+      ${siblingList.map(s => `<button type="button" class="sibling-tab ${s.id === student.id ? 'active' : ''}" onclick="showStudentReport(${s.id}).catch(err => alert(err.message))">${escapeHtml(s.name)}</button>`).join('')}
     </div>
   ` : '';
 
@@ -672,6 +760,7 @@ function renderReport(data, student){
   ` : '';
 
   wrap.innerHTML = `
+    <div style="display:flex; justify-content:flex-end; margin-bottom:8px;"><button type="button" class="btn ghost" style="width:auto; padding:6px 12px; font-size:12.5px;" onclick="parentLogout()">로그아웃</button></div>
     ${alertBannerHtml}
     ${siblingTabsHtml}
     <div class="card">
@@ -1053,43 +1142,12 @@ async function finishConceptQuiz(){
     area.innerHTML = `<div class="cq-empty">저장 중이에요...</div>`;
   }
 
+  let saveFailed = false;
   try {
-    const freshRes = await fetch(SHEET_URL, { method:'GET' });
-    const freshData = await freshRes.json();
-
-    // 2026-08-21 수정: 저장 직전에 한 번 더 최신 데이터를 확인해서, 그 사이 다른 기기에서
-    // 먼저 제출한 기록이 있으면 그걸 살려두고 이어서 저장해요. (중복 fetch 실수로 같은
-    // const를 두 번 선언했던 게 로그인 포함 스크립트 전체를 멈추게 했던 원인이라, 한 번만
-    // 확인하도록 정리했어요.)
-    const doubleCheckRes = await fetch(SHEET_URL, { method:'GET' });
-    const doubleCheckData = await doubleCheckRes.json();
-    if(doubleCheckData && Array.isArray(doubleCheckData.conceptTestRecords)){
-      freshData.conceptTestRecords = doubleCheckData.conceptTestRecords;
-    }
-    freshData.conceptTestRecords = freshData.conceptTestRecords || [];
-    const nextId = freshData.conceptTestRecords.length
-      ? Math.max(...freshData.conceptTestRecords.map(r => r.id || 0)) + 1 : 1;
-
-    freshData.conceptTestRecords.push({
-      id: nextId,
-      studentId: s.student.id,
-      date: todayIsoDate(),
-      correct: correctCount,
-      total: s.questions.length,
-      wrongItemIds,
-      correctItemIds
-    });
-
-    await fetch(SHEET_URL, {
-      method:'POST',
-      headers: { 'Content-Type':'text/plain' },
-      body: JSON.stringify(freshData)
-    });
-
-    cachedData = freshData;
-    currentData = freshData;
+    await portalApi_('parentSubmitQuiz', { token: parentToken, studentId: s.student.id, correct: correctCount, total: s.questions.length, wrongItemIds, correctItemIds });
+    delete studentDataCache[s.student.id]; // 리포트로 돌아가면 새 기록이 반영돼요
   } catch(err){
-    // 저장에 실패해도 학생에게는 결과를 보여주고, 다음 접속 때 다시 시도할 수 있게 안내
+    saveFailed = true;
   }
 
   const studentIdForClose = s.student.id;
@@ -1100,8 +1158,9 @@ async function finishConceptQuiz(){
       <div class="cq-week-row">
         <div class="cq-week-count">${correctCount}<span> / ${s.questions.length} 정답</span></div>
       </div>
+      ${saveFailed ? '<div class="cq-status pending">⚠️ 결과를 저장하지 못했어요. 인터넷 연결을 확인하고 다시 풀어주세요.</div>' : ''}
       ${summaryRows.join('')}
-      <button type="button" class="btn ghost" onclick="showStudentReport(${studentIdForClose})">확인했어요 · 리포트로 돌아가기</button>
+      <button type="button" class="btn ghost" onclick="showStudentReport(${studentIdForClose}).catch(err => alert(err.message))">확인했어요 · 리포트로 돌아가기</button>
     `;
   }
 }
@@ -1111,29 +1170,11 @@ async function toggleHomeworkCheck(assignmentId, studentId, checked){
   if(statusEl) statusEl.textContent = '저장 중...';
 
   try {
-    const freshRes = await fetch(SHEET_URL, { method:'GET' });
-    const freshData = await freshRes.json();
-
-    freshData.homeworkAssignments = freshData.homeworkAssignments || [];
-    const a = freshData.homeworkAssignments.find(x => x.id === assignmentId);
-    if(a){
-      a.doneBy = a.doneBy || [];
-      const idx = a.doneBy.indexOf(studentId);
-      if(checked && idx === -1) a.doneBy.push(studentId);
-      if(!checked && idx !== -1) a.doneBy.splice(idx, 1);
-    }
-
-    await fetch(SHEET_URL, {
-      method:'POST',
-      headers: { 'Content-Type':'text/plain' },
-      body: JSON.stringify(freshData)
-    });
-
-    cachedData = freshData;
-    currentData = freshData;
-    showStudentReport(studentId);
+    await portalApi_('parentToggleHomework', { token: parentToken, studentId, assignmentId, done: !!checked });
+    await showStudentReport(studentId, true);
   } catch(err){
-    if(statusEl) statusEl.textContent = '❌ 저장에 실패했어요. 잠시 후 다시 시도해주세요.';
+    alert('❌ ' + err.message);
+    showStudentReport(studentId, true).catch(() => {}); // 체크 표시를 서버 상태로 되돌려요
   }
 }
 
@@ -1151,32 +1192,12 @@ async function submitParentMessage(studentId){
   statusEl.textContent = '전송 중...';
 
   try {
-    const freshRes = await fetch(SHEET_URL, { method:'GET' });
-    const freshData = await freshRes.json();
-    const student = (freshData.students || []).find(s => s.id === studentId);
-
-    freshData.parentMessages = freshData.parentMessages || [];
-    const nextId = freshData.parentMessages.length ? Math.max(...freshData.parentMessages.map(m => m.id || 0)) + 1 : 1;
-    freshData.parentMessages.push({
-      id: nextId,
-      studentId: studentId,
-      studentName: student ? student.name : '',
-      date: new Date().toISOString(),
-      message: text
-    });
-
-    await fetch(SHEET_URL, {
-      method:'POST',
-      headers: { 'Content-Type':'text/plain' },
-      body: JSON.stringify(freshData)
-    });
-
-    cachedData = freshData;
-    currentData = freshData;
-    statusEl.textContent = '✅ 선생님께 전달했어요!';
-    showStudentReport(studentId);
+    await portalApi_('parentSendMessage', { token: parentToken, studentId, message: text });
+    await showStudentReport(studentId, true);
+    const doneEl = document.getElementById('parentMsgStatus');
+    if(doneEl) doneEl.textContent = '✅ 선생님께 전달했어요!';
   } catch(err){
-    statusEl.textContent = '❌ 전송에 실패했어요. 잠시 후 다시 시도해주세요.';
+    statusEl.textContent = '❌ ' + err.message;
   }
 }
 

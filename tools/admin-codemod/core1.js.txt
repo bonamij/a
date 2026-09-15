@@ -1,0 +1,346 @@
+/* =========================================================
+   ☁️ 서버 연결 (2026-09-15 새 방식)
+   - 예전: 저장할 때마다 전체 데이터를 받아 합친 뒤 통째로 덮어써서, 지운 항목이 되살아나곤 했어요.
+   - 지금: 마지막으로 서버와 맞춘 상태(lastSynced)와 비교해서 "바뀐 항목만" 보내요.
+     서버는 삭제를 기록으로 남겨서, 다른 기기가 옛 데이터로 저장해도 되살아나지 않아요.
+   - 관리자 비밀번호가 있어야 불러오고 저장할 수 있어요 (기기에 기억, 데이터 관리 탭에서 로그아웃).
+========================================================= */
+const APP_CLIENT_VERSION = 2;
+const DEFAULT_SHEET_SYNC_URL = 'https://script.google.com/macros/s/AKfycby248HXB7pvkzJ1gBjmLux0myAH2otNNt2A4Vp0edu0HAW49W42-8-uJzN_aKnbP6Uf/exec';
+let sheetSyncUrl = DEFAULT_SHEET_SYNC_URL;
+try { sheetSyncUrl = localStorage.getItem('academySheetSyncUrl') || DEFAULT_SHEET_SYNC_URL; } catch(err) {}
+
+// 비밀번호는 서버 주소별로 따로 기억해요 (테스트 서버에 실제 비밀번호가 가지 않게)
+function adminKeyStorageName_(){ return 'academyAdminKey|' + sheetSyncUrl; }
+let adminKey = '';
+try { adminKey = localStorage.getItem(adminKeyStorageName_()) || ''; } catch(err) {}
+
+let deviceId = 'device';
+try {
+  deviceId = localStorage.getItem('academyDeviceId') || '';
+  if(!deviceId){ deviceId = Math.random().toString(36).slice(2, 10); localStorage.setItem('academyDeviceId', deviceId); }
+} catch(err) {}
+
+// 서버와 주고받는 데이터 종류 (서버 gas/Store.js 와 같아야 해요)
+const SYNC_ARRAYS = [
+  'students', 'progressLogs', 'attendanceRecords', 'generalMakeups',
+  'conceptBankItems', 'conceptDraftItems', 'conceptTestRecords',
+  'dailyTests', 'homeworkAssignments', 'answerKeys', 'homeworkRecords', 'mistakeRecords',
+  'schoolInfos', 'examAnalysis', 'parentMessages', 'scheduleItems', 'aiLearningReports'
+];
+const SYNC_MAPS = ['teacherComments', 'conceptDailyCounts', 'conceptActiveDays', 'conceptEnabledUnits', 'studentBehaviorNotes'];
+const SYNC_SET_FIELDS = { homeworkAssignments: ['doneBy'], generalMakeups: ['doneBy'], students: ['pushTokens'] };
+const AUTH_ERRORS = ['AUTH_REQUIRED', 'AUTH_FAILED', 'ADMIN_KEY_NOT_SET', 'LOCKED'];
+const PENDING_OPS_KEY = 'academyPendingOps|';
+
+let storeReady = false;       // 서버에서 처음 불러오기가 끝났는지
+let lastRev = 0;              // 서버 변경 번호
+let lastSynced = new Map();   // 항목 key → 서버와 마지막으로 맞춘 JSON
+let syncBlocked = new Map();  // 서버가 거절한 항목 (내용이 바뀌기 전까지 다시 보내지 않음)
+let syncTimer = null;
+let syncRetryTimer = null;
+let syncInFlight = null;
+let syncAgain = false;
+let syncFailCount = 0;
+let syncErrorMessage = '';
+let lastSavedAt = null;
+let allowBulkDelete_ = false; // "전체 거절"처럼 여러 개를 일부러 지우는 버튼을 눌렀을 때만 true
+let restoreMode_ = false;     // 백업 파일 복원 중이면 서버에서 삭제된 항목도 되살려요
+let pendingRender_ = false;
+let lastNewId_ = 0;
+
+// 여러 기기에서 동시에 추가해도 겹치지 않는 숫자 id (시간 기반 + 난수)
+function newId_(){
+  let id = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+  if(id <= lastNewId_) id = lastNewId_ + 1;
+  lastNewId_ = id;
+  return id;
+}
+
+function syncError_(code, message){
+  const e = new Error(message || code);
+  e.code = code;
+  return e;
+}
+
+function apiBody_(action, payload){
+  return Object.assign({ v: 2, clientVersion: APP_CLIENT_VERSION, action, deviceId, auth: { adminKey } }, payload || {});
+}
+
+async function apiCall_(action, payload){
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), 45000) : null;
+  let res;
+  try {
+    res = await fetch(sheetSyncUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(apiBody_(action, payload)),
+      signal: controller ? controller.signal : undefined
+    });
+  } catch(err){
+    throw syncError_('NETWORK', err && err.name === 'AbortError'
+      ? '서버 응답이 너무 늦어요. 인터넷 연결을 확인해주세요.'
+      : '서버에 연결하지 못했어요. 인터넷 연결을 확인해주세요.');
+  } finally {
+    if(timer) clearTimeout(timer);
+  }
+  let data;
+  try { data = await res.json(); } catch(err){ throw syncError_('BAD_RESPONSE', '서버 응답을 읽지 못했어요. 잠시 후 다시 시도해주세요.'); }
+  if(data && data.ok === false){
+    if(data.error === 'AUTH_FAILED' || data.error === 'AUTH_REQUIRED'){
+      adminKey = '';
+      try { localStorage.removeItem(adminKeyStorageName_()); } catch(err) {}
+    }
+    if(AUTH_ERRORS.includes(data.error)) showAdminLock_(data.message);
+    if(data.error === 'UPGRADE_REQUIRED') showToast('앱이 새 버전으로 바뀌었어요. 새로고침해주세요.', 'error');
+    throw syncError_(data.error, data.message || data.error);
+  }
+  return data;
+}
+
+// ⚠️ 옛 서버는 모르는 요청도 "전체 저장"으로 처리해서 데이터를 덮어쓸 수 있어요.
+// 그래서 새 서버인지 먼저 확인하고, 아니면 아무것도 보내지 않아요.
+async function probeServer_(){
+  let data = null;
+  try {
+    const sep = sheetSyncUrl.includes('?') ? '&' : '?';
+    const res = await fetch(sheetSyncUrl + sep + 'probe=1', { method: 'GET' });
+    data = await res.json();
+  } catch(err){
+    throw syncError_('NETWORK', '서버에 연결하지 못했어요. 인터넷 연결을 확인해주세요.');
+  }
+  if(!data || data.api !== 2){
+    throw syncError_('OLD_SERVER', '서버(Apps Script)가 아직 옛 버전이에요. 새 서버를 먼저 배포해야 해요.\n(데이터는 건드리지 않았어요)');
+  }
+  if(!data.migrated){
+    throw syncError_('NOT_MIGRATED', '서버 데이터가 아직 새 구조로 옮겨지지 않았어요.\n(Apps Script 편집기에서 migrateToV2 실행 필요)');
+  }
+  return data;
+}
+
+function kindOf_(c){
+  if(SYNC_ARRAYS.includes(c)) return 'array';
+  if(SYNC_MAPS.includes(c)) return 'map';
+  if(c === 'adminPushTokens') return 'set';
+  return null;
+}
+
+// 앱의 데이터를 "항목 하나 = key" 형태로 펼쳐요 (서버 Items 시트와 같은 모양)
+function toStorageItems_(){
+  const items = new Map();
+  const arrays = {
+    students: students.map(s => { const c = Object.assign({}, s); delete c.withdrawDate; return c; })
+      .concat(withdrawnStudents.map(s => Object.assign({}, s, { withdrawDate: s.withdrawDate || 'unknown' }))),
+    progressLogs, attendanceRecords, generalMakeups, conceptBankItems, conceptDraftItems, conceptTestRecords,
+    dailyTests, homeworkAssignments, answerKeys, homeworkRecords, mistakeRecords, schoolInfos, examAnalysis,
+    parentMessages, scheduleItems, aiLearningReports
+  };
+  SYNC_ARRAYS.forEach(c => (arrays[c] || []).forEach(item => {
+    if(!item || item.id === undefined || item.id === null) return;
+    const id = String(item.id);
+    items.set(c + '' + id, { c, id, kind: 'array', value: item, json: JSON.stringify(item) });
+  }));
+  const maps = { teacherComments, conceptDailyCounts, conceptActiveDays, conceptEnabledUnits, studentBehaviorNotes };
+  SYNC_MAPS.forEach(c => Object.keys(maps[c] || {}).forEach(k => {
+    const v = maps[c][k];
+    if(v === undefined) return;
+    items.set(c + '' + k, { c, id: k, kind: 'map', value: v, json: JSON.stringify(v) });
+  }));
+  (adminPushTokens || []).forEach(t => {
+    if(t) items.set('adminPushTokens' + t, { c: 'adminPushTokens', id: String(t), kind: 'set', value: true, json: 'true' });
+  });
+  return items;
+}
+
+function writeStorageItems_(items){
+  const arrays = {};
+  SYNC_ARRAYS.forEach(c => { arrays[c] = []; });
+  const maps = {};
+  SYNC_MAPS.forEach(c => { maps[c] = {}; });
+  const tokens = [];
+  items.forEach(it => {
+    if(it.kind === 'array') arrays[it.c].push(it.value);
+    else if(it.kind === 'map') maps[it.c][it.id] = it.value;
+    else if(it.kind === 'set') tokens.push(it.id);
+  });
+  students = arrays.students.filter(s => !s.withdrawDate);
+  withdrawnStudents = arrays.students.filter(s => s.withdrawDate);
+  progressLogs = arrays.progressLogs;
+  attendanceRecords = arrays.attendanceRecords;
+  generalMakeups = arrays.generalMakeups;
+  conceptBankItems = arrays.conceptBankItems;
+  conceptDraftItems = arrays.conceptDraftItems;
+  conceptTestRecords = arrays.conceptTestRecords;
+  dailyTests = arrays.dailyTests;
+  homeworkAssignments = arrays.homeworkAssignments;
+  answerKeys = arrays.answerKeys;
+  homeworkRecords = arrays.homeworkRecords;
+  mistakeRecords = arrays.mistakeRecords;
+  schoolInfos = arrays.schoolInfos;
+  examAnalysis = arrays.examAnalysis;
+  parentMessages = arrays.parentMessages;
+  scheduleItems = arrays.scheduleItems;
+  aiLearningReports = arrays.aiLearningReports;
+  teacherComments = maps.teacherComments;
+  conceptDailyCounts = maps.conceptDailyCounts;
+  conceptActiveDays = maps.conceptActiveDays;
+  conceptEnabledUnits = maps.conceptEnabledUnits;
+  studentBehaviorNotes = maps.studentBehaviorNotes;
+  adminPushTokens = tokens;
+}
+
+function applyPatchLocal_(data, op){
+  Object.keys(op.set || {}).forEach(k => { if(k !== 'id') data[k] = op.set[k]; });
+  (op.unset || []).forEach(k => { if(k !== 'id') delete data[k]; });
+  Object.keys(op.addToSet || {}).forEach(k => {
+    const arr = Array.isArray(data[k]) ? data[k].slice() : [];
+    op.addToSet[k].forEach(v => { if(!arr.includes(v)) arr.push(v); });
+    data[k] = arr;
+  });
+  Object.keys(op.pullFromSet || {}).forEach(k => {
+    if(Array.isArray(data[k])) data[k] = data[k].filter(v => !op.pullFromSet[k].includes(v));
+  });
+}
+
+// 저장 못 하고 남아 있던 변경(오프라인 등)을 지금 데이터 위에 다시 얹어요
+function applyOpsLocally_(ops){
+  const items = toStorageItems_();
+  ops.forEach(op => {
+    const kind = kindOf_(op.c);
+    if(!kind) return;
+    const key = op.c + '' + op.id;
+    if(op.op === 'del'){ items.delete(key); return; }
+    if(op.op === 'put'){
+      const value = kind === 'set' ? true : op.data;
+      items.set(key, { c: op.c, id: String(op.id), kind, value, json: JSON.stringify(value) });
+      return;
+    }
+    if(op.op === 'patch'){
+      const it = items.get(key);
+      if(!it || kind !== 'array') return;
+      const v = JSON.parse(it.json);
+      applyPatchLocal_(v, op);
+      items.set(key, Object.assign({}, it, { value: v, json: JSON.stringify(v) }));
+    }
+  });
+  writeStorageItems_(items);
+}
+
+// 서버와 마지막으로 맞춘 상태와 비교해서 보낼 변경 목록을 만들어요
+function diffOps_(){
+  const items = toStorageItems_();
+  const out = [];
+  items.forEach((it, key) => {
+    const base = lastSynced.get(key);
+    if(base === it.json) return;
+    if(syncBlocked.get(key) === it.json) return;
+    if(base === undefined || it.kind !== 'array'){
+      out.push({ key, json: it.json, op: { op: 'put', c: it.c, id: it.id, data: it.value } });
+      return;
+    }
+    const before = JSON.parse(base);
+    const after = it.value;
+    const setFields = SYNC_SET_FIELDS[it.c] || [];
+    const set = {}, unset = [], add = {}, pull = {};
+    Object.keys(after).forEach(k => {
+      if(k === 'id') return;
+      if(setFields.includes(k)){
+        const b = Array.isArray(before[k]) ? before[k] : [];
+        const a = Array.isArray(after[k]) ? after[k] : [];
+        const plus = a.filter(v => !b.includes(v));
+        const minus = b.filter(v => !a.includes(v));
+        if(plus.length) add[k] = plus;
+        if(minus.length) pull[k] = minus;
+        return;
+      }
+      if(JSON.stringify(before[k]) !== JSON.stringify(after[k])) set[k] = after[k];
+    });
+    Object.keys(before).forEach(k => { if(k !== 'id' && !(k in after)) unset.push(k); });
+    const op = { op: 'patch', c: it.c, id: it.id };
+    if(Object.keys(set).length) op.set = set;
+    if(unset.length) op.unset = unset;
+    if(Object.keys(add).length) op.addToSet = add;
+    if(Object.keys(pull).length) op.pullFromSet = pull;
+    if(op.set || op.unset || op.addToSet || op.pullFromSet) out.push({ key, json: it.json, op });
+    else lastSynced.set(key, it.json); // 필드 순서만 달라진 경우
+  });
+  lastSynced.forEach((json, key) => {
+    if(items.has(key)) return;
+    const i = key.indexOf('');
+    out.push({ key, json: null, op: { op: 'del', c: key.slice(0, i), id: key.slice(i + 1) } });
+  });
+  return out;
+}
+
+// 내가 고친 필드는 살리고, 나머지는 서버(다른 기기) 내용으로
+function mergeThreeWay_(base, local, server, setFields){
+  const result = Object.assign({}, server);
+  Object.keys(local).forEach(k => {
+    if(k === 'id') return;
+    if(setFields.includes(k)){
+      const b = base[k] || [], l = local[k] || [], s = server[k] || [];
+      const plus = l.filter(v => !b.includes(v));
+      const minus = b.filter(v => !l.includes(v));
+      result[k] = s.filter(v => !minus.includes(v)).concat(plus.filter(v => !s.includes(v)));
+      return;
+    }
+    if(JSON.stringify(local[k]) !== JSON.stringify(base[k])) result[k] = local[k];
+  });
+  Object.keys(base).forEach(k => { if(k !== 'id' && !(k in local)) delete result[k]; });
+  return result;
+}
+
+// 다른 기기에서 바뀐 내용을 반영해요. 실제로 화면이 바뀌어야 하는 개수를 돌려줘요.
+function applyServerChanges_(changes){
+  if(!changes || changes.length === 0) return 0;
+  const items = toStorageItems_();
+  let applied = 0, lostLocal = 0;
+  changes.forEach(ch => {
+    const kind = kindOf_(ch.c);
+    if(!kind) return;
+    const key = ch.c + '' + ch.id;
+    const base = lastSynced.get(key);
+    const local = items.get(key);
+    const localJson = local ? local.json : undefined;
+    const dirty = localJson !== base;
+    if(ch.deleted){
+      if(local){ items.delete(key); applied++; if(dirty) lostLocal++; }
+      lastSynced.delete(key);
+      return;
+    }
+    const value = kind === 'set' ? true : ch.data;
+    const serverJson = JSON.stringify(value);
+    if(localJson === serverJson){ lastSynced.set(key, serverJson); return; }
+    if(!dirty){
+      items.set(key, { c: ch.c, id: String(ch.id), kind, value, json: serverJson });
+      lastSynced.set(key, serverJson);
+      applied++;
+      return;
+    }
+    if(local && kind === 'array' && base !== undefined){
+      const merged = mergeThreeWay_(JSON.parse(base), local.value, ch.data, SYNC_SET_FIELDS[ch.c] || []);
+      items.set(key, Object.assign({}, local, { value: merged, json: JSON.stringify(merged) }));
+      applied++;
+    }
+    lastSynced.set(key, serverJson); // 내 변경은 다음 저장 때 서버 내용 위에 다시 보내져요
+  });
+  if(applied) writeStorageItems_(items);
+  if(lostLocal) showToast(`다른 기기에서 삭제된 항목 ${lostLocal}개는 반영하지 않았어요.`, 'error');
+  return applied;
+}
+
+function savePendingOps_(){
+  if(!storeReady) return;
+  try {
+    const ops = diffOps_().map(d => d.op);
+    if(ops.length) localStorage.setItem(PENDING_OPS_KEY + sheetSyncUrl, JSON.stringify(ops));
+    else localStorage.removeItem(PENDING_OPS_KEY + sheetSyncUrl);
+  } catch(err) {}
+}
+function loadPendingOps_(){
+  try { return JSON.parse(localStorage.getItem(PENDING_OPS_KEY + sheetSyncUrl) || '[]') || []; } catch(err){ return []; }
+}
+function clearPendingOps_(){
+  try { localStorage.removeItem(PENDING_OPS_KEY + sheetSyncUrl); } catch(err) {}
+}

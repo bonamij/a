@@ -178,6 +178,8 @@ const A1 = () => env.sheets.Data.get(1, 1);
 
 // A. 이전 전: 예전 방식 유지 + 안전장치
 check('A get returns A1', env.get().students.length === 5);
+const probe1 = JSON.parse(env.ctx.doGet({ parameter: { probe: '1' } }).getContent());
+check('A probe before migration', probe1.api === 2 && probe1.migrated === false && !probe1.students, probe1);
 const beforeA1 = A1();
 check('A unknown action rejected', env.post({ action: 'somethingElse', students: [] }).error === 'UNKNOWN_ACTION');
 check('A1 untouched after unknown action', A1() === beforeA1);

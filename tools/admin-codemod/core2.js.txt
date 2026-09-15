@@ -1,0 +1,340 @@
+function saveSheetSyncUrl(){
+  const val = document.getElementById('sheetSyncUrlInput').value.trim();
+  const isLocalTest = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(val);
+  if(val && !isLocalTest && !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(val)){
+    alert('Apps Script 웹 앱 주소 형식이 아니에요. (https://script.google.com/macros/s/.../exec)');
+    return;
+  }
+  if(storeReady && diffOps_().length && !confirm('아직 저장 안 된 변경이 있어요. 그래도 서버를 바꿀까요?')) return;
+  try {
+    if(val && val !== DEFAULT_SHEET_SYNC_URL) localStorage.setItem('academySheetSyncUrl', val);
+    else localStorage.removeItem('academySheetSyncUrl');
+  } catch(err) {}
+  location.reload();
+}
+
+function disconnectSheetSync(){
+  document.getElementById('sheetSyncUrlInput').value = '';
+  saveSheetSyncUrl();
+}
+
+async function refreshHomeworkAssignmentsNow(btn){
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '불러오는 중...';
+  await syncNow();
+  btn.disabled = false;
+  btn.textContent = originalText;
+}
+
+function scheduleSync(){
+  if(!storeReady) return;
+  clearTimeout(syncTimer);
+  setSaveIndicator_('waiting');
+  syncTimer = setTimeout(syncNow, 900);
+}
+
+// 저장(바뀐 것 보내기) + 다른 기기 변경 가져오기. 동시에 두 번 돌지 않아요.
+function syncNow(){
+  if(!storeReady) return Promise.resolve();
+  if(syncInFlight){ syncAgain = true; return syncInFlight; }
+  clearTimeout(syncTimer); syncTimer = null;
+  clearTimeout(syncRetryTimer); syncRetryTimer = null;
+
+  syncInFlight = (async () => {
+    try {
+      do {
+        syncAgain = false;
+        const diffs = diffOps_();
+        if(diffs.length === 0){
+          const res = await apiCall_('adminChanges', { sinceRev: lastRev });
+          if(res.fullReload) await fullLoad_();
+          else {
+            if(applyServerChanges_(res.changes)) requestRenderAll_();
+            lastRev = res.rev;
+          }
+          break;
+        }
+        if(restoreMode_) diffs.forEach(d => { if(d.op.op === 'put') d.op.undelete = true; });
+        if(!(await guardBulkDelete_(diffs))){
+          await fullLoad_({ discardLocal: true });
+          showToast('삭제를 취소하고 서버에 저장된 상태로 되돌렸어요.', 'pending');
+          break;
+        }
+        setSaveIndicator_('saving');
+        for(let i = 0; i < diffs.length; i += 400){
+          const chunk = diffs.slice(i, i + 400);
+          const res = await apiCall_('adminCommit', { baseRev: lastRev, ops: chunk.map(d => d.op) });
+          const rejected = res.rejected || [];
+          const rejectedIdx = new Set(rejected.map(r => r.i));
+          chunk.forEach((d, idx) => {
+            if(rejectedIdx.has(idx)) return;
+            if(d.json === null) lastSynced.delete(d.key); else lastSynced.set(d.key, d.json);
+            syncBlocked.delete(d.key);
+          });
+          handleRejected_(chunk, rejected);
+          if(res.fullReload) await fullLoad_();
+          else {
+            if(applyServerChanges_(res.changes)) requestRenderAll_();
+            lastRev = res.changesRev;
+          }
+        }
+        lastSavedAt = new Date();
+      } while(syncAgain);
+      restoreMode_ = false;
+      syncFailCount = 0;
+      syncErrorMessage = '';
+      clearPendingOps_();
+    } catch(err){
+      syncFailCount++;
+      syncErrorMessage = err.message || String(err);
+      savePendingOps_();
+      if(!AUTH_ERRORS.includes(err.code)){
+        const delay = [4000, 8000, 30000, 60000][Math.min(syncFailCount - 1, 3)];
+        syncRetryTimer = setTimeout(syncNow, delay);
+      }
+    } finally {
+      syncInFlight = null;
+      updateSaveIndicator_();
+    }
+  })();
+  return syncInFlight;
+}
+
+function handleRejected_(chunk, rejected){
+  if(!rejected.length) return;
+  const items = toStorageItems_();
+  let removed = 0;
+  const messages = [];
+  rejected.forEach(r => {
+    const d = chunk[r.i];
+    if(!d) return;
+    if(r.reason === 'DELETED'){
+      items.delete(d.key);
+      lastSynced.delete(d.key);
+      removed++;
+    } else if(r.reason === 'NOT_FOUND'){
+      lastSynced.delete(d.key); // 다음 저장 때 새 항목으로 다시 보내요
+      syncAgain = true;
+    } else {
+      syncBlocked.set(d.key, d.json);
+      messages.push(r.message || r.reason);
+    }
+  });
+  if(removed){
+    writeStorageItems_(items);
+    requestRenderAll_();
+    showToast(`다른 기기에서 이미 삭제된 항목 ${removed}개는 반영하지 않았어요.`, 'error');
+  }
+  if(messages.length){
+    syncErrorMessage = messages[0];
+    showToast('❌ 저장하지 못한 항목이 있어요: ' + messages[0], 'error');
+  }
+}
+
+// 한 번에 많이 지워질 때: 서버에 먼저 백업하고, 일부러 누른 버튼이 아니면 한 번 더 물어봐요
+async function guardBulkDelete_(diffs){
+  const dels = diffs.filter(d => d.op.op === 'del').length;
+  if(dels === 0) return true;
+  const intended = allowBulkDelete_;
+  allowBulkDelete_ = false;
+  if(dels > 20){
+    try { await apiCall_('adminBackupNow'); } catch(err) { /* 매일 자동 백업도 있어서 계속 진행 */ }
+  }
+  if(intended || dels <= 5) return true;
+  return confirm(`한 번에 ${dels}개 항목이 삭제돼요. 정말 저장할까요?\n(취소하면 서버에 저장된 상태로 되돌려요)`);
+}
+
+// 서버에서 전체를 새로 불러와요. 저장 안 된 내 변경은 그 위에 다시 얹어요.
+async function fullLoad_(opts){
+  opts = opts || {};
+  let pending = [];
+  if(!opts.discardLocal) pending = storeReady ? diffOps_().map(d => d.op) : loadPendingOps_();
+  const res = await apiCall_('adminLoad');
+  applyAllData(res.data);
+  lastSynced = new Map();
+  toStorageItems_().forEach((it, key) => lastSynced.set(key, it.json));
+  syncBlocked = new Map();
+  lastRev = res.rev;
+  if(pending.length) applyOpsLocally_(pending);
+  storeReady = true;
+  requestRenderAll_();
+  return pending.length;
+}
+
+async function startSync_(){
+  updateSyncSettingsUi_();
+  if(!adminKey){ showAdminLock_(); return; }
+  setLoadingOverlay_('☁️ 데이터를 불러오는 중이에요...', false);
+  try {
+    await probeServer_();
+    const restored = await fullLoad_();
+    hideAdminLock_();
+    if(restored){
+      showToast(`저장되지 않았던 변경 ${restored}건을 다시 저장할게요.`, 'pending');
+      syncNow();
+    }
+    updateSaveIndicator_();
+  } catch(err){
+    if(AUTH_ERRORS.includes(err.code)) return; // 비밀번호 화면이 이미 떠 있어요
+    setLoadingOverlay_('❌ ' + (err.message || err), true);
+  }
+}
+
+/* ---------- 관리자 비밀번호 화면 ---------- */
+function showAdminLock_(message){
+  const lock = document.getElementById('adminLock');
+  if(!lock) return;
+  lock.hidden = false;
+  document.getElementById('adminLockForm').hidden = false;
+  document.getElementById('adminLockRetry').hidden = true;
+  document.getElementById('adminLockMsg').textContent = message || '관리자 비밀번호를 입력해주세요.';
+  setTimeout(() => { const input = document.getElementById('adminKeyInput'); if(input) input.focus(); }, 50);
+}
+
+function setLoadingOverlay_(message, showRetry){
+  const lock = document.getElementById('adminLock');
+  if(!lock) return;
+  lock.hidden = false;
+  document.getElementById('adminLockForm').hidden = true;
+  document.getElementById('adminLockRetry').hidden = !showRetry;
+  document.getElementById('adminLockMsg').textContent = message;
+}
+
+function hideAdminLock_(){
+  const lock = document.getElementById('adminLock');
+  if(lock) lock.hidden = true;
+}
+
+function submitAdminKey(e){
+  e.preventDefault();
+  const input = document.getElementById('adminKeyInput');
+  const key = input.value.trim();
+  if(!key) return;
+  adminKey = key;
+  input.value = '';
+  try { localStorage.setItem(adminKeyStorageName_(), key); } catch(err) {}
+  startSync_();
+}
+
+function adminLogout(){
+  if(!confirm('이 기기에서 로그아웃할까요? 다음에 들어올 때 관리자 비밀번호를 다시 입력해야 해요.')) return;
+  try { localStorage.removeItem(adminKeyStorageName_()); } catch(err) {}
+  location.reload();
+}
+
+/* ---------- 저장 상태 표시 ---------- */
+function setSaveIndicator_(state){
+  const el = document.getElementById('saveIndicator');
+  if(!el) return;
+  const map = { waiting: ['⏳ 저장 대기', 'pending'], saving: ['⏳ 저장 중…', 'pending'] };
+  if(!map[state]) return;
+  el.textContent = map[state][0];
+  el.className = 'save-indicator ' + map[state][1];
+}
+
+function updateSaveIndicator_(){
+  const el = document.getElementById('saveIndicator');
+  const statusEl = document.getElementById('sheetSyncStatus');
+  if(!el) return;
+  let text, cls, detail;
+  if(!storeReady){
+    text = '⏳ 불러오는 중'; cls = 'pending'; detail = '서버에서 데이터를 불러오는 중이에요.';
+  } else if(syncInFlight){
+    text = '⏳ 저장 중…'; cls = 'pending'; detail = '저장 중이에요.';
+  } else {
+    const pendingCount = diffOps_().length;
+    const time = lastSavedAt ? lastSavedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '';
+    if(pendingCount && syncErrorMessage){
+      text = `❌ 미저장 ${pendingCount}건 · 다시 시도`; cls = 'error'; detail = '❌ ' + syncErrorMessage;
+    } else if(pendingCount){
+      text = '⏳ 저장 대기'; cls = 'pending'; detail = '곧 저장돼요.';
+    } else if(syncBlocked.size){
+      text = `❌ 저장 안 된 항목 ${syncBlocked.size}건`; cls = 'error'; detail = '❌ ' + (syncErrorMessage || '서버가 거절한 항목이 있어요.');
+    } else {
+      text = time ? `✅ 저장됨 ${time}` : '✅ 최신 상태'; cls = 'ok';
+      detail = `✅ 서버와 연결돼 있어요.${time ? ' 마지막 저장 ' + time : ''}`;
+    }
+  }
+  el.textContent = text;
+  el.className = 'save-indicator ' + cls;
+  el.title = detail;
+  if(statusEl) statusEl.textContent = detail;
+}
+
+/* ---------- 다른 기기 변경이 오면 화면 다시 그리기 (입력 중이면 끝난 뒤에) ---------- */
+function isEditingNow_(){
+  const a = document.activeElement;
+  const typing = a && a.closest && a.closest('.main') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+  return !!(editingStudentId || withdrawingStudentId || typing);
+}
+
+function requestRenderAll_(){
+  if(isEditingNow_()){ pendingRender_ = true; return; }
+  pendingRender_ = false;
+  renderAll_();
+  updateSyncSettingsUi_();
+}
+
+function updateSyncSettingsUi_(){
+  const input = document.getElementById('sheetSyncUrlInput');
+  if(input) input.value = sheetSyncUrl === DEFAULT_SHEET_SYNC_URL ? '' : sheetSyncUrl;
+  const ribbon = document.getElementById('testServerRibbon');
+  if(ribbon) ribbon.hidden = sheetSyncUrl === DEFAULT_SHEET_SYNC_URL;
+  const weak = document.getElementById('weakPinNotice');
+  if(weak){
+    const list = students.filter(s => !s.pin || s.pin === '0000');
+    weak.hidden = list.length === 0;
+    weak.textContent = `⚠️ 비밀번호가 없거나 0000이라 학부모 포털에 로그인할 수 없는 학생: ${list.map(s => s.name).join(', ')} (학생 목록에서 4자리 비밀번호를 정해주세요)`;
+  }
+}
+
+async function backupOnServerNow(){
+  try {
+    const r = await apiCall_('adminBackupNow');
+    showToast('✅ 서버(구글 드라이브)에 백업했어요: ' + r.file, 'ok');
+    loadServerBackupList();
+  } catch(err){
+    showToast('❌ 백업 실패: ' + err.message, 'error');
+  }
+}
+
+async function loadServerBackupList(){
+  const ul = document.getElementById('serverBackupList');
+  if(!ul) return;
+  ul.innerHTML = '<li>불러오는 중...</li>';
+  try {
+    const r = await apiCall_('adminListBackups');
+    ul.innerHTML = r.files.slice(0, 40).map(f => `
+      <li style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+        <span>${escapeHtml(f.name)}</span>
+        <span style="color:var(--ink-soft); font-size:12px;">${new Date(f.createdAt).toLocaleString('ko-KR')} · ${Math.max(1, Math.round(f.size / 1024))}KB</span>
+      </li>`).join('') || '<li>아직 백업이 없어요.</li>';
+  } catch(err){
+    ul.innerHTML = `<li>❌ ${escapeHtml(err.message)}</li>`;
+  }
+}
+
+document.addEventListener('focusout', () => {
+  setTimeout(() => { if(pendingRender_ && !isEditingNow_()) requestRenderAll_(); }, 400);
+});
+document.addEventListener('visibilitychange', () => {
+  if(!storeReady) return;
+  if(document.visibilityState === 'visible') syncNow();
+  else savePendingOps_();
+});
+setInterval(() => {
+  if(storeReady && document.visibilityState === 'visible' && !syncInFlight) syncNow();
+}, 60000);
+window.addEventListener('beforeunload', e => {
+  if(!storeReady) return;
+  if(syncInFlight || syncTimer || diffOps_().length){
+    savePendingOps_();
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+// 예전 이름으로 부르는 곳이 남아 있어도 동작하도록
+function syncFromSheet(){ return syncNow(); }
+function syncToSheet(){ return syncNow(); }

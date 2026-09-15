@@ -1,0 +1,91 @@
+function handleRestoreFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(evt){
+    let data;
+    try {
+      data = JSON.parse(evt.target.result);
+    } catch(err){
+      alert('올바른 백업 파일이 아니에요. .json 백업 파일을 선택해주세요.');
+      e.target.value = '';
+      return;
+    }
+
+    if(!data || !Array.isArray(data.students)){
+      alert('백업 파일 형식이 올바르지 않아요.');
+      e.target.value = '';
+      return;
+    }
+
+    if(!confirm('지금 데이터가 이 백업 파일의 내용으로 교체되고 서버에도 저장돼요.\n(교체 직전 상태는 서버에 자동으로 백업해둘게요) 계속할까요?')){
+      e.target.value = '';
+      return;
+    }
+
+    if(storeReady){
+      try {
+        const r = await apiCall_('adminBackupNow');
+        showToast('✅ 교체 전 상태를 백업했어요: ' + r.file, 'ok');
+      } catch(err){
+        if(!confirm('서버 백업에 실패했어요 (' + err.message + '). 그래도 복원할까요?')){
+          e.target.value = '';
+          return;
+        }
+      }
+    }
+
+    applyAllData(data);
+    allowBulkDelete_ = true;
+    restoreMode_ = true;
+    renderAll_();
+
+    document.getElementById('backupStatus').textContent =
+      `✅ 백업 파일을 불러왔어요. (백업 시각: ${data.savedAt || data.exportedAt ? new Date(data.savedAt || data.exportedAt).toLocaleString('ko-KR') : '알 수 없음'})`;
+
+    e.target.value = '';
+    syncNow();
+  };
+  reader.readAsText(file);
+}
+
+async function resetAllData(){
+  const typed = prompt('모든 데이터를 지우려면 아래 칸에 "초기화"라고 입력해주세요.\n(지우기 직전 상태는 서버에 자동으로 백업해둬요)');
+  if(typed === null) return;
+  if(typed.trim() !== '초기화'){
+    alert('"초기화"라고 정확히 입력해야 지워져요. 아무것도 지우지 않았어요.');
+    return;
+  }
+  if(storeReady){
+    try {
+      const r = await apiCall_('adminBackupNow');
+      showToast('✅ 지우기 전 상태를 백업했어요: ' + r.file, 'ok');
+    } catch(err){
+      alert('서버 백업에 실패해서 초기화를 멈췄어요: ' + err.message);
+      return;
+    }
+  }
+
+  students = []; nextStudentId = 1; withdrawnStudents = [];
+  progressLogs = []; nextProgressId = 1;
+  attendanceRecords = []; nextAttendanceId = 1;
+  generalMakeups = []; nextGeneralMakeupId = 1;
+  dailyTests = []; nextDailyId = 1;
+  homeworkAssignments = []; nextHomeworkAssignmentId = 1;
+  answerKeys = []; nextAnswerKeyId = 1;
+  homeworkRecords = []; nextHomeworkId = 1;
+  conceptBankItems = []; nextConceptItemId = 1; conceptDraftItems = []; nextConceptDraftId = 1; conceptDailyCounts = {}; conceptActiveDays = {}; conceptEnabledUnits = {};
+  conceptTestRecords = []; nextConceptRecordId = 1;
+  mistakeRecords = []; nextMistakeId = 1;
+  teacherComments = {};
+  schoolInfos = []; nextSchoolInfoId = 1;
+  examAnalysis = []; nextExamId = 1;
+  aiLearningReports = []; nextAiReportId = 1; studentBehaviorNotes = {};
+
+  allowBulkDelete_ = true;
+  renderAll_();
+
+  document.getElementById('backupStatus').textContent = '🗑️ 전체 데이터를 초기화했어요. (지우기 전 상태는 서버 백업 목록에 있어요)';
+  scheduleSync();
+}

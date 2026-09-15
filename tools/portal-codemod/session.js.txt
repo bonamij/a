@@ -1,0 +1,147 @@
+let parentToken = '';
+let studentDataCache = {};
+
+function portalError_(code, message){
+  const e = new Error(message || code);
+  e.code = code;
+  return e;
+}
+
+// ⚠️ 옛 서버는 모르는 요청도 "전체 저장"으로 처리해서 데이터를 덮어쓸 수 있어요.
+// 그래서 새 서버인지 먼저 확인하고, 아니면 아무것도 보내지 않아요.
+let serverChecked_ = false;
+async function checkServer_(){
+  if(serverChecked_) return;
+  let data = null;
+  try {
+    const sep = API_URL.includes('?') ? '&' : '?';
+    const res = await fetch(API_URL + sep + 'probe=1', { method:'GET' });
+    data = await res.json();
+  } catch(err){
+    throw portalError_('NETWORK', '서버에 연결하지 못했어요. 인터넷 연결을 확인하시고 잠시 후 다시 시도해주세요.');
+  }
+  if(!data || data.api !== 2 || !data.migrated){
+    throw portalError_('MAINTENANCE', '학원 시스템을 점검하고 있어요. 잠시 후 다시 시도해주세요.');
+  }
+  serverChecked_ = true;
+}
+
+async function portalApi_(action, payload){
+  await checkServer_();
+  let res;
+  try {
+    res = await fetch(API_URL, {
+      method:'POST',
+      headers: { 'Content-Type':'text/plain' },
+      body: JSON.stringify(Object.assign({ v: 2, clientVersion: PORTAL_CLIENT_VERSION, action }, payload || {}))
+    });
+  } catch(err){
+    throw portalError_('NETWORK', '서버에 연결하지 못했어요. 인터넷 연결을 확인하시고 잠시 후 다시 시도해주세요.');
+  }
+  let data;
+  try { data = await res.json(); } catch(err){ throw portalError_('BAD_RESPONSE', '서버 응답을 읽지 못했어요. 잠시 후 다시 시도해주세요.'); }
+  if(!data || data.ok !== true){
+    const code = data && data.error;
+    if(code === 'SESSION_EXPIRED' || code === 'AUTH_REQUIRED'){
+      clearParentSession_();
+      showLoginView_(data.message);
+    }
+    throw portalError_(code || 'ERROR', (data && data.message) || '요청을 처리하지 못했어요.');
+  }
+  return data;
+}
+
+// 로그인 증표는 이 기기에 30일 동안 기억해요 (PIN을 바꾸면 자동으로 풀려요)
+function saveParentSession_(token, studentId){
+  try { localStorage.setItem(PORTAL_SESSION_KEY, JSON.stringify({ token, studentId })); } catch(err) {}
+}
+function loadParentSession_(){
+  try { return JSON.parse(localStorage.getItem(PORTAL_SESSION_KEY) || 'null'); } catch(err){ return null; }
+}
+function clearParentSession_(){
+  parentToken = '';
+  studentDataCache = {};
+  try { localStorage.removeItem(PORTAL_SESSION_KEY); } catch(err) {}
+}
+
+function showLoginView_(message){
+  document.getElementById('reportView').style.display = 'none';
+  document.getElementById('loginView').style.display = '';
+  const btn = document.getElementById('loginBtn');
+  if(btn){ btn.disabled = false; btn.textContent = '확인'; }
+  const errEl = document.getElementById('loginError');
+  if(errEl) errEl.textContent = message || '';
+}
+
+function parentLogout(){
+  if(!confirm('이 기기에서 로그아웃할까요?')) return;
+  clearParentSession_();
+  showLoginView_('');
+}
+
+async function login(e){
+  e.preventDefault();
+  const name = document.getElementById('login-name').value.trim();
+  const pin = document.getElementById('login-pin').value.trim();
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+  errEl.textContent = '';
+
+  if(!name || !pin){
+    errEl.textContent = '이름과 비밀번호를 모두 입력해주세요.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '확인 중...';
+
+  try {
+    const res = await portalApi_('parentLogin', { name, pin });
+    parentToken = res.token;
+    siblingList = res.students || [];
+    saveParentSession_(res.token, res.studentId);
+    await showStudentReport(res.studentId);
+    document.getElementById('login-pin').value = '';
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('reportView').style.display = 'block';
+  } catch(err){
+    errEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '확인';
+  }
+}
+
+// 서버가 이 자녀(와 형제자매) 데이터만 골라서 내려줘요
+async function loadStudentData_(studentId, force){
+  if(!force && studentDataCache[studentId]) return studentDataCache[studentId];
+  const res = await portalApi_('parentLoad', { token: parentToken, studentId });
+  siblingList = res.students || siblingList;
+  studentDataCache[studentId] = res.data;
+  return res.data;
+}
+
+async function showStudentReport(studentId, force){
+  currentStudentId = studentId;
+  const data = await loadStudentData_(studentId, force);
+  currentData = data;
+  cachedData = data;
+  const student = (data.students || []).find(s => s.id === studentId);
+  if(!student) return;
+  renderReport(data, student);
+}
+
+// 저장된 로그인 증표가 있으면 바로 리포트를 열어요
+(async function autoLogin_(){
+  const saved = loadParentSession_();
+  if(!saved || !saved.token) return;
+  parentToken = saved.token;
+  try {
+    await showStudentReport(saved.studentId);
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('reportView').style.display = 'block';
+  } catch(err){
+    const errEl = document.getElementById('loginError');
+    if(errEl && err.code !== 'SESSION_EXPIRED' && err.code !== 'AUTH_REQUIRED') errEl.textContent = err.message;
+  }
+})();
