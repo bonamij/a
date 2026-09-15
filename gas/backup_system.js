@@ -34,9 +34,11 @@ function currentFullData_() {
 }
 
 function getOrCreateBackupFolder_() {
-  const folders = DriveApp.getFoldersByName(BACKUP_CONFIG.FOLDER_NAME);
+  // 테스트 사본은 스크립트 속성 BACKUP_FOLDER_NAME 으로 다른 폴더를 써요 (실제 백업과 안 섞이게)
+  const name = props_().getProperty('BACKUP_FOLDER_NAME') || BACKUP_CONFIG.FOLDER_NAME;
+  const folders = DriveApp.getFoldersByName(name);
   if (folders.hasNext()) return folders.next();
-  return DriveApp.createFolder(BACKUP_CONFIG.FOLDER_NAME);
+  return DriveApp.createFolder(name);
 }
 
 /** 백업 파일을 만들고 파일 이름을 돌려줘요. reason: daily / manual / before-restore 등 */
