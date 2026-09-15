@@ -461,3 +461,30 @@ function authorizeOnce() {
   UrlFetchApp.getRequest('https://www.google.com');
   Logger.log('✅ 권한 확인 완료. 이제 배포해도 돼요.');
 }
+
+/**
+ * 🚀 실제(운영) 스크립트 준비 — 편집기에서 한 번 실행
+ * 알림 키 확인(실제 인증까지) + 권한 승인 + 관리자 비밀번호 저장. 데이터는 아직 옮기지 않아요.
+ */
+function prepareProduction() {
+  const p = props_();
+  const fcm = parseJsonSafe_(p.getProperty('FCM_SERVICE_ACCOUNT_JSON'), null);
+  if (!fcm || !fcm.private_key || !fcm.client_email) {
+    throw new Error('스크립트 속성 FCM_SERVICE_ACCOUNT_JSON 이 없거나 형식이 달라요. 알림 키를 먼저 옮겨주세요.');
+  }
+  authorizeOnce();
+  try {
+    getFcmAccessToken_();
+    Logger.log('✅ 알림 키로 알림 서버 인증 성공 (알림을 보내지는 않았어요)');
+  } catch (e) {
+    throw new Error('알림 키로 인증하지 못했어요: ' + e.message);
+  }
+  if (p.getProperty('ADMIN_KEY_PLAIN')) {
+    hashAdminKey();
+  } else if (p.getProperty('ADMIN_KEY_HASH')) {
+    Logger.log('✅ 관리자 비밀번호가 이미 저장돼 있어요.');
+  } else {
+    throw new Error('스크립트 속성 ADMIN_KEY_PLAIN (관리자 비밀번호)을 먼저 넣어주세요.');
+  }
+  Logger.log('✅ 준비 완료 (데이터 옮기기는 아직 안 했어요)');
+}
