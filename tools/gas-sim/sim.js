@@ -378,6 +378,24 @@ check('M big data rollback refused', rollbackErr && /5만 자/.test(rollbackErr.
 check('M big data stays migrated', env.run('isMigrated_()') === true);
 check('M rollback file saved anyway', env.folders['아임수학학원_백업'].files.some(f => f.fname.startsWith('rollback_')));
 
+// N. 예전 앱이 id 없이 저장한 항목
+const noIdData = {
+  students: [{ id: 1, name: '가학생', pin: '1234' }],
+  parentMessages: [
+    { studentId: 1, studentName: '가학생', date: '2026-07-01T01:00:00.000Z', message: '첫 메시지' },
+    { studentId: 1, studentName: '가학생', date: '2026-07-01T01:00:00.000Z', message: '같은 시각 메시지' },
+    { id: 5, studentId: 1, studentName: '가학생', date: '2026-08-01T01:00:00.000Z', message: 'id 있음' },
+    { studentId: 1, studentName: '가학생', message: '날짜 없음' }
+  ]
+};
+const noId = makeEnv(JSON.stringify(noIdData));
+noId.run('migrateToV2()');
+check('N migrated with id-less items', noId.run('isMigrated_()') === true, noId.logs.slice(-6));
+const noIdMsgs = noId.run('assembleLegacy_()').parentMessages;
+check('N all messages kept with unique ids', noIdMsgs.length === 4 && new Set(noIdMsgs.map(m => String(m.id))).size === 4, noIdMsgs);
+check('N verify passes', noId.run('verifyMigration()').length === 0);
+check('N restore of old id-less backup is a no-op', noId.run(`restoreOpsFromLegacy_(${JSON.stringify(noIdData)}).length`) === 0);
+
 const small = makeEnv(JSON.stringify(sample));
 small.run('migrateToV2()');
 small.props.ADMIN_KEY_PLAIN = 'test-admin-key-123';

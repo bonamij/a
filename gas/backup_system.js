@@ -258,10 +258,28 @@ function buildRowsFromLegacy_(data) {
 
     if (Array.isArray(v)) {
       const known = ARRAY_COLLECTIONS.indexOf(key) >= 0;
-      const allHaveId = v.every(function (x) { return x && typeof x === 'object' && x.id !== undefined && x.id !== null; });
-      if (!allHaveId) { errors.push(key + ' 목록에 id 없는 항목이 있어요'); return; }
+      const allObjects = v.every(function (x) { return x && typeof x === 'object' && !Array.isArray(x); });
+      if (!allObjects) { errors.push(key + ' 목록에 형식이 이상한 항목이 있어요'); return; }
       if (!known) { extra[key] = 'array'; log.push('ℹ️ 새 목록 발견: ' + key + ' (' + v.length + '개)'); }
-      v.forEach(function (x) { add(key, x.id, x); });
+
+      // 예전 버전 앱이 id 없이 저장한 항목(예: 초기 학부모 메시지)에는 겹치지 않는 id를 붙여요.
+      // 날짜 + 순서로 만들어서, 같은 데이터로 다시 실행해도 같은 id가 나와요.
+      const used = {};
+      v.forEach(function (x) { if (x.id !== undefined && x.id !== null) used[String(x.id)] = true; });
+      let assigned = 0;
+      v.forEach(function (x, i) {
+        let item = x;
+        if (x.id === undefined || x.id === null) {
+          const t = Date.parse(x.date || x.createdAt || '');
+          let id = (isFinite(t) ? t * 1000 : 900000000000000) + i;
+          while (used[String(id)]) id++;
+          used[String(id)] = true;
+          item = Object.assign({ id: id }, x);
+          assigned++;
+        }
+        add(key, item.id, item);
+      });
+      if (assigned) log.push('ℹ️ ' + key + ': id 없던 항목 ' + assigned + '개에 id를 붙였어요');
       return;
     }
 
@@ -361,6 +379,10 @@ function verifyMigration() {
         if (!mb[id]) problems.push(key + ' #' + id + ' 없음');
         else if (JSON.stringify(ma[id]) !== JSON.stringify(mb[id])) problems.push(key + ' #' + id + ' 내용 다름');
       });
+      // id 없던 항목은 새 id가 붙어서 위에서 비교가 안 되니 개수로 확인 (중복 id는 하나만 남아요)
+      const noId = a.filter(function (x) { return !x || x.id === undefined || x.id === null; }).length;
+      const expected = Object.keys(ma).length + noId;
+      if ((b || []).length !== expected) problems.push(key + ' 개수 다름: 예상 ' + expected + ', 실제 ' + (b || []).length);
       counts.push(key + ' ' + a.length + ' → ' + (b || []).length);
       return;
     }
