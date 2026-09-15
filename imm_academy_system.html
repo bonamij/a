@@ -5152,6 +5152,12 @@ const APP_CLIENT_VERSION = 2;
 const DEFAULT_SHEET_SYNC_URL = 'https://script.google.com/macros/s/AKfycby248HXB7pvkzJ1gBjmLux0myAH2otNNt2A4Vp0edu0HAW49W42-8-uJzN_aKnbP6Uf/exec';
 let sheetSyncUrl = DEFAULT_SHEET_SYNC_URL;
 try { sheetSyncUrl = localStorage.getItem('academySheetSyncUrl') || DEFAULT_SHEET_SYNC_URL; } catch(err) {}
+// 테스트용: 내 컴퓨터(localhost)에서 열었을 때만 주소 뒤 ?api= 로 서버를 바꿀 수 있어요 (저장은 안 해요)
+(function(){
+  const isLocal = /^(localhost|127.0.0.1)$/.test(location.hostname);
+  const override = new URLSearchParams(location.search).get("api");
+  if(isLocal && override) sheetSyncUrl = override;
+})();
 
 // 비밀번호는 서버 주소별로 따로 기억해요 (테스트 서버에 실제 비밀번호가 가지 않게)
 function adminKeyStorageName_(){ return 'academyAdminKey|' + sheetSyncUrl; }
