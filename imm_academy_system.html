@@ -248,9 +248,18 @@
   .rp-warn{background:rgba(184,57,31,0.08); color:#B8391F; border-radius:7px; padding:8px 11px; font-size:12.5px; font-family:'Noto Sans KR',sans-serif; font-weight:500; margin-bottom:10px;}
   .rp-note{font-size:11.5px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
   .rp-actions{display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 6px;}
+  .rp-photo-btns{display:flex; gap:8px; flex-wrap:wrap;}
+  .rp-photo-btn{display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:10px 14px;}
+  .rp-thumbs{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px;}
+  .rp-thumbs:empty{display:none;}
+  .rp-thumb{position:relative; width:64px; height:84px; border-radius:7px; overflow:hidden; border:1px solid var(--line); background:#fff;}
+  .rp-thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+  .rp-thumb button{position:absolute; top:3px; right:3px; width:22px; height:22px; border:none; border-radius:50%; background:rgba(0,0,0,0.6); color:#fff; font-size:11px; line-height:22px; padding:0;}
   .rp-status{font-size:12.5px; font-family:'Noto Sans KR',sans-serif; font-weight:600; color:var(--brand-dark); min-height:18px;}
   @media (max-width:760px){
     .rp-row{flex-direction:column; align-items:stretch;}
+    .rp-row > .field{flex:none !important;}
+    .rp-photo-btn{flex:1 1 0;}
     .rp-fields{grid-template-columns:1fr;}
     .rp-actions .btn{flex:1 1 100%;}
   }
@@ -942,10 +951,14 @@
             <input type="date" id="dt-photo-date">
           </div>
           <div class="field" style="flex:1 1 220px;">
-            <label for="dt-photo-file">채점한 시험지 사진 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(여러 장 선택 가능)</span></label>
-            <input type="file" id="dt-photo-file" accept="image/*" multiple>
+            <label>채점한 시험지 사진 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(여러 장 가능 · 한 장씩 찍어서 추가해도 돼요)</span></label>
+            <div class="rp-photo-btns">
+              <label class="btn ghost rp-photo-btn">📸 카메라로 찍기<input type="file" id="dt-photo-camera" accept="image/*" capture="environment" hidden onchange="addDtPhotos_(this)"></label>
+              <label class="btn ghost rp-photo-btn">🖼️ 앨범에서 고르기<input type="file" id="dt-photo-file" accept="image/*" multiple hidden onchange="addDtPhotos_(this)"></label>
+            </div>
           </div>
         </div>
+        <div id="dtPhotoThumbs" class="rp-thumbs"></div>
         <button type="button" class="btn" style="margin-top:12px;" id="dtPhotoAnalyzeBtn" onclick="analyzeDailyTestPhoto()">🔍 AI 분석 + 문자 만들기</button>
         <div id="dtPhotoAnalysisResult" style="margin-top:16px;"></div>
       </div>
@@ -3400,9 +3413,8 @@ function compressImageToDataURL(file, maxWidth, quality){
 
 async function analyzeDailyTestPhoto(){
   const studentId = Number(document.getElementById('dt-photo-student').value);
-  const fileInput = document.getElementById('dt-photo-file');
   const resultEl = document.getElementById('dtPhotoAnalysisResult');
-  const files = Array.from(fileInput.files || []);
+  const files = dtPhotoFiles.slice();
 
   if(!studentId){
     alert('학생을 먼저 선택해주세요.');
@@ -3489,7 +3501,8 @@ async function analyzeDailyTestPhoto(){
           <textarea id="rp-sms" class="rp-text rp-sms" rows="6" oninput="lastDailyPhotoAnalysis.smsEdited = true; updateSmsCount_()"></textarea>
         </div>
         <div class="rp-actions">
-          <button type="button" class="btn" onclick="copyParentSms_()">📋 문자 복사</button>
+          ${navigator.share ? `<button type="button" class="btn" onclick="shareParentSms_()">📤 카톡·문자로 보내기</button>` : ''}
+          <button type="button" class="btn ${navigator.share ? 'ghost' : ''}" onclick="copyParentSms_()">📋 문자 복사</button>
           <button type="button" class="btn" id="rp-save-notify" onclick="saveDailyReport_(true)">📲 저장 + 학부모 앱 알림</button>
           <button type="button" class="btn ghost" id="rp-save-only" onclick="saveDailyReport_(false)">💾 기록만 저장</button>
           <button type="button" class="btn ghost small" onclick="lastDailyPhotoAnalysis.smsEdited = false; refreshParentSms_()">🔄 문자 다시 조립</button>
@@ -3509,6 +3522,7 @@ async function analyzeDailyTestPhoto(){
         </details>
       </div>`;
     refreshParentSms_();
+    resultEl.scrollIntoView({ behavior:'smooth', block:'start' });
   } catch(err){
     resultEl.innerHTML = `<div class="report-empty">❌ 분석 요청에 실패했어요.<br><span style="font-size:11px;">오류 내용: ${escapeHtml(err.message || String(err))}</span></div>`;
   }
@@ -3540,6 +3554,40 @@ function applyDailyPhotoAnalysis(){
 }
 
 /* ---------- 2026-09-17 데일리 테스트 → 학부모 문자 ---------- */
+
+// 폰에서 한 장씩 찍어 추가할 수 있게 선택한 사진을 모아둬요
+let dtPhotoFiles = [];
+
+function addDtPhotos_(input){
+  dtPhotoFiles = dtPhotoFiles.concat(Array.from(input.files || []).filter(f => f.type.startsWith('image/')));
+  input.value = '';
+  renderDtThumbs_();
+}
+
+function removeDtPhoto_(i){
+  dtPhotoFiles.splice(i, 1);
+  renderDtThumbs_();
+}
+
+function renderDtThumbs_(){
+  const el = document.getElementById('dtPhotoThumbs');
+  el.querySelectorAll('img').forEach(img => URL.revokeObjectURL(img.src));
+  el.innerHTML = dtPhotoFiles.map((f, i) => `
+    <div class="rp-thumb"><img src="${URL.createObjectURL(f)}" alt="시험지 ${i + 1}"><button type="button" onclick="removeDtPhoto_(${i})" aria-label="사진 빼기">✕</button></div>`).join('')
+    + (dtPhotoFiles.length ? `<span class="rp-note">사진 ${dtPhotoFiles.length}장</span>` : '');
+}
+
+async function shareParentSms_(){
+  const el = document.getElementById('rp-sms');
+  if(!el || !el.value.trim()) return;
+  try {
+    await navigator.share({ text: el.value });
+    document.getElementById('rp-status').textContent = '📤 보내기 창을 열었어요. 앱 알림도 보내려면 "저장 + 학부모 앱 알림"을 눌러주세요.';
+  } catch(e){
+    if(e && e.name === 'AbortError') return;
+    copyParentSms_();
+  }
+}
 
 function localIsoToday_(){
   const d = new Date();
@@ -3659,6 +3707,8 @@ function saveDailyReport_(notify){
     analysis: { strengths: r.strengths || '', weakTypes: r.weakTypes || [], causeGuess: r.causeGuess || '', uncertainNumbers: r.uncertainNumbers || [] }
   });
   r.saved = true;
+  dtPhotoFiles = []; // 다음 학생 시험지를 바로 찍을 수 있게 사진 비우기
+  renderDtThumbs_();
   ['rp-save-notify', 'rp-save-only'].forEach(id => { const b = document.getElementById(id); if(b) b.disabled = true; });
   document.getElementById('rp-status').textContent = notify
     ? `✅ 저장했어요. ${student.name} 학부모님 포털에 올라가고, 알림을 켰다면 휴대폰 알림이 가요.`
