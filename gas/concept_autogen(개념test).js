@@ -87,6 +87,9 @@ const CONCEPT_CURRICULUM_BY_UNIT = {
   "7-2 확률의 계산": "또는(동시에 안 일어남)=덧셈 p+q, 동시에(독립)=곱셈 p×q, 비복원추출=종속시행.",
 };
 
+// 2026-09-18 변경: 검토 대기함을 거치지 않고 만든 문제를 바로 문제은행에 넣어요(선생님 결정).
+// 새 문제에는 autoDate(한국 날짜)를 붙이고, 학생 화면은 그날 새로 만든 문제를 먼저 내요.
+// 개별학생 대상 문제만 예전처럼 검토 대기함으로 가요 (문제은행은 반 단위라서).
 function generateDailyConceptQuestions(){
   const data = fetchConceptAppData_();
 
@@ -95,8 +98,12 @@ function generateDailyConceptQuestions(){
     Logger.log('❌ 데이터를 정상적으로 불러오지 못해서 안전하게 중단했어요. (다음 예약 실행 때 다시 시도돼요)');
     return;
   }
-  const studentCountAtFetch = data.students.length;
 
+  const kstNow = new Date(Date.now() + 9 * 3600 * 1000);
+  const todayKst = kstNow.toISOString().slice(0, 10);
+  const todayDow = kstNow.getUTCDay(); // 0=일 ... 6=토
+
+  data.conceptBankItems = data.conceptBankItems || [];
   data.conceptDraftItems = data.conceptDraftItems || [];
   data.nextConceptDraftId = data.nextConceptDraftId || (maxId_(data.conceptDraftItems) + 1);
 
@@ -106,77 +113,104 @@ function generateDailyConceptQuestions(){
     return;
   }
 
-  let totalGenerated = 0;
+  const newBankItems = [];
+  const newDraftItems = [];
+  const done = [];
+  const skipped = [];
+  const failed = [];
+  let idSeed = Date.now() * 1000;
 
   targets.forEach(target => {
-    const targetKey = JSON.stringify(target);
+    const label = conceptTargetLabel_(target);
+    const isClass = target.type === 'class';
     try {
-      const existing = [
-        ...(data.conceptBankItems || []).filter(i => JSON.stringify(i.target) === targetKey),
-        ...(data.conceptDraftItems || []).filter(i => JSON.stringify(i.target) === targetKey)
-      ];
-      let activeUnitsForTarget = (data.conceptCurriculumUnits || []).filter(u => u.active && JSON.stringify(u.target) === targetKey);
-      if(activeUnitsForTarget.length === 0 && target.type === 'class'){
-        const enabledNames = (data.conceptEnabledUnits && data.conceptEnabledUnits[target.className]) || [];
-        if(enabledNames.length > 0){
-          activeUnitsForTarget = enabledNames
-            .filter(name => CONCEPT_CURRICULUM_BY_UNIT[name])
-            .map(name => ({ unitName: name, summary: CONCEPT_CURRICULUM_BY_UNIT[name] }));
+      if(isClass){
+        const activeDays = (data.conceptActiveDays || {})[target.className];
+        if(activeDays && activeDays.length > 0 && activeDays.indexOf(todayDow) === -1){
+          skipped.push(label + '(오늘 출제 요일 아님)');
+          return;
+        }
+        if(data.conceptBankItems.some(i => i.className === target.className && i.autoDate === todayKst)){
+          skipped.push(label + '(오늘 이미 만듦)');
+          return;
         }
       }
-      const questionsPerClass = (target.type === 'class' && data.conceptDailyCounts && data.conceptDailyCounts[target.className]) || CONCEPT_AUTOGEN_CONFIG.QUESTIONS_PER_CLASS;
+
+      const targetKey = JSON.stringify(target);
+      const existing = [
+        ...data.conceptBankItems.filter(i => isClass ? i.className === target.className : JSON.stringify(i.target) === targetKey),
+        ...data.conceptDraftItems.filter(i => JSON.stringify(i.target) === targetKey)
+      ].slice(-80); // 프롬프트가 너무 길어지지 않게 최근 문제만 겹침 방지에 써요
+
+      let activeUnitsForTarget = (data.conceptCurriculumUnits || []).filter(u => u.active && JSON.stringify(u.target) === targetKey);
+      if(activeUnitsForTarget.length === 0 && isClass){
+        const enabledNames = (data.conceptEnabledUnits && data.conceptEnabledUnits[target.className]) || [];
+        activeUnitsForTarget = enabledNames
+          .filter(name => CONCEPT_CURRICULUM_BY_UNIT[name])
+          .map(name => ({ unitName: name, summary: CONCEPT_CURRICULUM_BY_UNIT[name] }));
+      }
+      const questionsPerClass = (isClass && data.conceptDailyCounts && data.conceptDailyCounts[target.className]) || CONCEPT_AUTOGEN_CONFIG.QUESTIONS_PER_CLASS;
       const newItems = generateConceptQuestionsForTarget_(target, existing, activeUnitsForTarget, questionsPerClass);
+      if(newItems.length === 0) throw new Error('AI가 쓸 수 있는 문제를 하나도 돌려주지 않았어요.');
 
       newItems.forEach(item => {
-        data.conceptDraftItems.push({
-          id: data.nextConceptDraftId++,
-          target: target,
-          unit: item.unit || '',
-          question: item.question,
-          choices: item.choices,
-          correctIndex: item.correctIndex,
-          createdAt: new Date().toISOString()
-        });
-        totalGenerated++;
+        if(isClass){
+          newBankItems.push({
+            id: ++idSeed,
+            className: target.className,
+            unit: item.unit || '',
+            question: item.question,
+            choices: item.choices,
+            correctIndex: item.correctIndex,
+            autoDate: todayKst,
+            source: 'ai',
+            createdAt: new Date().toISOString()
+          });
+        } else {
+          newDraftItems.push({
+            id: data.nextConceptDraftId++,
+            target: target,
+            unit: item.unit || '',
+            question: item.question,
+            choices: item.choices,
+            correctIndex: item.correctIndex,
+            createdAt: new Date().toISOString()
+          });
+        }
       });
-
-      Logger.log(`[${conceptTargetLabel_(target)}] ${newItems.length}개 초안 생성`);
+      done.push(`${label} ${newItems.length}개`);
+      Logger.log(`[${label}] ${newItems.length}개 ${isClass ? '출제' : '검토 대기함에 추가'}`);
     } catch(err){
-      Logger.log(`[${conceptTargetLabel_(target)}] 생성 실패: ${err.message || err}`);
+      failed.push(`${label}: ${err.message || err}`);
+      Logger.log(`❌ [${label}] 생성 실패: ${err.message || err}`);
     }
   });
 
-  if(totalGenerated === 0){
-    Logger.log('새로 생성된 문제가 없어요.');
-    return;
+  if(skipped.length) Logger.log('건너뜀: ' + skipped.join(', '));
+
+  if(newBankItems.length + newDraftItems.length > 0){
+    // 문제 생성하는 동안 다른 곳에서 저장된 게 있을 수 있으니, 저장 직전에 최신 데이터에 새 문제만 더해요.
+    const latest = fetchConceptAppData_();
+    if(!latest || !Array.isArray(latest.students) || latest.students.length === 0){
+      Logger.log('🛑 저장 직전 재확인에 실패해서 안전하게 중단했어요. (다음 예약 실행 때 다시 시도돼요)');
+      return;
+    }
+    latest.conceptBankItems = mergeConceptItemsById_(latest.conceptBankItems, (latest.conceptBankItems || []).concat(newBankItems));
+    latest.conceptDraftItems = mergeConceptItemsById_(latest.conceptDraftItems, (latest.conceptDraftItems || []).concat(newDraftItems));
+    latest.nextConceptDraftId = Math.max(latest.nextConceptDraftId || 1, data.nextConceptDraftId || 1);
+    saveConceptAppData_(latest);
+    Logger.log(`✅ 문제은행에 ${newBankItems.length}개 바로 출제, 검토 대기함에 ${newDraftItems.length}개`);
   }
 
-  // ⚠️ 저장 직전 확인: 학생 수가 이상하게 줄어들어 있으면 절대 저장하지 않아요.
-  if(!Array.isArray(data.students) || data.students.length < studentCountAtFetch){
-    Logger.log(`🛑 저장을 안전하게 중단했어요 (학생 수 이상: ${studentCountAtFetch}명 → ${(data.students||[]).length}명).`);
-    return;
-  }
+  if(done.length === 0 && failed.length === 0) return;
 
-  // 문제 생성하는 동안(몇 초~몇십 초) 다른 곳에서 저장된 게 있을 수 있으니,
-  // 저장 직전에 한 번 더 최신 데이터를 받아서 conceptDraftItems만 병합해요.
-  const latest = fetchConceptAppData_();
-  if(!latest || !Array.isArray(latest.students) || latest.students.length === 0){
-    Logger.log('🛑 저장 직전 재확인에 실패해서 안전하게 중단했어요. (다음 예약 실행 때 다시 시도돼요)');
-    return;
-  }
-  latest.conceptDraftItems = mergeConceptItemsById_(latest.conceptDraftItems, data.conceptDraftItems);
-  latest.nextConceptDraftId = Math.max(latest.nextConceptDraftId || 1, data.nextConceptDraftId || 1);
-
-  saveConceptAppData_(latest);
-  Logger.log(`✅ 검토 대기함에 ${totalGenerated}개 문제를 넣었어요.`);
-
-  // 🔔 원장님 폰에 알림 (이미 만들어둔 sendPushToTokens를 재사용해요)
+  // 🔔 선생님 폰에 결과 알림 — 실패했으면 이유까지 알려서 조용히 멈추지 않게 해요
   try {
-    if(typeof sendPushToTokens === 'function' && latest.adminPushTokens && latest.adminPushTokens.length){
+    if(typeof sendPushToTokens === 'function' && data.adminPushTokens && data.adminPushTokens.length){
       sendPushToTokens(
-        latest.adminPushTokens,
-        '🧩 AI가 새 개념문제를 만들었어요',
-        `검토 대기 중: ${totalGenerated}개 (승인해야 학생한테 나가요)`,
+        data.adminPushTokens,
+        failed.length ? '⚠️ 개념문제 자동 출제 일부 실패' : '🧩 오늘의 개념문제를 자동 출제했어요',
+        (done.length ? '출제: ' + done.join(', ') : '') + (failed.length ? (done.length ? ' / ' : '') + '실패: ' + failed.join(' | ').slice(0, 150) : ''),
         './imm_academy_system.html'
       );
     }
@@ -297,10 +331,18 @@ ${existingQuestionTexts.length ? existingQuestionTexts.map(q => '- ' + q).join('
 
   const payload = {
     contents: [{ parts: [{ text: promptText }] }],
-    generationConfig: { temperature: 0.5 }
+    generationConfig: { temperature: 0.5, maxOutputTokens: 8192 }
   };
 
-  const rawResponse = callGeminiWithRetry(payload, 4);
+  // 2026-09-18: 모델을 안 넘겨서 사진분석과 같은 쿼터를 쓰고 있었어요 → 텍스트용 lite 모델로 분리
+  const rawResponse = callGeminiWithRetry(payload, 4, 'gemini-flash-lite-latest');
+  const code = rawResponse && typeof rawResponse.getResponseCode === 'function' ? rawResponse.getResponseCode() : 200;
+  if(code !== 200){
+    if(isGeminiDailyQuotaExhausted_(rawResponse)) throw new Error('AI 무료 하루 사용량을 다 썼어요 (내일 다시 시도돼요)');
+    let body = '';
+    try { body = rawResponse.getContentText(); } catch(e){}
+    throw new Error('AI 서버 오류 ' + code + ': ' + body.slice(0, 150));
+  }
   const responseText = extractGeminiResponseText_(rawResponse);
   const jsonMatch = responseText.match(/\[[\s\S]*\]/);
   if(!jsonMatch){
@@ -448,16 +490,24 @@ function itemMatchesStudentForReminder_(item, student){
 }
 
 function getTodaysConceptItemsForReminder_(student, allItems, dailyCounts){
-  const relevantItems = (allItems || []).filter(i => itemMatchesStudentForReminder_(i, student)).sort((a,b) => a.id - b.id);
-  if(relevantItems.length === 0) return [];
+  const relevantItems = (allItems || []).filter(i => itemMatchesStudentForReminder_(i, student));
   const perDay = (dailyCounts && dailyCounts[student.className]) || 5;
-  const dayIndex = Math.floor((Date.now() + 9 * 3600 * 1000) / 86400000);
-    const total = relevantItems.length;
-  const startIdx = (dayIndex * perDay) % total;
-  const result = [];
-  for(let i = 0; i < Math.min(perDay, total); i++){
-    result.push(relevantItems[(startIdx + i) % total]);
-  }
+  return pickTodaysConceptItems_(relevantItems, perDay, Date.now());
+}
+
+// 학생 포털 getTodaysConceptItemsForStudent · 관리자 앱 getTodaysConceptItems 와 같은 규칙이에요 (바꿀 땐 셋 다):
+// 오늘(한국 날짜) 자동 출제된 문제를 먼저, 모자라면 나머지 문제를 날짜별로 돌려가며 채워요.
+function pickTodaysConceptItems_(items, perDay, nowMs){
+  const sorted = (items || []).slice().sort((a,b) => a.id - b.id);
+  if(sorted.length === 0) return [];
+  const kstToday = new Date(nowMs + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const fresh = sorted.filter(i => i.autoDate === kstToday).slice(0, perDay);
+  const rest = sorted.filter(i => i.autoDate !== kstToday);
+  const need = Math.min(perDay - fresh.length, rest.length);
+  const dayIndex = Math.floor((nowMs + 9 * 3600 * 1000) / 86400000);
+  const startIdx = rest.length ? (dayIndex * perDay) % rest.length : 0;
+  const result = fresh.slice();
+  for(let i = 0; i < need; i++) result.push(rest[(startIdx + i) % rest.length]);
   return result;
 }
 

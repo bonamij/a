@@ -989,14 +989,16 @@ function getTodaysConceptItemsForStudent(className, data){
   if(items.length === 0) return [];
   if(!isConceptActiveToday(className, data)) return [];
   const perDay = (data.conceptDailyCounts && data.conceptDailyCounts[className]) || 5;
-  // 2026-09-08 수정: 한국시간(KST) 자정 기준으로 하루가 바뀌도록. (예전엔 UTC 자정 기준이라
-  // 한국 아침 9시에 그날 문제 세트가 또 바뀌어서, 학생이 하루에 여러 날치를 이어서 푸는
-  // 것처럼 보였던 버그가 있었어요.)
-  const dayIndex = Math.floor((Date.now() + 9 * 3600 * 1000) / 86400000);
-  const total = items.length;
-  const startIdx = (dayIndex * perDay) % total;
-  const result = [];
-  for(let i = 0; i < Math.min(perDay, total); i++) result.push(items[(startIdx + i) % total]);
+  // 2026-09-08 수정: 한국시간(KST) 자정 기준으로 하루가 바뀌도록.
+  // 2026-09-18: 그날 AI가 자동 출제한 문제(autoDate=오늘)를 먼저 내고, 모자라면 나머지를 돌려가며 채워요.
+  const kstNow = Date.now() + 9 * 3600 * 1000;
+  const kstToday = new Date(kstNow).toISOString().slice(0, 10);
+  const fresh = items.filter(i => i.autoDate === kstToday).slice(0, perDay);
+  const rest = items.filter(i => i.autoDate !== kstToday);
+  const need = Math.min(perDay - fresh.length, rest.length);
+  const startIdx = rest.length ? (Math.floor(kstNow / 86400000) * perDay) % rest.length : 0;
+  const result = fresh.slice();
+  for(let i = 0; i < need; i++) result.push(rest[(startIdx + i) % rest.length]);
   return result;
 }
 

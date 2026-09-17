@@ -1069,7 +1069,7 @@
         <div class="card-head">
           <div>
             <h3>🕐 검토 대기함</h3>
-            <div class="sub" id="conceptDraftCountSub">AI가 밤사이 자동으로 만든 문제예요. 승인해야 학생에게 나가요.</div>
+            <div class="sub" id="conceptDraftCountSub">반 문제는 AI가 매일 새벽 바로 출제해요. 개별학생 문제만 여기서 승인해요.</div>
           </div>
           <div style="display:flex; gap:6px;">
             <button type="button" class="btn small" id="conceptDraftApproveAllBtn" onclick="approveAllConceptDrafts()" style="display:none;">✅ 전체 승인</button>
@@ -3016,7 +3016,7 @@ function renderConceptItemList(){
   listEl.innerHTML = list.map(item => `
     <li>
       <div class="left">
-        <span class="date" style="font-family:'Noto Sans KR',sans-serif;">🏷️ ${escapeHtml(item.className)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}</span>
+        <span class="date" style="font-family:'Noto Sans KR',sans-serif;">🏷️ ${escapeHtml(item.className)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}${item.autoDate ? ` · 🤖 AI 자동출제 ${escapeHtml(item.autoDate.slice(5).replace('-', '/'))}` : ''}</span>
         <strong style="font-size:13px;">${escapeHtml(item.question)}</strong>
         <span style="font-size:12px; color:var(--ink-soft);">보기: ${item.choices.map((c,i) => i === item.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)}✓</strong>` : escapeHtml(c)).join(' / ')}</span>
       </div>
@@ -3060,7 +3060,7 @@ function renderConceptDraftList(){
   const list = conceptDraftItems.slice().sort((a,b) => (a.createdAt || '').localeCompare(b.createdAt || '') || a.id - b.id);
   subEl.textContent = list.length > 0
     ? `AI가 자동으로 만든 문제 ${list.length}개가 승인을 기다리고 있어요.`
-    : '대기 중인 문제가 없어요. AI가 밤사이 새 문제를 만들면 여기에 나타나요.';
+    : '대기 중인 문제가 없어요. 반 문제는 AI가 매일 새벽 문제은행에 바로 출제하고, 개별학생 문제만 여기로 와요.';
   if(rejectAllBtn) rejectAllBtn.style.display = list.length > 0 ? 'inline-block' : 'none';
   if(approveAllBtn) approveAllBtn.style.display = list.some(i => i.target && i.target.type === 'class' && i.target.className) ? 'inline-block' : 'none';
 
@@ -3187,13 +3187,15 @@ function getTodaysConceptItems(className){
 
   const perDay = conceptDailyCounts[className] || 5;
   // 2026-09-08 수정: 학생 화면과 동일하게 한국시간(KST) 자정 기준으로 통일
-  const dayIndex = Math.floor((Date.now() + 9 * 3600 * 1000) / 86400000);
-  const total = classItems.length;
-  const startIdx = (dayIndex * perDay) % total;
-  const result = [];
-  for(let i = 0; i < Math.min(perDay, total); i++){
-    result.push(classItems[(startIdx + i) % total]);
-  }
+  // 2026-09-18: 학생 화면과 같이 오늘 자동 출제된 문제(autoDate)를 먼저, 모자라면 나머지를 돌려가며
+  const kstNow = Date.now() + 9 * 3600 * 1000;
+  const kstToday = new Date(kstNow).toISOString().slice(0, 10);
+  const fresh = classItems.filter(i => i.autoDate === kstToday).slice(0, perDay);
+  const rest = classItems.filter(i => i.autoDate !== kstToday);
+  const need = Math.min(perDay - fresh.length, rest.length);
+  const startIdx = rest.length ? (Math.floor(kstNow / 86400000) * perDay) % rest.length : 0;
+  const result = fresh.slice();
+  for(let i = 0; i < need; i++) result.push(rest[(startIdx + i) % rest.length]);
   return result;
 }
 

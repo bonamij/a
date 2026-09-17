@@ -468,5 +468,49 @@ check('M A1 has current data', !a1after.students.some(s => s.id === 2) && a1afte
 check('M get uses A1 again', small.get().students.length === a1after.students.length);
 check('M legacy save works after rollback', small.post(a1after).ok === true);
 
+// Q. 개념문제 자동 출제: 검토 없이 문제은행에 바로, 오늘 요일 아닌 반은 건너뜀, 하루 한 번만, 실패는 알림
+const q = makeEnv(JSON.stringify(sample));
+q.run('migrateToV2()');
+q.props.PUSH_DISABLED = 'true';
+const qDow = new Date(Date.now() + 9 * 3600 * 1000).getUTCDay();
+const qToday = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+q.run(`withLock_(() => commitOps_([
+  { op: 'put', c: 'conceptActiveDays', id: '월목중2', data: [${qDow}] },
+  { op: 'put', c: 'conceptActiveDays', id: '화금중1', data: [${(qDow + 1) % 7}] }
+], 'test'))`);
+let qGemini = { code: 200 };
+let qCalls = [];
+const qFetch = q.ctx.UrlFetchApp.fetch;
+q.ctx.UrlFetchApp.fetch = (u, opts) => {
+  if (!String(u).includes('generativelanguage')) return qFetch(u, opts);
+  qCalls.push(String(u));
+  const n = Number((JSON.parse(opts.payload).contents[0].parts[0].text.match(/총 (\d+)개/) || [])[1] || 1);
+  const arr = Array.from({ length: n }, (_, i) => ({ unit: 'u1', question: `새 문제 ${i} ___`, choices: ['a', 'b', 'c'], correctIndex: 1 }));
+  return qGemini.code === 200
+    ? { getResponseCode: () => 200, getContentText: () => JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(arr) }] } }] }) }
+    : { getResponseCode: () => qGemini.code, getContentText: () => '{"error":{"code":500,"details":[{"x":1}]}}' };
+};
+q.run('generateDailyConceptQuestions()');
+let qBank = JSON.parse(q.run('JSON.stringify(assembleLegacy_().conceptBankItems)'));
+const qFresh = qBank.filter(i => i.autoDate === qToday);
+check('Q generated straight into bank for active class', qFresh.length === 5 && qFresh.every(i => i.className === '월목중2' && i.source === 'ai'), qBank.length);
+check('Q not-active-day class skipped', !qBank.some(i => i.className === '화금중1' && i.autoDate));
+check('Q uses lite model', qCalls.length === 1 && qCalls[0].includes('gemini-flash-lite-latest'), qCalls);
+check('Q drafts untouched', JSON.parse(q.run('JSON.stringify(assembleLegacy_().conceptDraftItems)')).length === 0);
+q.run('generateDailyConceptQuestions()');
+qBank = JSON.parse(q.run('JSON.stringify(assembleLegacy_().conceptBankItems)'));
+check('Q second run same day adds nothing', qBank.filter(i => i.autoDate === qToday).length === 5 && qCalls.length === 1);
+const qPicked = JSON.parse(q.run(`JSON.stringify(pickTodaysConceptItems_(assembleLegacy_().conceptBankItems.filter(i => i.className === '월목중2'), 5, Date.now()))`));
+check('Q today picks fresh items first', qPicked.length === 5 && qPicked.every(i => i.autoDate === qToday), qPicked.map(i => i.id));
+const qPickedMore = JSON.parse(q.run(`JSON.stringify(pickTodaysConceptItems_(assembleLegacy_().conceptBankItems.filter(i => i.className === '월목중2'), 6, Date.now()))`));
+check('Q tops up with older items', qPickedMore.length === 6 && qPickedMore.filter(i => !i.autoDate).length === 1);
+q.run(`withLock_(() => commitOps_([{ op: 'put', c: 'conceptActiveDays', id: '화금중1', data: [${qDow}] }], 'test'))`);
+qGemini.code = 500;
+const qLogStart = q.logs.length;
+q.run('generateDailyConceptQuestions()');
+const qNewLogs = q.logs.slice(qLogStart).join('\n');
+check('Q AI error is reported, not swallowed', qNewLogs.includes('생성 실패') && qNewLogs.includes('AI 서버 오류 500') && qNewLogs.includes('일부 실패'), qNewLogs);
+check('Q failed class saves nothing', !JSON.parse(q.run('JSON.stringify(assembleLegacy_().conceptBankItems)')).some(i => i.className === '화금중1' && i.autoDate));
+
 console.log(`\n[${ORDER}] pass ${pass}, fail ${fail}`);
 process.exit(fail ? 1 : 0);
