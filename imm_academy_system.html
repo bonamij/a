@@ -3571,7 +3571,8 @@ function removeDtPhoto_(i){
 
 function renderDtThumbs_(){
   const el = document.getElementById('dtPhotoThumbs');
-  el.querySelectorAll('img').forEach(img => URL.revokeObjectURL(img.src));
+  const oldUrls = Array.from(el.querySelectorAll('img')).map(img => img.src);
+  setTimeout(() => oldUrls.forEach(u => URL.revokeObjectURL(u)), 1000); // 바로 지우면 사라지는 그림이 오류를 남겨요
   el.innerHTML = dtPhotoFiles.map((f, i) => `
     <div class="rp-thumb"><img src="${URL.createObjectURL(f)}" alt="시험지 ${i + 1}"><button type="button" onclick="removeDtPhoto_(${i})" aria-label="사진 빼기">✕</button></div>`).join('')
     + (dtPhotoFiles.length ? `<span class="rp-note">사진 ${dtPhotoFiles.length}장</span>` : '');
