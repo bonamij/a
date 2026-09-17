@@ -70,7 +70,13 @@ function buildParentData_(snap, student) {
     academyName: m.settings.academyName || '',
     students: [safeStudent],
     attendanceRecords: mine(a.attendanceRecords),
-    dailyTests: mine(a.dailyTests),
+    dailyTests: mine(a.dailyTests).map(function (t) {
+      if (!('analysis' in t) && !('parentReport' in t)) return t;
+      const copy = Object.assign({}, t);
+      delete copy.analysis; // 선생님용 분석 메모
+      if (!copy.notifyParent) delete copy.parentReport; // '기록만 저장'한 문자는 학부모에게 안 보여요
+      return copy;
+    }),
     mistakeRecords: mine(a.mistakeRecords),
     conceptTestRecords: mine(a.conceptTestRecords),
     parentMessages: mine(a.parentMessages),

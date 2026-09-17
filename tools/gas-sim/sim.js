@@ -265,6 +265,25 @@ check('F message', env.v2('parentSendMessage', { token, studentId: 1, message: '
 check('F message pushed to admin', env.fetches.length > fetchesBefore);
 check('F push token register', env.v2('parentRegisterPushToken', { token, studentId: 1, pushToken: 'tokB' }).pushTokenCount === 2);
 
+// 데일리 테스트 학부모 문자: '저장 + 알림'만 푸시·공개, '기록만 저장'은 비공개, 수정은 재알림 없음
+const pushesWith = text => env.fetches.filter(f => String((f.opts || {}).payload || '').includes(text)).length;
+let dtRev = env.admin('adminLoad').rev;
+const dtBase = { studentId: 1, date: '2026-09-17', unit: '일차함수', mode: 'tap', total: 20, correct: 17, score: 85, wrongNumbers: [3, 7, 12], analysis: { causeGuess: '단순 계산실수' } };
+let dtRes = env.admin('adminCommit', { baseRev: dtRev, ops: [
+  { op: 'put', c: 'dailyTests', id: '501', data: Object.assign({ id: 501, parentReport: '공개문자', notifyParent: true }, dtBase) },
+  { op: 'put', c: 'dailyTests', id: '502', data: Object.assign({ id: 502, parentReport: '비공개문자', notifyParent: false }, dtBase) }
+] });
+check('P daily report commit ok', dtRes.ok && dtRes.rejected.length === 0, dtRes);
+check('P push to both parent tokens once', pushesWith('데일리 테스트 결과') === 2, pushesWith('데일리 테스트 결과'));
+const dtLoad = env.v2('parentLoad', { token, studentId: 1 });
+const dt501 = dtLoad.data.dailyTests.find(t => t.id === 501), dt502 = dtLoad.data.dailyTests.find(t => t.id === 502);
+check('P parent sees sent report', dt501 && dt501.parentReport === '공개문자' && !('analysis' in dt501), dt501);
+check('P save-only report hidden', dt502 && !('parentReport' in dt502) && !JSON.stringify(dtLoad).includes('비공개문자'), dt502);
+dtRev = env.admin('adminLoad').rev;
+env.admin('adminCommit', { baseRev: dtRev, ops: [{ op: 'patch', c: 'dailyTests', id: '501', set: { score: 90 } }] });
+check('P edit does not re-push', pushesWith('데일리 테스트 결과') === 2);
+env.admin('adminCommit', { baseRev: env.admin('adminLoad').rev, ops: [{ op: 'del', c: 'dailyTests', id: '501' }, { op: 'del', c: 'dailyTests', id: '502' }] });
+
 // 관리자 수정 + 옛 앱 저장이 학부모 체크를 지우지 않음
 let rev = env.admin('adminLoad').rev;
 let res = env.admin('adminCommit', { baseRev: rev, deviceId: 'pc', ops: [{ op: 'patch', c: 'homeworkAssignments', id: '1', set: { text: '쎈 12쪽' } }] });

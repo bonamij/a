@@ -234,7 +234,7 @@ function targetStudents_(target, students) {
 
 function notifyFromApplied_(applied, getSnap) {
   const fresh = applied.filter(function (a) {
-    return a.op === 'put' && a.isNew && ['homeworkAssignments', 'generalMakeups', 'parentMessages'].indexOf(a.c) >= 0;
+    return a.op === 'put' && a.isNew && ['homeworkAssignments', 'generalMakeups', 'parentMessages', 'dailyTests'].indexOf(a.c) >= 0;
   });
   if (fresh.length === 0) return;
   const snap = getSnap();
@@ -256,6 +256,13 @@ function notifyFromApplied_(applied, getSnap) {
         if (s) sendPushToTokens(s.pushTokens, '💬 선생님 답장이 도착했어요', d.message, './parent_portal.html');
       } else {
         sendPushToTokens(snap.sets.adminPushTokens, '💬 학부모 메시지가 도착했어요', (d.studentName || '') + ': ' + d.message, './imm_academy_system.html');
+      }
+    } else if (a.c === 'dailyTests') {
+      // 선생님이 '저장 + 학부모 알림'을 눌렀을 때만 (그냥 기록만 한 테스트는 알림 없음)
+      if (d.notifyParent && d.parentReport) {
+        const s = students.find(function (x) { return String(x.id) === String(d.studentId); });
+        const summary = (d.total ? d.total + '문항 중 ' + d.correct + '개 정답' : d.score + '점') + (d.unit ? ' · ' + d.unit : '');
+        if (s) sendPushToTokens(s.pushTokens, '📝 오늘 데일리 테스트 결과가 도착했어요', summary, './parent_portal.html');
       }
     }
   });

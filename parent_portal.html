@@ -732,6 +732,8 @@ function renderReport(data, student){
     .slice().sort((a,b) => a.date.localeCompare(b.date) || a.id - b.id);
   const avgScore = studentTests.length ? Math.round(studentTests.reduce((s,t) => s + t.score, 0) / studentTests.length) : null;
   const groupAvgScore = computeGroupAvgScore(student.id, data);
+  // 선생님이 '저장 + 학부모 알림'으로 보낸 데일리 테스트 분석 (최근 3개)
+  const testReports = studentTests.filter(t => t.notifyParent && t.parentReport).slice().reverse().slice(0, 3);
 
   const perf = getUnitPerformanceData(student.id, data);
   const strongUnits = perf.allUnits.filter(u => perf.classify(u) === 'strong');
@@ -849,6 +851,16 @@ function renderReport(data, student){
       <div class="report-section">
         <h4>✏️ 데일리 테스트${avgScore !== null ? ` · 평균 ${avgScore}점` : ''}${groupAvgScore !== null ? ` · ${escapeHtml(levelOf(student.grade))} 평균 ${groupAvgScore}점` : ''}</h4>
         ${studentTests.length === 0 ? `<div class="report-empty">기록된 데일리 테스트가 없어요.</div>` : buildScoreChartSVG(studentTests, groupAvgScore)}
+        ${testReports.length ? `
+          <div style="margin-top:14px; display:flex; flex-direction:column; gap:10px;">
+            ${testReports.map((t, i) => `
+              <div style="background:${i === 0 ? 'var(--brand-soft)' : 'var(--cream-alt)'}; border-radius:10px; padding:12px 14px;">
+                <div style="display:flex; justify-content:space-between; gap:8px; font-size:11.5px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:600; margin-bottom:6px;">
+                  <span>📝 선생님 분석 · ${t.date.replace(/-/g,'.')}</span><span>${t.total ? `${t.correct}/${t.total}` : ''} · ${t.score}점</span>
+                </div>
+                <div style="white-space:pre-line; font-size:13.5px; line-height:1.65; color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-weight:500;">${escapeHtml(t.parentReport)}</div>
+              </div>`).join('')}
+          </div>` : ''}
       </div>
 
       <div class="report-section" id="hwChecklistSection">

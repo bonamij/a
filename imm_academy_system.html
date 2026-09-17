@@ -236,6 +236,24 @@
   }
   .photo-result-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px 16px; font-size:13px; font-family:'Noto Sans KR',sans-serif; font-weight:500; margin-bottom:12px;}
   .photo-result-grid .label{color:var(--ink-soft); font-size:11px; display:block; margin-bottom:2px;}
+  /* 2026-09-17 데일리 테스트 → 학부모 문자 */
+  .rp-row{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;}
+  .rp-fields{display:grid; grid-template-columns:2fr 1fr 2fr; gap:10px 12px; margin-bottom:12px;}
+  .rp-fields .field input{min-width:0; width:100%;}
+  .rp-fields .full{grid-column:1/-1;}
+  .rp-text{width:100%; border:1px solid var(--line); border-radius:7px; padding:9px 11px; background:var(--cream); color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-size:13.5px; line-height:1.6; resize:vertical;}
+  .rp-text:focus{background:#fff;}
+  .rp-sms{background:#fff; border:1.5px solid var(--brand); min-height:150px;}
+  .rp-result-line{font-size:13px; font-family:'Noto Sans KR',sans-serif; font-weight:600; color:var(--ink); margin:2px 0 12px;}
+  .rp-warn{background:rgba(184,57,31,0.08); color:#B8391F; border-radius:7px; padding:8px 11px; font-size:12.5px; font-family:'Noto Sans KR',sans-serif; font-weight:500; margin-bottom:10px;}
+  .rp-note{font-size:11.5px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+  .rp-actions{display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 6px;}
+  .rp-status{font-size:12.5px; font-family:'Noto Sans KR',sans-serif; font-weight:600; color:var(--brand-dark); min-height:18px;}
+  @media (max-width:760px){
+    .rp-row{flex-direction:column; align-items:stretch;}
+    .rp-fields{grid-template-columns:1fr;}
+    .rp-actions .btn{flex:1 1 100%;}
+  }
 
   .group-header-row td{
     background:var(--cream-alt); font-weight:800; font-size:13px; padding:10px 14px;
@@ -910,21 +928,25 @@
       <div class="card">
         <div class="card-head">
           <div>
-            <h3>📷 사진으로 자동 분석</h3>
-            <div class="sub">매쓰프로 채점 결과지 사진을 올리면 AI가 점수·틀린 문항·단원을 자동으로 읽어드려요. 결과는 검토 후 직접 반영해주세요.</div>
+            <h3>📷 시험지 사진 → 학부모 문자 자동 작성</h3>
+            <div class="sub">채점한 시험지 사진을 올리면 AI가 맞은 개수·틀린 문항·약한 유형을 읽고, 학부모님께 보낼 3~5줄 문자를 만들어 드려요. 확인·수정한 뒤 복사해서 보내거나 앱 알림으로 보내세요.</div>
           </div>
         </div>
-        <div class="inline-form">
+        <div class="rp-row">
           <div class="field">
             <label for="dt-photo-student">학생</label>
             <select id="dt-photo-student" required><option value="">선택</option></select>
           </div>
           <div class="field">
-            <label for="dt-photo-file">테스트 결과지 사진 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(여러 장 선택 가능)</span></label>
+            <label for="dt-photo-date">시험 날짜</label>
+            <input type="date" id="dt-photo-date">
+          </div>
+          <div class="field" style="flex:1 1 220px;">
+            <label for="dt-photo-file">채점한 시험지 사진 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(여러 장 선택 가능)</span></label>
             <input type="file" id="dt-photo-file" accept="image/*" multiple>
           </div>
         </div>
-        <button type="button" class="btn" style="margin-top:12px;" onclick="analyzeDailyTestPhoto()">🔍 AI 분석하기</button>
+        <button type="button" class="btn" style="margin-top:12px;" id="dtPhotoAnalyzeBtn" onclick="analyzeDailyTestPhoto()">🔍 AI 분석 + 문자 만들기</button>
         <div id="dtPhotoAnalysisResult" style="margin-top:16px;"></div>
       </div>
 
@@ -3395,7 +3417,7 @@ async function analyzeDailyTestPhoto(){
     return;
   }
 
-  resultEl.innerHTML = `<div class="report-empty">🔍 사진을 최적화하고 AI가 ${files.length}장을 분석하고 있어요... (몇 초~1분 정도 걸릴 수 있어요)</div>`;
+  resultEl.innerHTML = `<div class="report-empty">🔍 AI가 시험지 ${files.length}장의 채점 표시를 읽고 학부모 문자를 만들고 있어요... (몇 초~1분 정도 걸릴 수 있어요)</div>`;
 
   try {
     const dataUrls = await Promise.all(files.map(f => compressImageToDataURL(f, 1600, 0.75)));
@@ -3409,7 +3431,7 @@ async function analyzeDailyTestPhoto(){
       res = await fetch(sheetSyncUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(apiBody_('analyzeExam', { images }))
+        body: JSON.stringify(apiBody_('analyzeExam', { images, studentName: (students.find(s => s.id === studentId) || {}).name, grade: (students.find(s => s.id === studentId) || {}).grade, date: document.getElementById('dt-photo-date').value }))
       });
     } catch(networkErr){
       resultEl.innerHTML = `<div class="report-empty">❌ 서버에 연결하지 못했어요.<br><span style="font-size:11px;">오류 내용: ${escapeHtml(networkErr.message || String(networkErr))}<br>인터넷 연결을 확인하시거나, 사진 용량이 너무 크면(각 5MB 이하 권장) 줄여서 다시 시도해주세요.</span></div>`;
@@ -3433,32 +3455,60 @@ async function analyzeDailyTestPhoto(){
       return;
     }
 
-    lastDailyPhotoAnalysis = { studentId, ...result };
+    const photoStudentObj = students.find(s => s.id === studentId) || {};
+    const photoDate = document.getElementById('dt-photo-date').value || localIsoToday_();
+    const wrongNums = normalizeWrongNumbers_(result.wrongNumbers);
+    lastDailyPhotoAnalysis = { studentId, date: photoDate, ...result, wrongNumbers: wrongNums, saved: false };
+
+    const aiCorrect = Number(result.correctCount);
+    const aiTotal = Number(result.totalQuestions) || '';
+    const warnings = [];
+    if(aiTotal && result.correctCount != null && !isNaN(aiCorrect) && aiCorrect !== aiTotal - wrongNums.length){
+      warnings.push(`AI가 읽은 정답 개수(${aiCorrect}개)와 틀린 번호 개수(${wrongNums.length}개)가 맞지 않아요. 틀린 번호를 시험지와 한 번 대조해주세요.`);
+    }
+    const unsure = normalizeWrongNumbers_(result.uncertainNumbers);
+    if(unsure.length) warnings.push(`채점 표시가 흐릿한 문항: ${unsure.join(', ')}번 — 맞았는지 틀렸는지 확인해주세요.`);
+    const noPush = !((photoStudentObj.pushTokens || []).length);
+    const weakText = (result.weakTypes || []).map(w => (w.type || '') + ((w.numbers && w.numbers.length) ? ` (${w.numbers.join('·')}번)` : '')).filter(Boolean).join(' / ');
 
     resultEl.innerHTML = `
       <div class="photo-result-card">
-        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:600;">✅ AI 분석 결과예요 (사진 ${files.length}장 종합). 내용을 확인하고 아래 버튼을 눌러 반영해주세요.</p>
-        <div class="photo-result-grid">
-          <div><span class="label">점수</span>${result.score != null ? result.score + '점' : '-'}</div>
-          <div><span class="label">전체 문항 / 정답</span>${result.totalQuestions || '-'} / ${result.correctCount != null ? result.correctCount : '-'}</div>
-          <div style="grid-column:1/-1;"><span class="label">단원</span>${escapeHtml(result.unit || '-')}</div>
-          <div style="grid-column:1/-1;"><span class="label">틀린 문항 번호</span>${(result.wrongNumbers && result.wrongNumbers.length) ? result.wrongNumbers.join(', ') + '번' : '없음'}</div>
-          <div style="grid-column:1/-1;"><span class="label">예상 오답 원인</span>${escapeHtml(result.causeGuess || '-')}</div>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif; font-weight:600;">✅ AI 분석 결과예요 (사진 ${files.length}장). 칸을 고치면 아래 문자에 바로 반영돼요.</p>
+        ${warnings.map(w => `<div class="rp-warn">⚠️ ${escapeHtml(w)}</div>`).join('')}
+        <div class="rp-fields">
+          <div class="field"><label for="rp-range">시험범위</label><input id="rp-range" value="${escapeHtml(result.range || result.unit || '')}" oninput="refreshParentSms_()"></div>
+          <div class="field"><label for="rp-total">전체 문항 수</label><input id="rp-total" type="number" min="1" value="${aiTotal}" oninput="refreshParentSms_()"></div>
+          <div class="field"><label for="rp-wrong">틀린 문항 번호 <span style="font-weight:400; font-size:11px;">(쉼표로 구분)</span></label><input id="rp-wrong" value="${wrongNums.join(', ')}" placeholder="다 맞았으면 비워두세요" oninput="refreshParentSms_()"></div>
+          <div class="full rp-result-line" id="rp-result-line"></div>
+          <div class="field full"><label for="rp-analysis">분석 (잘한 점 · 약했던 부분)</label><textarea id="rp-analysis" class="rp-text" rows="2" oninput="refreshParentSms_()">${escapeHtml(result.analysis || '')}</textarea></div>
+          <div class="field full"><label for="rp-supplement">보완 내용 (어떻게 채웠는지)</label><textarea id="rp-supplement" class="rp-text" rows="2" oninput="refreshParentSms_()">${escapeHtml(result.supplement || '')}</textarea></div>
         </div>
-        <div style="margin-bottom:12px;">
-          <span class="label" style="display:block; margin-bottom:4px;">학부모님께 전달할 코멘트 (수정 가능)</span>
-          <textarea id="photoTeacherComment" class="msg-textarea" rows="4">${escapeHtml(result.teacherComment || '')}</textarea>
-          ${!result.teacherComment ? `<p style="font-size:11px; color:#B8391F; margin-top:4px;">⚠️ AI가 이번엔 코멘트를 안 만들었어요. 직접 입력하시거나, 아래 원본 응답을 확인해주세요.</p>` : ''}
+        ${weakText ? `<p class="rp-note" style="margin:-4px 0 10px;">약한 유형: ${escapeHtml(weakText)}${result.causeGuess ? ` · 예상 원인: ${escapeHtml(result.causeGuess)}` : ''}</p>` : ''}
+        <div class="field">
+          <label for="rp-sms" style="display:flex; justify-content:space-between; gap:8px;"><span>📱 학부모님께 보낼 문자 <span style="font-weight:400; font-size:11px;">(직접 고쳐도 돼요)</span></span><span id="rp-sms-count" class="rp-note"></span></label>
+          <textarea id="rp-sms" class="rp-text rp-sms" rows="6" oninput="lastDailyPhotoAnalysis.smsEdited = true; updateSmsCount_()"></textarea>
         </div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-          <button type="button" class="btn small" onclick="applyDailyPhotoAnalysis()">📥 이 결과를 아래 입력폼에 반영하기</button>
-          <button type="button" class="btn small ghost" onclick="applyPhotoCommentToReport(${studentId})">💬 이 코멘트를 학생 리포트에 반영하기</button>
+        <div class="rp-actions">
+          <button type="button" class="btn" onclick="copyParentSms_()">📋 문자 복사</button>
+          <button type="button" class="btn" id="rp-save-notify" onclick="saveDailyReport_(true)">📲 저장 + 학부모 앱 알림</button>
+          <button type="button" class="btn ghost" id="rp-save-only" onclick="saveDailyReport_(false)">💾 기록만 저장</button>
+          <button type="button" class="btn ghost small" onclick="lastDailyPhotoAnalysis.smsEdited = false; refreshParentSms_()">🔄 문자 다시 조립</button>
         </div>
-        <details style="font-size:11px; color:var(--ink-soft);">
-          <summary style="cursor:pointer;">🔧 AI 원본 응답 보기 (문제 생길 때 확인용)</summary>
-          <pre style="white-space:pre-wrap; word-break:break-all; background:#fff; padding:8px; border-radius:6px; margin-top:6px; font-family:'Space Mono',monospace; font-size:10.5px;">${escapeHtml(JSON.stringify(result, null, 2))}</pre>
+        ${noPush ? `<p class="rp-note">🔕 ${escapeHtml(photoStudentObj.name || '')} 학부모님은 앱 알림을 아직 안 켜셨어요. 저장하면 포털에는 보이지만 휴대폰 알림은 안 가니, 문자 복사로 보내주세요.</p>` : ''}
+        <div class="rp-status" id="rp-status"></div>
+        <details style="font-size:11px; color:var(--ink-soft); margin-top:10px;">
+          <summary style="cursor:pointer;">더보기 · 긴 코멘트 / 예전 방식 반영</summary>
+          <div style="margin-top:8px;">
+            <textarea id="photoTeacherComment" class="rp-text" rows="4">${escapeHtml(result.teacherComment || '')}</textarea>
+            <div class="rp-actions">
+              <button type="button" class="btn small ghost" onclick="applyPhotoCommentToReport(${studentId})">💬 이 코멘트를 학생 리포트에 반영</button>
+              <button type="button" class="btn small ghost" onclick="applyDailyPhotoAnalysis()">📥 아래 입력폼에 반영</button>
+            </div>
+            <pre style="white-space:pre-wrap; word-break:break-all; background:#fff; padding:8px; border-radius:6px; margin-top:6px; font-family:'Space Mono',monospace; font-size:10.5px;">${escapeHtml(JSON.stringify(result, null, 2))}</pre>
+          </div>
         </details>
       </div>`;
+    refreshParentSms_();
   } catch(err){
     resultEl.innerHTML = `<div class="report-empty">❌ 분석 요청에 실패했어요.<br><span style="font-size:11px;">오류 내용: ${escapeHtml(err.message || String(err))}</span></div>`;
   }
@@ -3487,6 +3537,136 @@ function applyDailyPhotoAnalysis(){
 
   document.getElementById('dailyTestForm').scrollIntoView({ behavior:'smooth', block:'center' });
   alert('입력폼에 반영했어요. 내용을 확인하시고 "기록 추가" 버튼을 눌러 저장해주세요.\n(틀린 문항 번호까지 기록하고 싶으면 "틀린 번호 탭하기" 모드로 바꿔서 직접 탭해주세요: ' + ((r.wrongNumbers && r.wrongNumbers.length) ? r.wrongNumbers.join(', ') + '번' : '없음') + ')');
+}
+
+/* ---------- 2026-09-17 데일리 테스트 → 학부모 문자 ---------- */
+
+function localIsoToday_(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function normalizeWrongNumbers_(value){
+  const list = Array.isArray(value) ? value : String(value || '').split(/[^0-9]+/);
+  return Array.from(new Set(list.map(Number).filter(n => Number.isInteger(n) && n > 0))).sort((a,b) => a - b);
+}
+
+// 성을 떼고 받침 있으면 '민준이', 없으면 '지우'
+function studentCallName_(name){
+  name = String(name || '').trim();
+  const given = name.length === 3 ? name.slice(1) : name;
+  const code = given.charCodeAt(given.length - 1) - 0xAC00;
+  return (code >= 0 && code <= 11171 && code % 28 !== 0) ? given + '이' : given;
+}
+
+function readParentSmsFields_(){
+  const total = Number(document.getElementById('rp-total').value) || 0;
+  const wrongNumbers = normalizeWrongNumbers_(document.getElementById('rp-wrong').value);
+  const correct = total ? Math.max(0, total - wrongNumbers.length) : null;
+  return {
+    range: document.getElementById('rp-range').value.trim(),
+    total, wrongNumbers, correct,
+    score: total ? Math.round(correct / total * 100) : null,
+    analysis: document.getElementById('rp-analysis').value.trim(),
+    supplement: document.getElementById('rp-supplement').value.trim()
+  };
+}
+
+// 날짜·범위·개수 줄은 AI가 아니라 입력값으로 조립해요 (숫자 틀릴 일 없게)
+function buildParentSms_(student, date, f){
+  const d = new Date(date + 'T00:00:00');
+  const dateLabel = isNaN(d) ? date : `${d.getMonth()+1}/${d.getDate()}(${'일월화수목금토'[d.getDay()]})`;
+  const academy = String(student.grade || '').startsWith('초') ? '첫단추 아임학원' : '아임수학';
+  const lines = [`[${academy}] ${dateLabel} ${studentCallName_(student.name)} 데일리 테스트 결과`];
+  if(f.range) lines.push(`시험범위: ${f.range}`);
+  if(f.total){
+    lines.push(`결과: ${f.total}문항 중 ${f.correct}개 정답` + (f.wrongNumbers.length ? ` (틀린 문항 ${f.wrongNumbers.join(', ')}번)` : ' (전부 정답)'));
+  }
+  if(f.analysis) lines.push(f.analysis);
+  if(f.supplement) lines.push(f.supplement);
+  return lines.join('\n');
+}
+
+function refreshParentSms_(){
+  const r = lastDailyPhotoAnalysis;
+  if(!r || !document.getElementById('rp-sms')) return;
+  const f = readParentSmsFields_();
+  const bad = f.wrongNumbers.filter(n => f.total && n > f.total);
+  document.getElementById('rp-result-line').textContent = f.total
+    ? `→ ${f.total}문항 중 ${f.correct}개 정답 · ${f.score}점` + (bad.length ? `  ⚠️ ${bad.join(', ')}번은 전체 문항 수보다 커요` : '')
+    : '→ 전체 문항 수를 입력하면 맞은 개수가 계산돼요';
+  if(!r.smsEdited){
+    const student = students.find(s => s.id === r.studentId) || {};
+    document.getElementById('rp-sms').value = buildParentSms_(student, r.date, f);
+  }
+  updateSmsCount_();
+}
+
+function updateSmsCount_(){
+  const el = document.getElementById('rp-sms');
+  const countEl = document.getElementById('rp-sms-count');
+  if(!el || !countEl) return;
+  const lines = el.value.split('\n').filter(l => l.trim()).length;
+  countEl.textContent = `${el.value.length}자 · ${lines}줄`;
+}
+
+async function copyText_(text, fallbackEl){
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch(e){
+    if(!fallbackEl) return false;
+    fallbackEl.select();
+    try { return document.execCommand('copy'); } catch(_){ return false; }
+  }
+}
+
+async function copyParentSms_(){
+  const el = document.getElementById('rp-sms');
+  if(!el || !el.value.trim()) return;
+  const ok = await copyText_(el.value, el);
+  document.getElementById('rp-status').textContent = ok
+    ? '📋 복사했어요. 문자나 카톡 창에 붙여넣기 해주세요.'
+    : '복사가 안 됐어요. 문자 칸을 길게 눌러 직접 복사해주세요.';
+}
+
+async function copyDailyReport_(id){
+  const t = dailyTests.find(x => x.id === id);
+  if(!t || !t.parentReport) return;
+  if(await copyText_(t.parentReport)) alert('학부모 문자를 복사했어요.');
+  else prompt('아래 내용을 복사해주세요.', t.parentReport);
+}
+
+function saveDailyReport_(notify){
+  const r = lastDailyPhotoAnalysis;
+  if(!r) return;
+  if(r.saved){ alert('이미 저장한 결과예요. 새 시험지는 다시 분석해주세요.'); return; }
+  const student = students.find(s => s.id === r.studentId);
+  if(!student){ alert('학생 정보를 찾을 수 없어요.'); return; }
+  const f = readParentSmsFields_();
+  const sms = document.getElementById('rp-sms').value.trim();
+  if(!f.range){ alert('시험범위를 입력해주세요.'); return; }
+  if(!f.total){ alert('전체 문항 수를 입력해주세요.'); return; }
+  if(f.wrongNumbers.some(n => n > f.total)){ alert('틀린 문항 번호가 전체 문항 수보다 커요. 확인해주세요.'); return; }
+  if(notify && !sms){ alert('보낼 문자 내용이 비어 있어요.'); return; }
+
+  const dup = dailyTests.some(t => t.studentId === r.studentId && t.date === r.date && t.unit === f.range);
+  if(dup && !confirm(`${student.name} 학생의 ${r.date} "${f.range}" 기록이 이미 있어요. 그래도 추가할까요?`)) return;
+  if(notify && !confirm(`${student.name} 학부모님께 데일리 테스트 결과를 보낼까요?\n(학부모 포털에 올라가고, 알림을 켠 경우 휴대폰 알림이 가요)`)) return;
+
+  dailyTests.push({
+    id: newId_(), studentId: r.studentId, date: r.date, unit: f.range, mode: 'tap',
+    total: f.total, correct: f.correct, score: f.score, wrongNumbers: f.wrongNumbers,
+    parentReport: sms, notifyParent: !!notify, reportCreatedAt: new Date().toISOString(),
+    analysis: { strengths: r.strengths || '', weakTypes: r.weakTypes || [], causeGuess: r.causeGuess || '', uncertainNumbers: r.uncertainNumbers || [] }
+  });
+  r.saved = true;
+  ['rp-save-notify', 'rp-save-only'].forEach(id => { const b = document.getElementById(id); if(b) b.disabled = true; });
+  document.getElementById('rp-status').textContent = notify
+    ? `✅ 저장했어요. ${student.name} 학부모님 포털에 올라가고, 알림을 켰다면 휴대폰 알림이 가요.`
+    : '✅ 기록만 저장했어요 (학부모 알림 없음).';
+
+  renderDailyList();
+  renderScoreChart();
+  scheduleSync();
 }
 
 function renderDailyList(){
@@ -3526,6 +3706,7 @@ function renderDailyList(){
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="badge ${scoreBadgeClass(t.score)}">${t.score}점</span>
+          ${t.parentReport ? `<button class="btn small ghost" title="${t.notifyParent ? '학부모 앱 알림 보냄' : '기록만 저장'} · 누르면 문자 복사" onclick="copyDailyReport_(${t.id})">${t.notifyParent ? '📲' : '📋'} 문자</button>` : ''}
           <button class="btn small danger-text" onclick="deleteDailyTest(${t.id})">삭제</button>
         </div>
       </li>`;
@@ -5972,6 +6153,7 @@ function init(){
   document.getElementById('att-date').value = iso;
   document.getElementById('gm-date').value = iso;
   document.getElementById('dt-date').value = iso;
+  document.getElementById('dt-photo-date').value = iso;
   document.getElementById('hwa-date').value = iso;
   document.getElementById('s-enroll').value = iso;
   document.getElementById('m-date').value = iso;

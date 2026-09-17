@@ -55,8 +55,25 @@ const sample = {
   adminPushTokens: []
 };
 
+sample.students[0].pushTokens = ['fake-token-1'];
+
 const env = makeEnv(JSON.stringify(sample));
 env.props.PUSH_DISABLED = 'true';
+
+// 가짜 Gemini: 사진 분석(analyzeExam)을 실제 AI 없이 화면 테스트할 수 있게 고정 응답을 돌려줘요
+const fakeExamAnalysis = {
+  examName: '데일리 테스트', range: '중2 일차함수 - 기울기와 y절편', unit: '일차함수', totalQuestions: 20, correctCount: 17, score: 85,
+  wrongNumbers: [12, 15, 18], uncertainNumbers: [9], strengths: '기울기 구하기는 모두 정확',
+  weakTypes: [{ numbers: [12, 15], type: 'y절편으로 식 세우기' }, { numbers: [18], type: '그래프 평행이동' }],
+  causeGuess: '단순 계산실수',
+  analysis: '기울기 구하기는 안정적이었지만, y절편을 이용해 식을 세우는 문제(12·15번)에서 부호 실수가 있었습니다.',
+  supplement: '틀린 문제는 수업 중 오답 풀이로 부호 처리 과정을 다시 짚었고, 같은 유형 3문제를 더 풀며 확인했습니다.',
+  teacherComment: '오늘은 일차함수의 기울기와 y절편을 다뤘습니다. 기울기 계산은 정확했고, 식 세우기에서 부호 실수가 있어 오답 풀이로 보완했습니다.'
+};
+const realFetch = env.ctx.UrlFetchApp.fetch;
+env.ctx.UrlFetchApp.fetch = (u, opts) => String(u).includes('generativelanguage')
+  ? { getResponseCode: () => 200, getContentText: () => JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(fakeExamAnalysis) }] } }] }) }
+  : realFetch(u, opts);
 env.run('migrateToV2()');
 env.props.ADMIN_KEY_PLAIN = TEST_ADMIN_KEY;
 env.run('hashAdminKey()');
