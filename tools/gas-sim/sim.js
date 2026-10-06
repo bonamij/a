@@ -456,6 +456,26 @@ fbO = hwEnv.fetches.length;
 hwEnv.run('sendConceptTestReminders()');
 check('O reminder only to the student who has not done it', hwEnv.fetches.length - fbO === 1, hwEnv.fetches.length - fbO);
 
+// P. 학부모 문자 (자동 발송 · MacroDroid 웹훅)
+const smsEnv = makeEnv(JSON.stringify({ students: [{ id: 1, name: "가학생", pin: "1234", parentPhone: "010-1234-5678" }] }));
+smsEnv.run("migrateToV2()");
+smsEnv.props.ADMIN_KEY_PLAIN = "test-admin-key-123";
+smsEnv.run("hashAdminKey()");
+check("P bad phone rejected", smsEnv.admin("adminSendSms", { to: "123", text: "안녕하세요" }).error === "BAD_PHONE");
+check("P no gateway url", smsEnv.admin("adminSendSms", { to: "010-1234-5678", text: "안녕하세요" }).error === "SMS_NOT_SET");
+smsEnv.admin("adminCommit", { baseRev: 0, ops: [{ op: "put", c: "settings", id: "smsGatewayUrl", data: "https://evil.example.com/steal" }] });
+check("P non-macrodroid url blocked", smsEnv.admin("adminSendSms", { to: "010-1234-5678", text: "안녕하세요" }).error === "SMS_BAD_URL");
+smsEnv.admin("adminCommit", { baseRev: 0, ops: [{ op: "put", c: "settings", id: "smsGatewayUrl", data: "https://trigger.macrodroid.com/abc-123/attend" }] });
+const fbSms = smsEnv.fetches.length;
+const sendRes = smsEnv.admin("adminSendSms", { to: "010-1234-5678", text: "가학생 오늘 결석했어요", kind: "absence", studentId: 1, studentName: "가학생" });
+const sentUrl = smsEnv.fetches[smsEnv.fetches.length - 1].url;
+check("P sent via gateway", sendRes.ok === true && smsEnv.fetches.length === fbSms + 1 && sentUrl.indexOf("https://trigger.macrodroid.com/abc-123/attend?sms_number=01012345678") === 0, sentUrl);
+check("P text passed", decodeURIComponent(sentUrl.split("sms_text=")[1]) === "가학생 오늘 결석했어요");
+const smsRows = smsEnv.run("assembleLegacy_()").smsLogs;
+check("P log saved", smsRows.length === 1 && smsRows[0].status === "sent" && smsRows[0].kind === "absence" && smsRows[0].to === "01012345678", smsRows[0]);
+check("P test send uses fixed text", smsEnv.admin("adminTestSms", { to: "010-1234-5678" }).ok === true && smsEnv.run("assembleLegacy_()").smsLogs.length === 2);
+check("P parent never sees sms logs", !JSON.stringify(smsEnv.v2("parentLogin", { name: "가학생", pin: "1234" })).includes("smsLogs"));
+
 const small = makeEnv(JSON.stringify(sample));
 small.run('migrateToV2()');
 small.props.ADMIN_KEY_PLAIN = 'test-admin-key-123';

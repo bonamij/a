@@ -29,7 +29,7 @@ const ARRAY_COLLECTIONS = [
   'students', 'progressLogs', 'attendanceRecords', 'generalMakeups',
   'conceptBankItems', 'conceptDraftItems', 'conceptTestRecords',
   'dailyTests', 'homeworkAssignments', 'answerKeys', 'homeworkRecords', 'mistakeRecords',
-  'schoolInfos', 'examAnalysis', 'parentMessages', 'scheduleItems', 'aiLearningReports'
+  'schoolInfos', 'examAnalysis', 'parentMessages', 'scheduleItems', 'aiLearningReports', 'smsLogs'
 ];
 // 키-값 맵 컬렉션 — id = 키 (예: teacherComments의 학생 id)
 const MAP_COLLECTIONS = [
@@ -393,7 +393,8 @@ function assembleLegacy_(snap) {
   const out = {
     version: 2,
     savedAt: new Date().toISOString(),
-    academyName: snap.maps.settings.academyName || ''
+    academyName: snap.maps.settings.academyName || '',
+    settings: snap.maps.settings || {} // 문자 설정 등 (옛 버전 앱은 이 값을 무시해요)
   };
   Object.keys(snap.arrays).forEach(function (c) { out[c] = snap.arrays[c]; });
   const allStudents = out.students || [];

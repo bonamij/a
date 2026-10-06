@@ -471,6 +471,16 @@
   .admin-lock-card input{ font-size:16px; padding:12px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); }
   .test-server-ribbon{ position:fixed; top:0; left:50%; transform:translateX(-50%); background:#B8391F; color:#fff; font-size:12px; font-weight:800; padding:4px 14px; border-radius:0 0 10px 10px; z-index:10000; }
   @media (max-width:480px){ .save-indicator{ padding:5px 9px; font-size:11.5px; } }
+  /* 2026-10-06 학부모 문자 */
+  .sms-modal{ position:fixed; inset:0; background:rgba(46,32,19,0.5); display:flex; align-items:center; justify-content:center; z-index:9998; padding:16px; }
+  .sms-modal-card{ background:var(--cream); border-radius:16px; padding:20px; width:100%; max-width:420px; display:flex; flex-direction:column; gap:8px; box-shadow:0 10px 30px rgba(0,0,0,.25); max-height:90vh; overflow:auto; }
+  .sms-modal-title{ font-size:16px; font-weight:800; margin-bottom:4px; }
+  .sms-label{ font-size:12.5px; font-weight:700; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; }
+  .sms-modal-card input, .sms-modal-card textarea{ width:100%; font-size:16px; padding:10px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); font-family:inherit; }
+  .sms-modal-card textarea{ font-size:14px; line-height:1.6; resize:vertical; }
+  .sms-hint{ font-size:11.5px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; }
+  .sms-modal-buttons{ display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
+  .sms-modal-buttons .btn{ width:auto; padding:9px 16px; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
@@ -659,6 +669,10 @@
           <div class="field">
             <label for="s-family">가족 연결 코드 <span style="font-weight:400; color:var(--ink-soft); font-size:11px;">(형제자매만! 같은 코드끼리 포털에서 서로 전환돼요. 비워두면 본인 정보만 보여요)</span></label>
             <input type="text" id="s-family" placeholder="예: kim-family (형제자매끼리 동일하게)">
+          </div>
+          <div class="field">
+            <label for="s-parent-phone">학부모 번호 <span style="font-weight:400; color:var(--ink-soft);">(문자 보낼 때 써요)</span></label>
+            <input type="tel" id="s-parent-phone" inputmode="numeric" placeholder="예: 010-1234-5678">
           </div>
           <div class="field">
             <label for="s-enroll">등록일</label>
@@ -1569,6 +1583,42 @@
       <div class="card">
         <div class="card-head">
           <div>
+            <h3>📨 학부모 문자</h3>
+            <div class="sub">결석·지각, 개념빈칸 미실시, 데일리 테스트 결과를 문자로 보낼 수 있어요. 학생 정보에 학부모 번호를 넣어두면 버튼만 누르면 돼요.</div>
+          </div>
+        </div>
+        <div class="inline-form">
+          <div class="field" style="flex:1 1 200px; min-width:0;">
+            <label for="smsModeSelect">보내는 방식</label>
+            <select id="smsModeSelect" onchange="document.getElementById('smsGatewayWrap').style.display = this.value === 'gateway' ? '' : 'none';">
+              <option value="link">문자앱 열기 (폰에서 전송 버튼 누르기)</option>
+              <option value="gateway">자동 발송 (학원폰 MacroDroid)</option>
+              <option value="off">안 씀</option>
+            </select>
+          </div>
+          <div class="field" style="flex:1 1 200px; min-width:0;">
+            <label for="smsSignature">문자 앞에 붙는 이름</label>
+            <input type="text" id="smsSignature" placeholder="예: 아임수학학원">
+          </div>
+        </div>
+        <div class="inline-form" id="smsGatewayWrap" style="display:none;">
+          <div class="field" style="flex:1 1 260px; min-width:0;">
+            <label for="smsGatewayUrl">MacroDroid 웹훅 주소</label>
+            <input type="text" id="smsGatewayUrl" placeholder="https://trigger.macrodroid.com/..../attend">
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+          <button type="button" class="btn small" onclick="saveSmsSettings_()">💾 문자 설정 저장</button>
+          <button type="button" class="btn small ghost" onclick="testSms_()">✉️ 테스트 발송</button>
+        </div>
+        <div id="smsNoPhoneNotice" style="display:none; margin-top:10px; font-size:12.5px; color:#B4472B; font-family:'Noto Sans KR',sans-serif; font-weight:600;"></div>
+        <div style="margin-top:14px; font-size:13px; font-weight:700;">최근 보낸 문자</div>
+        <ul id="smsLogList" class="recent-list" style="flex-direction:column; display:flex; gap:0; margin-top:6px;"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
             <h3>데이터 백업</h3>
             <div class="sub">버튼을 누르면 지금까지 입력한 모든 데이터(학생·진도·출결·보강·데일리테스트·숙제·오답·리포트 코멘트·중등부 정보)가 파일 하나로 저장돼요. 이 파일을 컴퓨터에 잘 보관해주세요.</div>
           </div>
@@ -1697,6 +1747,8 @@ let parentMessages = [];
 
 // 🧠 AI 학습 성향 분석 리포트
 let aiLearningReports = []; // { id, studentId, createdAt, auto:{...}, manual:{...}, report:{...} }
+let smsLogs = [];           // 보낸 학부모 문자 기록
+let appSettings = {};       // 서버에 저장된 설정 (문자 방식 등)
 let nextAiReportId = 1;
 let studentBehaviorNotes = {}; // { studentId: { focus, participation, hwSpeed, mistakeReaction, stress, updatedAt } }
 
@@ -1811,6 +1863,7 @@ function addStudent(e){
   const className = document.getElementById('s-class').value.trim();
   const pin = document.getElementById('s-pin').value.trim();
   const familyCode = document.getElementById('s-family').value.trim();
+  const parentPhone = document.getElementById('s-parent-phone').value.trim();
   const now = new Date();
   const enrollDate = document.getElementById('s-enroll').value || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
@@ -1823,7 +1876,7 @@ function addStudent(e){
     return;
   }
 
-  students.push({ id: newId_(), name, grade, school, className, pin, familyCode, enrollDate, concept:'', sen:'', topSProgress:'', bookProgress:{} });
+  students.push({ id: newId_(), name, grade, school, className, pin, familyCode, parentPhone, enrollDate, concept:'', sen:'', topSProgress:'', bookProgress:{} });
 
   document.getElementById('s-name').value = '';
   document.getElementById('s-grade').value = '';
@@ -1831,6 +1884,7 @@ function addStudent(e){
   document.getElementById('s-class').value = '';
   document.getElementById('s-pin').value = '';
   document.getElementById('s-family').value = '';
+  document.getElementById('s-parent-phone').value = '';
   document.getElementById('s-enroll').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   document.getElementById('s-name').focus();
 
@@ -1847,11 +1901,12 @@ function saveEditStudent(id){
   const className = document.getElementById(`e-class-${id}`).value.trim();
   const pin = document.getElementById(`e-pin-${id}`).value.trim();
   const familyCode = document.getElementById(`e-family-${id}`).value.trim();
+  const parentPhone = document.getElementById(`e-parent-phone-${id}`).value.trim();
   const enrollDate = document.getElementById(`e-enroll-${id}`).value;
   if(!name || !grade){ alert('이름과 학년은 필수 입력 항목입니다.'); return; }
   if(pin && !/^\d{4}$/.test(pin)){ alert('비밀번호는 숫자 4자리로 입력해주세요.'); return; }
   const s = students.find(x => x.id === id);
-  Object.assign(s, { name, grade, school, className, pin, familyCode, enrollDate });
+  Object.assign(s, { name, grade, school, className, pin, familyCode, parentPhone, enrollDate });
   editingStudentId = null;
   renderStudents();
   scheduleSync();
@@ -1945,6 +2000,7 @@ function renderStudentRow(s){
           <input type="text" id="e-class-${s.id}" value="${escapeHtml(s.className || '')}" placeholder="반 이름 (예: 화금중1)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
           <input type="text" id="e-pin-${s.id}" value="${escapeHtml(s.pin || '')}" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="비밀번호(4자리)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
           <input type="text" id="e-family-${s.id}" value="${escapeHtml(s.familyCode || '')}" placeholder="가족 연결 코드 (형제자매만)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
+          <input type="tel" id="e-parent-phone-${s.id}" value="${escapeHtml(s.parentPhone || '')}" placeholder="학부모 번호 (문자용)" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px;">
           <label style="font-size:11px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">등록일</label>
           <input type="date" id="e-enroll-${s.id}" value="${escapeHtml(s.enrollDate || '')}" style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px;">
         </td>
@@ -2389,7 +2445,7 @@ function renderAttendanceRoster(){
       <tr>
         <td><strong>${escapeHtml(s.name)}</strong></td>
         <td><span class="badge gray">${escapeHtml(s.grade)}</span></td>
-        <td><div class="att-btn-group">${btns}</div></td>
+        <td><div class="att-btn-group">${btns}</div>${rec && (rec.status === '결석' || rec.status === '지각') ? `<button type="button" class="btn small ghost" style="margin-top:6px;" onclick="openSmsModal_({ studentId: ${s.id}, kind: '${rec.status === '결석' ? 'absence' : 'late'}' })">📨 문자</button>` : ''}</td>
       </tr>`;
   }).join('');
 }
@@ -3227,7 +3283,7 @@ function renderConceptTodaySubmissions(){
         </div>
         ${rec
           ? `<span class="badge ${rec.correct === rec.total ? 'green' : 'gray'}">${rec.correct}/${rec.total} 완료</span>`
-          : `<span class="badge gray">미제출</span>`}
+          : `<span class="badge gray">미제출</span><button type="button" class="btn small ghost" style="margin-left:6px;" onclick="openSmsModal_({ studentId: ${s.id}, kind: 'concept' })">📨</button>`}
       </li>`;
   }).join('');
 }
@@ -3503,7 +3559,8 @@ async function analyzeDailyTestPhoto(){
           <textarea id="rp-sms" class="rp-text rp-sms" rows="6" oninput="lastDailyPhotoAnalysis.smsEdited = true; updateSmsCount_()"></textarea>
         </div>
         <div class="rp-actions">
-          ${navigator.share ? `<button type="button" class="btn" onclick="shareParentSms_()">📤 카톡·문자로 보내기</button>` : ''}
+          <button type="button" class="btn" onclick="sendDailySms_()">📨 문자 보내기</button>
+          ${navigator.share ? `<button type="button" class="btn ghost" onclick="shareParentSms_()">📤 카톡·공유</button>` : ''}
           <button type="button" class="btn ${navigator.share ? 'ghost' : ''}" onclick="copyParentSms_()">📋 문자 복사</button>
           <button type="button" class="btn" id="rp-save-notify" onclick="saveDailyReport_(true)">📲 저장 + 학부모 앱 알림</button>
           <button type="button" class="btn ghost" id="rp-save-only" onclick="saveDailyReport_(false)">💾 기록만 저장</button>
@@ -3553,6 +3610,228 @@ function applyDailyPhotoAnalysis(){
 
   document.getElementById('dailyTestForm').scrollIntoView({ behavior:'smooth', block:'center' });
   alert('입력폼에 반영했어요. 내용을 확인하시고 "기록 추가" 버튼을 눌러 저장해주세요.\n(틀린 문항 번호까지 기록하고 싶으면 "틀린 번호 탭하기" 모드로 바꿔서 직접 탭해주세요: ' + ((r.wrongNumbers && r.wrongNumbers.length) ? r.wrongNumbers.join(', ') + '번' : '없음') + ')');
+}
+
+/* =========================================================
+   📨 학부모 문자 (2026-10-06)
+   - '문자앱 열기': 폰에서 문자앱이 열리고 전송만 누르면 돼요 (준비물 없음)
+   - '자동 발송': 학원 안드로이드폰의 MacroDroid가 대신 보내요 (컴퓨터에서 눌러도 나가요)
+   보낸 내역은 smsLogs 에 남아요.
+========================================================= */
+const PORTAL_URL = 'https://bonamij.github.io/a/parent_portal.html';
+
+function smsMode_(){ return (appSettings && appSettings.smsMode) || 'link'; }
+function smsSignature_(){
+  if(appSettings && appSettings.smsSignature) return appSettings.smsSignature;
+  const el = document.querySelector('.brand-title');
+  return (el && el.textContent.trim()) || '아임수학학원';
+}
+function phoneDigits_(raw){ return String(raw || '').replace(/[^0-9]/g, ''); }
+function phonePretty_(raw){
+  const d = phoneDigits_(raw);
+  if(d.length === 11) return d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7);
+  if(d.length === 10) return d.slice(0,3) + '-' + d.slice(3,6) + '-' + d.slice(6);
+  return raw || '';
+}
+function mdDay_(iso){
+  if(!iso) return '';
+  const p = String(iso).split('-');
+  return p.length === 3 ? Number(p[1]) + '/' + Number(p[2]) : iso;
+}
+
+// 상황별 문자 초안 (보내기 전에 고칠 수 있어요)
+function smsTemplate_(kind, student, extra){
+  const name = student ? student.name : '';
+  const sign = smsSignature_();
+  const today = mdDay_(todayIso_());
+  if(kind === 'absence') return `[${sign}] ${name} 학생이 오늘(${today}) 결석했어요. 보강 일정이 필요하시면 알려주세요.`;
+  if(kind === 'late') return `[${sign}] ${name} 학생이 오늘(${today}) 지각했어요. 수업은 정상적으로 참여했습니다.`;
+  if(kind === 'concept') return `[${sign}] ${name} 학생이 오늘 개념빈칸 테스트를 아직 못 했어요. 5분이면 끝나니 집에서 꼭 한 번 풀게 해주세요.\n${PORTAL_URL}`;
+  if(kind === 'homework') return `[${sign}] ${name} 학생이 숙제를 아직 체크하지 않았어요. 오늘 안에 확인 부탁드려요.\n${PORTAL_URL}`;
+  if(kind === 'daily') return (extra && extra.text) || '';
+  return `[${sign}] `;
+}
+
+function todayIso_(){
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+}
+
+// 폰인지(문자앱이 있는 기기인지) 확인해요
+function isPhoneDevice_(){
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+async function copySmsText_(){
+  const el = document.getElementById('smsText');
+  if(!el) return;
+  if(await copyText_(el.value)) showToast('📋 복사했어요. 문자나 카톡에 붙여넣기 해주세요.', 'ok');
+  else alert('복사가 안 됐어요. 내용을 길게 눌러 직접 복사해주세요.');
+}
+
+function closeSmsModal_(){
+  const el = document.getElementById('smsModal');
+  if(el) el.remove();
+}
+
+/** 문자 보내기 창 — openSmsModal_({ studentId, kind, text }) */
+function openSmsModal_(opts){
+  opts = opts || {};
+  const student = students.find(s => s.id === opts.studentId) || null;
+  const phone = opts.to || (student && student.parentPhone) || '';
+  const text = opts.text || smsTemplate_(opts.kind || 'notice', student, opts);
+  closeSmsModal_();
+  const wrap = document.createElement('div');
+  wrap.id = 'smsModal';
+  wrap.className = 'sms-modal';
+  wrap.innerHTML = `
+    <div class="sms-modal-card">
+      <div class="sms-modal-title">📨 ${escapeHtml(student ? student.name + ' 학생 학부모님' : '문자 보내기')}</div>
+      <label class="sms-label" for="smsPhone">받는 번호</label>
+      <input type="tel" id="smsPhone" inputmode="numeric" value="${escapeHtml(phonePretty_(phone))}" placeholder="010-0000-0000">
+      ${student && !phone ? '<div class="sms-hint">이 학생은 학부모 번호가 아직 없어요. 여기 입력하면 학생 정보에도 저장돼요.</div>' : ''}
+      <label class="sms-label" for="smsText">내용 <span id="smsCount" class="sms-hint" style="float:right;"></span></label>
+      <textarea id="smsText" rows="6">${escapeHtml(text)}</textarea>
+      <div class="sms-hint">${smsMode_() === 'gateway' ? '자동 발송: 학원폰이 바로 보내요.' : (isPhoneDevice_() ? '문자앱 열기: 문자앱이 열리면 전송을 눌러주세요.' : '⚠️ 지금은 컴퓨터예요. 문자앱이 없어서 전송이 안 돼요. 폰에서 열거나, 아래 내용을 복사해 보내주세요.')}</div>
+      <div class="sms-modal-buttons">
+        <button type="button" class="btn ghost" onclick="copySmsText_()">📋 복사</button>
+        <button type="button" class="btn ghost" onclick="closeSmsModal_()">닫기</button>
+        <button type="button" class="btn" id="smsSendBtn" onclick="sendSmsFromModal_(${student ? student.id : 'null'}, '${opts.kind || 'notice'}')">${smsMode_() === 'gateway' ? '📨 보내기' : '📱 문자앱 열기'}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  const ta = document.getElementById('smsText');
+  const count = () => { document.getElementById('smsCount').textContent = ta.value.length + '자'; };
+  ta.addEventListener('input', count);
+  count();
+  wrap.addEventListener('click', e => { if(e.target === wrap) closeSmsModal_(); });
+}
+
+async function sendSmsFromModal_(studentId, kind){
+  const phoneEl = document.getElementById('smsPhone');
+  const textEl = document.getElementById('smsText');
+  const btn = document.getElementById('smsSendBtn');
+  const phone = phoneDigits_(phoneEl.value);
+  const text = textEl.value.trim();
+  if(phone.length < 9){ alert('전화번호를 다시 확인해주세요.'); return; }
+  if(!text){ alert('보낼 내용을 입력해주세요.'); return; }
+
+  // 번호가 비어 있던 학생이면 학생 정보에도 저장해둬요
+  const student = students.find(s => s.id === studentId);
+  if(student && phoneDigits_(student.parentPhone) !== phone){
+    student.parentPhone = phonePretty_(phone);
+    renderStudents();
+    scheduleSync();
+  }
+
+  if(smsMode_() === 'gateway'){
+    btn.disabled = true; btn.textContent = '보내는 중...';
+    try {
+      await apiCall_('adminSendSms', { to: phone, text, kind, studentId: studentId, studentName: student ? student.name : '' });
+      showToast('✅ 문자를 보냈어요.', 'ok');
+      closeSmsModal_();
+      syncNow();
+    } catch(err){
+      alert('문자를 보내지 못했어요: ' + err.message);
+      btn.disabled = false; btn.textContent = '📨 보내기';
+    }
+    return;
+  }
+
+  // 문자앱 열기: 기록을 먼저 남기고 문자앱을 띄워요
+  smsLogs.push({
+    id: newId_(), studentId: studentId || null, studentName: student ? student.name : '',
+    to: phone, text, kind: kind || 'notice', via: 'link', status: 'opened',
+    sentAt: new Date().toISOString()
+  });
+  renderSmsLogs_();
+  scheduleSync();
+  closeSmsModal_();
+  window.location.href = 'sms:' + phone + '?&body=' + encodeURIComponent(text);
+}
+
+/* ---------- 설정 ---------- */
+function renderSmsSettings_(){
+  const modeEl = document.getElementById('smsModeSelect');
+  if(!modeEl) return;
+  modeEl.value = smsMode_();
+  const urlEl = document.getElementById('smsGatewayUrl');
+  if(urlEl) urlEl.value = (appSettings && appSettings.smsGatewayUrl) || '';
+  const signEl = document.getElementById('smsSignature');
+  if(signEl) signEl.value = (appSettings && appSettings.smsSignature) || '';
+  const gw = document.getElementById('smsGatewayWrap');
+  if(gw) gw.style.display = modeEl.value === 'gateway' ? '' : 'none';
+  const noPhone = students.filter(s => !phoneDigits_(s.parentPhone));
+  const warn = document.getElementById('smsNoPhoneNotice');
+  if(warn){
+    warn.style.display = noPhone.length ? '' : 'none';
+    warn.textContent = `📵 학부모 번호가 없는 학생 ${noPhone.length}명: ${noPhone.map(s => s.name).join(', ')} — 학생 목록에서 번호를 넣어주세요.`;
+  }
+  renderSmsLogs_();
+}
+
+async function saveSmsSettings_(){
+  const mode = document.getElementById('smsModeSelect').value;
+  const url = document.getElementById('smsGatewayUrl').value.trim();
+  const sign = document.getElementById('smsSignature').value.trim();
+  if(mode === 'gateway' && url.indexOf('https://trigger.macrodroid.com/') !== 0){
+    alert('자동 발송을 쓰려면 MacroDroid 웹훅 주소(https://trigger.macrodroid.com/...)를 넣어주세요.');
+    return;
+  }
+  try {
+    await apiCall_('adminCommit', { baseRev: lastRev, ops: [
+      { op: 'put', c: 'settings', id: 'smsMode', data: mode },
+      { op: 'put', c: 'settings', id: 'smsGatewayUrl', data: url },
+      { op: 'put', c: 'settings', id: 'smsSignature', data: sign }
+    ] });
+    appSettings = Object.assign({}, appSettings, { smsMode: mode, smsGatewayUrl: url, smsSignature: sign });
+    renderSmsSettings_();
+    showToast('✅ 문자 설정을 저장했어요.', 'ok');
+  } catch(err){
+    alert('설정을 저장하지 못했어요: ' + err.message);
+  }
+}
+
+async function testSms_(){
+  const phone = phoneDigits_(prompt('테스트 문자를 받을 번호를 넣어주세요 (보통 선생님 번호)', '') || '');
+  if(!phone) return;
+  if(smsMode_() !== 'gateway'){
+    openSmsModal_({ to: phone, text: '[테스트] 학원관리 앱에서 보낸 문자예요.', kind: 'test' });
+    return;
+  }
+  try {
+    await apiCall_('adminTestSms', { to: phone });
+    showToast('✅ 테스트 문자를 보냈어요. 폰을 확인해주세요.', 'ok');
+    syncNow();
+  } catch(err){
+    alert('테스트 문자를 보내지 못했어요: ' + err.message);
+  }
+}
+
+const SMS_KIND_LABEL = { daily: '데일리테스트', absence: '결석', late: '지각', concept: '개념빈칸', homework: '숙제', notice: '공지', test: '테스트' };
+function renderSmsLogs_(){
+  const ul = document.getElementById('smsLogList');
+  if(!ul) return;
+  const list = smsLogs.slice().sort((a,b) => String(b.sentAt).localeCompare(String(a.sentAt))).slice(0, 20);
+  if(list.length === 0){ ul.innerHTML = '<li style="color:var(--ink-soft);">아직 보낸 문자가 없어요.</li>'; return; }
+  ul.innerHTML = list.map(l => `
+    <li style="display:flex; flex-direction:column; gap:2px; padding:8px 0; border-bottom:1px solid var(--line);">
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <strong style="font-size:13px;">${escapeHtml(l.studentName || phonePretty_(l.to))}</strong>
+        <span class="badge gray">${escapeHtml(SMS_KIND_LABEL[l.kind] || l.kind || '')}</span>
+        <span style="font-size:11.5px; color:var(--ink-soft);">${escapeHtml(l.via === 'gateway' ? '자동' : '문자앱')} · ${escapeHtml(new Date(l.sentAt).toLocaleString('ko-KR'))}</span>
+        ${l.status === 'failed' ? '<span class="badge" style="background:#FDECE7; color:#B4472B;">실패</span>' : ''}
+      </div>
+      <div style="font-size:12.5px; color:var(--ink-soft); white-space:pre-wrap;">${escapeHtml(String(l.text || '').slice(0, 120))}</div>
+    </li>`).join('');
+}
+
+/** 데일리 테스트 결과 화면에서 바로 보내기 */
+function sendDailySms_(){
+  const el = document.getElementById('rp-sms');
+  const t = lastDailyPhotoAnalysis;
+  if(!el || !t){ alert('먼저 사진을 분석해주세요.'); return; }
+  openSmsModal_({ studentId: t.studentId, kind: 'daily', text: el.value });
 }
 
 /* ---------- 2026-09-17 데일리 테스트 → 학부모 문자 ---------- */
@@ -5207,7 +5486,8 @@ function collectAllData(){
     examAnalysis, nextExamId,
     parentMessages,
     scheduleItems, nextScheduleId,
-    aiLearningReports, nextAiReportId, studentBehaviorNotes
+    aiLearningReports, nextAiReportId, studentBehaviorNotes,
+    smsLogs
   };
 }
 
@@ -5254,6 +5534,8 @@ function applyAllData(data){
   aiLearningReports = data.aiLearningReports || [];
   nextAiReportId = data.nextAiReportId || maxId(aiLearningReports);
   studentBehaviorNotes = data.studentBehaviorNotes || {};
+  smsLogs = data.smsLogs || [];
+  appSettings = data.settings || {};
 
   if(data.academyName){
     const brandEl = document.querySelector('.brand-title');
@@ -5411,7 +5693,7 @@ const SYNC_ARRAYS = [
   'students', 'progressLogs', 'attendanceRecords', 'generalMakeups',
   'conceptBankItems', 'conceptDraftItems', 'conceptTestRecords',
   'dailyTests', 'homeworkAssignments', 'answerKeys', 'homeworkRecords', 'mistakeRecords',
-  'schoolInfos', 'examAnalysis', 'parentMessages', 'scheduleItems', 'aiLearningReports'
+  'schoolInfos', 'examAnalysis', 'parentMessages', 'scheduleItems', 'aiLearningReports', 'smsLogs'
 ];
 const SYNC_MAPS = ['teacherComments', 'conceptDailyCounts', 'conceptActiveDays', 'conceptEnabledUnits', 'studentBehaviorNotes'];
 const SYNC_SET_FIELDS = { homeworkAssignments: ['doneBy'], generalMakeups: ['doneBy'], students: ['pushTokens'] };
@@ -5519,7 +5801,7 @@ function toStorageItems_(){
       .concat(withdrawnStudents.map(s => Object.assign({}, s, { withdrawDate: s.withdrawDate || 'unknown' }))),
     progressLogs, attendanceRecords, generalMakeups, conceptBankItems, conceptDraftItems, conceptTestRecords,
     dailyTests, homeworkAssignments, answerKeys, homeworkRecords, mistakeRecords, schoolInfos, examAnalysis,
-    parentMessages, scheduleItems, aiLearningReports
+    parentMessages, scheduleItems, aiLearningReports, smsLogs
   };
   SYNC_ARRAYS.forEach(c => (arrays[c] || []).forEach(item => {
     if(!item || item.id === undefined || item.id === null) return;
@@ -5567,6 +5849,7 @@ function writeStorageItems_(items){
   parentMessages = arrays.parentMessages;
   scheduleItems = arrays.scheduleItems;
   aiLearningReports = arrays.aiLearningReports;
+  smsLogs = arrays.smsLogs;
   teacherComments = maps.teacherComments;
   conceptDailyCounts = maps.conceptDailyCounts;
   conceptActiveDays = maps.conceptActiveDays;
@@ -6124,6 +6407,7 @@ function requestRenderAll_(){
 }
 
 function updateSyncSettingsUi_(){
+  renderSmsSettings_();
   const input = document.getElementById('sheetSyncUrlInput');
   if(input) input.value = sheetSyncUrl === DEFAULT_SHEET_SYNC_URL ? '' : sheetSyncUrl;
   const ribbon = document.getElementById('testServerRibbon');

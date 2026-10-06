@@ -76,6 +76,8 @@ const V2_ACTIONS = {
   adminBackupNow: { admin: true, fn: function () { return { ok: true, file: backupNow_('manual') }; } },
   adminListBackups: { admin: true, fn: function () { return { ok: true, files: listBackupFiles_() }; } },
   adminClearLoginLock: { admin: true, fn: function (b) { clearLoginLock_(b.name); return { ok: true }; } },
+  adminSendSms: { admin: true, fn: function (b) { return adminSendSms_(b); } },
+  adminTestSms: { admin: true, fn: function (b) { return adminTestSms_(b); } },
   analyzeExam: { admin: true, raw: function (b) { return handleAnalyzeExam(b); } },
   generateLearningReport: { admin: true, raw: function (b) { return handleGenerateLearningReport(b); } },
   // 다른 파일(Portal.js)의 함수는 파일 로딩 순서와 상관없도록 호출 시점에 찾아요
