@@ -22,6 +22,10 @@ function json_(obj) {
 }
 
 function errorJson_(err) {
+  // 구글 저장용량이 꽉 차면 시트에 줄을 못 늘려요. 원인을 알 수 있게 바꿔서 알려줘요.
+  if (!err.code && typeof isStorageBlockedError_ === 'function' && isStorageBlockedError_(err)) {
+    err = storeError_('STORAGE_FULL', '구글 계정 저장용량이 가득 차서 저장할 수 없어요. one.google.com/storage 에서 사진·휴지통을 정리하거나 용량을 늘려주세요. (정리하면 바로 다시 저장돼요)');
+  }
   if (!err.code) Logger.log('서버 오류: ' + (err.stack || err.message));
   return json_({
     ok: false,

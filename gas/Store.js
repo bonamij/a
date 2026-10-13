@@ -65,6 +65,29 @@ function storeError_(code, message) {
   return e;
 }
 
+// 2026-10-13: 구글 저장용량이 꽉 차면 시트에 줄을 추가하는 게 간헐적으로 막혀요.
+// 몇 번 다시 시도하고, 그래도 안 되면 원인을 알 수 있는 메시지로 알려줘요.
+function isStorageBlockedError_(e) {
+  const m = String((e && e.message) || e);
+  return m.indexOf("권한이 없습니다") >= 0 || m.indexOf("permission to access") >= 0 ||
+    m.indexOf("제한 초과") >= 0 || m.indexOf("Limit Exceeded") >= 0;
+}
+
+function sheetRetry_(what, fn) {
+  let lastErr = null;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      return fn();
+    } catch (e) {
+      lastErr = e;
+      if (!isStorageBlockedError_(e)) throw e;
+      Utilities.sleep(attempt * 400);
+    }
+  }
+  Logger.log("저장 실패(" + what + "): " + lastErr.message);
+  throw storeError_("STORAGE_FULL", "구글 계정 저장용량이 가득 차서 저장할 수 없어요. one.google.com/storage 에서 사진·휴지통을 정리하거나 용량을 늘린 뒤 다시 시도해주세요.");
+}
+
 function parseJsonSafe_(text, fallback) {
   if (text === null || text === undefined || text === '') return fallback;
   try { return JSON.parse(text); } catch (e) { return fallback; }
@@ -78,7 +101,7 @@ function withLock_(fn) {
   }
   try {
     const result = fn();
-    SpreadsheetApp.flush();
+    sheetRetry_('마무리 저장', function () { SpreadsheetApp.flush(); });
     return result;
   } finally {
     lock.releaseLock();
@@ -111,6 +134,10 @@ function getMeta_() {
 }
 
 function setMeta_(patch) {
+  return sheetRetry_('저장 기록', function () { return setMetaOnce_(patch); });
+}
+
+function setMetaOnce_(patch) {
   const sh = metaSheet_(true);
   const last = sh.getLastRow();
   const keys = last >= 2 ? sh.getRange(2, 1, last - 1, 1).getValues().map(function (r) { return String(r[0]); }) : [];
@@ -185,6 +212,10 @@ function rowValues_(row) {
 }
 
 function writeRows_(store, touched) {
+  return sheetRetry_('줄 쓰기', function () { return writeRowsOnce_(store, touched); });
+}
+
+function writeRowsOnce_(store, touched) {
   const sh = store.sheet;
   const existing = touched.filter(function (row) { return row.r; });
   if (existing.length > 40) {
