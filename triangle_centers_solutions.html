@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>외심·내심 수행평가 해설지</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 레이아웃: 시험지처럼 한 열로 내려가는 문항 카드, 문항마다 접히는 해설. 외심=빨강, 내심=파랑으로 끝까지 통일 */
+:root {
+  --bg: #f6f7f4;
+  --sheet: #ffffff;
+  --ink: #1f2a24;
+  --muted: #5d6b63;
+  --line: #d5dcd6;
+  --paper: #cfe8c4;        /* 학생이 쓰는 초록 색종이 */
+  --hl: rgba(255, 196, 0, .45);
+  --o: #c62828;            /* 외심 O */
+  --i: #1e5bb8;            /* 내심 I */
+  --crease: #3d6b4a;       /* 접은 선 */
+  --accent: #2f6b4f;
+  --map: #ece7dc;
+  --street: #ffffff;
+  --river: #a9c8e6;
+  --sol: #f1f6f2;
+  --font-display: "Gowun Batang", "Noto Serif KR", serif;
+  --font-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141916; --sheet: #1c231f; --ink: #e4ebe6; --muted: #9fb0a6; --line: #34413a;
+    --paper: #2c4a33; --hl: rgba(255, 196, 0, .30); --o: #ff6b5e; --i: #6aa5ff; --crease: #8fd0a2;
+    --accent: #8fd0a2; --map: #2a2e2b; --street: #3b423d; --river: #2d4a66; --sol: #18201b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141916; --sheet: #1c231f; --ink: #e4ebe6; --muted: #9fb0a6; --line: #34413a;
+  --paper: #2c4a33; --hl: rgba(255, 196, 0, .30); --o: #ff6b5e; --i: #6aa5ff; --crease: #8fd0a2;
+  --accent: #8fd0a2; --map: #2a2e2b; --street: #3b423d; --river: #2d4a66; --sol: #18201b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.7;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 64px;
+}
+.wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.3; margin: 0; }
+h1 { font-size: 1.9rem; }
+h2 { font-size: 1.45rem; }
+h3 { font-size: 1.1rem; }
+p { margin: 0; }
+.o { color: var(--o); font-weight: 700; }
+.i { color: var(--i); font-weight: 700; }
+.muted { color: var(--muted); }
+.small { font-size: .9rem; }
+
+header.top { display: grid; gap: 12px; padding-bottom: 20px; border-bottom: 2px solid var(--ink); }
+.eyebrow { font-size: .8rem; letter-spacing: .08em; color: var(--accent); font-weight: 700; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: .95rem; color: var(--muted); }
+.meta b { color: var(--ink); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+button {
+  font: inherit; font-size: .9rem; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--accent);
+  background: var(--sheet); color: var(--accent); cursor: pointer; font-weight: 500;
+}
+button:hover { background: var(--sol); }
+button:focus-visible, summary:focus-visible { outline: 3px solid var(--i); outline-offset: 2px; }
+
+.sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; padding: 22px; display: grid; gap: 16px; min-width: 0; }
+.part-head { display: grid; gap: 6px; }
+.part-head .tag { font-size: .8rem; letter-spacing: .06em; color: var(--accent); font-weight: 700; }
+
+.checklist { display: grid; gap: 6px; padding-left: 0; margin: 0; list-style: none; }
+.checklist li { display: grid; grid-template-columns: 22px 1fr; gap: 6px; }
+.checklist li::before { content: "☐"; color: var(--accent); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .9rem; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 22px; height: 0; border-top: 2px solid; display: inline-block; }
+.sw.cr { border-top: 2px dashed var(--crease); }
+.sw.oc { border-color: var(--o); }
+.sw.ic { border-color: var(--i); }
+
+.figrow { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; align-items: flex-start; }
+figure { margin: 0; display: grid; gap: 4px; justify-items: center; min-width: 0; flex: 1 1 200px; max-width: 360px; }
+figcaption { font-size: .85rem; color: var(--muted); text-align: center; }
+.fig { width: 100%; height: auto; display: block; overflow: visible; }
+
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+.tbl { overflow-x: auto; }
+th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: var(--sol); font-weight: 700; }
+
+.q { display: grid; gap: 12px; padding-top: 18px; border-top: 1px dashed var(--line); }
+.q:first-of-type { border-top: 0; padding-top: 0; }
+.qhead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.qnum { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; }
+.chip { font-size: .75rem; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.qbody { display: grid; gap: 10px; }
+ol.sub, ul.sub { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }
+.blank { display: inline-block; min-width: 6.5em; border-bottom: 1.5px solid var(--ink); text-align: center; color: transparent; }
+.write { height: 96px; border: 1px solid var(--line); border-radius: 6px;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--line) 31px 32px); }
+.write.tall { height: 160px; }
+
+details.sol { background: var(--sol); border-radius: 8px; border: 1px solid var(--line); }
+details.sol > summary { cursor: pointer; padding: 8px 14px; font-weight: 700; color: var(--accent); list-style: none; }
+details.sol > summary::-webkit-details-marker { display: none; }
+details.sol > summary::before { content: "▸ "; }
+details.sol[open] > summary::before { content: "▾ "; }
+.solbody { padding: 0 16px 16px; display: grid; gap: 10px; }
+.ans { font-weight: 700; }
+.tip { border-left: 3px solid var(--o); padding: 4px 0 4px 12px; font-size: .95rem; }
+.tip.blue { border-left-color: var(--i); }
+.steps { margin: 0; padding-left: 1.4em; display: grid; gap: 6px; }
+
+/* SVG 도형 */
+.f-tri { fill: var(--paper); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.f-tri-open { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-dasharray: 3 3; }
+.f-hl { fill: var(--hl); stroke: none; }
+.f-ln { stroke: var(--ink); stroke-width: 1.3; }
+.f-cr { stroke: var(--crease); stroke-width: 1.6; stroke-dasharray: 6 4; }
+.f-cr.f-now { stroke-width: 2.6; }
+.f-ext { stroke: var(--crease); stroke-width: 1.3; stroke-dasharray: 2 4; }
+.f-rad { stroke: var(--o); stroke-width: 1.3; stroke-dasharray: 5 3; }
+.f-perp { stroke: var(--i); stroke-width: 1.4; }
+.f-cc { fill: none; stroke: var(--o); stroke-width: 1.8; }
+.f-ic { fill: none; stroke: var(--i); stroke-width: 1.8; }
+.f-wrong { fill: none; stroke: var(--o); stroke-width: 1.8; stroke-dasharray: 7 4; }
+.f-wrongr { stroke: var(--o); stroke-width: 1.6; }
+.f-mk { fill: none; stroke: var(--ink); stroke-width: 1.2; }
+.f-dot { fill: var(--ink); }
+.f-dotO { fill: var(--o); }
+.f-dotI { fill: var(--i); }
+.f-lb { fill: var(--ink); font-family: var(--font-body); font-size: 15px; font-weight: 700; }
+.f-lbO { fill: var(--o); }
+.f-lbI { fill: var(--i); }
+.f-small { font-size: 12px; font-weight: 500; }
+.f-arrow { fill: none; stroke: var(--accent); stroke-width: 1.6; }
+.f-arrowhead { fill: var(--accent); }
+.f-map { fill: var(--map); stroke: none; }
+.f-street { stroke: var(--street); stroke-width: 6; }
+.f-park { fill: var(--paper); stroke: none; }
+.f-river { fill: none; stroke: var(--river); stroke-width: 16; }
+.f-road { fill: none; stroke: var(--muted); stroke-width: 5; stroke-linejoin: round; opacity: .55; }
+.f-house { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.5; }
+.f-signal { fill: var(--hl); fill-opacity: .35; stroke: var(--o); stroke-width: 1.6; stroke-dasharray: 6 4; }
+.f-grid { stroke: var(--line); stroke-width: 1; }
+.f-ghost { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 3 4; }
+.f-plate { fill: var(--paper); stroke: var(--ink); stroke-width: 1.8; }
+
+@media (max-width: 520px) {
+  .sheet { padding: 16px; }
+  h1 { font-size: 1.55rem; }
+}
+@media print {
+  body { background: #fff; padding-block: 0; }
+  .toolbar { display: none; }
+  .sheet { border: 0; padding: 0; }
+  details.sol { break-inside: avoid; }
+  .q { break-inside: avoid; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<style>
+@page { size: A4; margin: 13mm 12mm; }
+html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { background: #fff; padding: 0 !important; font-size: 13.5px; line-height: 1.6; }
+.wrap { max-width: none; gap: 14px; }
+.toolbar, .hint { display: none !important; }
+.sheet { border: 0; padding: 0; background: #fff; gap: 12px; }
+.sheet.newpage { break-before: page; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.25rem; }
+header.top { padding-bottom: 10px; }
+.namebox { display: flex; gap: 18px; justify-content: flex-end; font-size: .95rem; }
+.namebox span { white-space: nowrap; }
+.q { break-inside: avoid; }
+.sol { background: var(--sol); border: 1px solid var(--line); border-radius: 8px; }
+.solhead { padding: 6px 14px 0; font-weight: 700; color: var(--accent); }
+.solbody { padding-top: 6px; }
+.figrow, .steps li, .tbl, .tip { break-inside: avoid; }
+.figrow { display: block; text-align: center; }
+figure { display: inline-grid; vertical-align: top; width: 31%; max-width: 250px; margin: 0 4px 6px; }
+figure:first-child:nth-last-child(4), figure:first-child:nth-last-child(4) ~ figure { width: 23%; }
+.figrow figure:only-child { width: 46%; max-width: 300px; }
+.write { height: 120px; } .write.tall { height: 210px; }
+.figrow { gap: 10px; }
+.mode-sol .q { break-inside: auto; }
+.mode-sol .qhead, .mode-sol .qbody { break-after: avoid; }
+/* Chromium은 grid 안에서 페이지를 나눌 때 내용이 겹칠 수 있어 인쇄본은 block 흐름으로 */
+.wrap, .sheet, .q, .qbody, .solbody, .part-head { display: block; }
+.wrap > * + *, .sheet > * + *, .q > * + *, .qbody > * + *, .solbody > * + * { margin-top: 10px; }
+.q + .q { margin-top: 16px; }
+.solhead { break-after: avoid; }
+.sol { break-inside: auto; }
+</style>
+</head>
+<body>
+
+
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="f-arrowhead" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+</svg>
+
+<div class="wrap mode-sol">
+
+<header class="top">
+  <div class="eyebrow">중학교 2학년 · 2학기 2차 수학 수행평가 대비</div>
+  <h1>삼각형의 외심과 내심 연습지 · 정답과 해설</h1>
+  <div class="meta">
+    <span>평가일 <b>10/22(목) 수업 시간</b></span>
+    <span>준비물 <b>가위, 풀, 자, 컴퍼스, 필기도구</b></span>
+    <span>참고 <b>교과서 167쪽 13번, 168~169쪽 프로젝트</b></span>
+  </div>
+  <p class="muted small hint">문제마다 먼저 직접 풀고, 아래 <b>정답과 해설</b>을 눌러 확인하세요. 그림 색은 끝까지 같은 뜻입니다.</p>
+  <div class="legend">
+    <span><i class="sw oc"></i><span class="o">외심 O</span>·외접원</span>
+    <span><i class="sw ic"></i><span class="i">내심 I</span>·내접원</span>
+    <span><i class="sw cr"></i>종이를 접은 선</span>
+  </div>
+  <div class="namebox"><span>2학년 (&emsp;&emsp;)반</span><span>(&emsp;&emsp;)번</span><span>이름 (&emsp;&emsp;&emsp;&emsp;&emsp;)</span></div>
+  <div class="toolbar">
+    <button type="button" id="openAll">해설 모두 펼치기</button>
+    <button type="button" id="closeAll">해설 모두 접기</button>
+  </div>
+</header>
+
+<!-- 선생님 체크포인트 -->
+<section class="sheet" aria-labelledby="t-check">
+  <div class="part-head">
+    <div class="tag">선생님이 알려준 채점 포인트</div>
+    <h2 id="t-check">이것만은 꼭 지키기</h2>
+  </div>
+  <ul class="checklist">
+    <li><span>삼각형의 세 꼭짓점에 <b>A, B, C</b>를 쓴다.</span></li>
+    <li><span><b>수선의 발</b>(수직으로 만나는 점)에도 알파벳(D, E, F)을 쓴다.</span></li>
+    <li><span>외심은 <span class="o">O</span>, 내심은 <span class="i">I</span>로 쓴다.</span></li>
+    <li><span>종이접기로 <b>접은 선을 모두</b> 자로 그린다.</span></li>
+    <li><span><b>직각 표시(ㄴ)</b>와 <b>같은 길이 표시(//)</b>, <b>같은 각 표시(호)</b>를 빠짐없이 한다.</span></li>
+    <li><span>외접원은 반지름 <b>OA</b>, 내접원은 반지름 <b>I에서 변까지의 수선(ID)</b>으로 컴퍼스를 벌린다.</span></li>
+  </ul>
+</section>
+
+<!-- 개념 정리 -->
+<section class="sheet" aria-labelledby="t-concept">
+  <div class="part-head">
+    <div class="tag">시작 전 5분 정리</div>
+    <h2 id="t-concept">외심과 내심 한눈에 보기</h2>
+  </div>
+  <div class="figrow">
+    <figure><svg class="fig" viewBox="13.5 -1 303.2 310.8" width="303.2" style="max-width:330px" role="img" aria-label="외심 O와 세 변의 수직이등분선, 외접원"><circle class="f-cc" cx="165" cy="165.5" r="136.4"/><polygon class="f-tri" points="150,30 40,220 290,220"/><line class="f-ln" x1="95" y1="125" x2="165" y2="165.5"/><polyline class="f-mk" points="91,131.9 97.9,135.9 101.9,129"/><line class="f-mk" x1="118.2" y1="75" x2="126.8" y2="80"/><line class="f-mk" x1="63.2" y1="170" x2="71.8" y2="175"/><text class="f-lb" x="82.4" y="118.9" text-anchor="middle" dominant-baseline="central">D</text><line class="f-ln" x1="165" y1="220" x2="165" y2="165.5"/><polyline class="f-mk" points="173,220 173,212 165,212"/><line class="f-mk" x1="100.5" y1="225" x2="100.5" y2="215"/><line class="f-mk" x1="104.5" y1="225" x2="104.5" y2="215"/><line class="f-mk" x1="225.5" y1="225" x2="225.5" y2="215"/><line class="f-mk" x1="229.5" y1="225" x2="229.5" y2="215"/><text class="f-lb" x="166.1" y="234" text-anchor="middle" dominant-baseline="central">E</text><line class="f-ln" x1="220" y1="125" x2="165" y2="165.5"/><polyline class="f-mk" points="215.3,118.6 208.8,123.3 213.6,129.7"/><line class="f-mk" x1="261.4" y1="172.8" x2="253.3" y2="178.7"/><line class="f-mk" x1="259" y1="169.5" x2="251" y2="175.5"/><line class="f-mk" x1="256.7" y1="166.3" x2="248.6" y2="172.2"/><line class="f-mk" x1="191.4" y1="77.8" x2="183.3" y2="83.7"/><line class="f-mk" x1="189" y1="74.5" x2="181" y2="80.5"/><line class="f-mk" x1="186.7" y1="71.3" x2="178.6" y2="77.2"/><text class="f-lb" x="232.4" y="118.5" text-anchor="middle" dominant-baseline="central">F</text><line class="f-rad" x1="165" y1="165.5" x2="150" y2="30"/><line class="f-rad" x1="165" y1="165.5" x2="40" y2="220"/><line class="f-rad" x1="165" y1="165.5" x2="290" y2="220"/><text class="f-lb" x="149" y="17" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="28.5" y="226.1" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="301.7" y="225.7" text-anchor="middle" dominant-baseline="central">C</text><circle class="f-dotO" cx="165" cy="165.5" r="4"/><text class="f-lb f-lbO" x="179" y="175.5" text-anchor="middle" dominant-baseline="central">O</text></svg><figcaption><span class="o">외심 O</span>: 세 변의 수직이등분선이 만나는 점</figcaption></figure>
+    <figure><svg class="fig" viewBox="3.5 -0.7 323.5 252.7" width="323.5" style="max-width:330px" role="img" aria-label="내심 I와 세 내각의 이등분선, 내접원"><polygon class="f-tri" points="120,30 30,220 300,220"/><line class="f-ln" x1="120" y1="30" x2="139.3" y2="150.9"/><path class="f-mk" d="M111.4,48.1 A20,20 0 0 0 123.1,49.8"/><path class="f-mk" d="M123.1,49.8 A20,20 0 0 0 133.8,44.5"/><line class="f-ln" x1="30" y1="220" x2="139.3" y2="150.9"/><path class="f-mk" d="M38.6,201.9 A20,20 0 0 1 46.9,209.3"/><path class="f-mk" d="M40.3,198.3 A24,24 0 0 1 50.3,207.2"/><path class="f-mk" d="M46.9,209.3 A20,20 0 0 1 50,220"/><path class="f-mk" d="M50.3,207.2 A24,24 0 0 1 54,220"/><line class="f-ln" x1="300" y1="220" x2="139.3" y2="150.9"/><path class="f-mk" d="M286.2,205.5 A20,20 0 0 0 281.6,212.1"/><path class="f-mk" d="M283.5,202.6 A24,24 0 0 0 278,210.5"/><path class="f-mk" d="M280.7,199.7 A28,28 0 0 0 274.3,208.9"/><path class="f-mk" d="M281.6,212.1 A20,20 0 0 0 280,220"/><path class="f-mk" d="M278,210.5 A24,24 0 0 0 276,220"/><path class="f-mk" d="M274.3,208.9 A28,28 0 0 0 272,220"/><line class="f-perp" x1="139.3" y1="150.9" x2="76.8" y2="121.3"/><polyline class="f-mk" points="73.3,128.5 80.6,131.9 84,124.7"/><text class="f-lb" x="64.1" y="115.3" text-anchor="middle" dominant-baseline="central">D</text><line class="f-perp" x1="139.3" y1="150.9" x2="139.3" y2="220"/><polyline class="f-mk" points="147.3,220 147.3,212 139.3,212"/><text class="f-lb" x="139.3" y="234" text-anchor="middle" dominant-baseline="central">E</text><line class="f-perp" x1="139.3" y1="150.9" x2="189.4" y2="103.3"/><polyline class="f-mk" points="183.9,97.5 178.1,103 183.6,108.8"/><text class="f-lb" x="199.6" y="93.7" text-anchor="middle" dominant-baseline="central">F</text><circle class="f-ic" cx="139.3" cy="150.9" r="69.1"/><text class="f-lb" x="117" y="17.3" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="18.5" y="226.1" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="312" y="225.1" text-anchor="middle" dominant-baseline="central">C</text><circle class="f-dotI" cx="139.3" cy="150.9" r="4"/><text class="f-lb f-lbI" x="153.3" y="138.9" text-anchor="middle" dominant-baseline="central">I</text></svg><figcaption><span class="i">내심 I</span>: 세 내각의 이등분선이 만나는 점</figcaption></figure>
+  </div>
+  <div class="tbl">
+  <table>
+    <thead><tr><th></th><th><span class="o">외심 O</span></th><th><span class="i">내심 I</span></th></tr></thead>
+    <tbody>
+      <tr><th>뜻</th><td>세 변의 <b>수직이등분선</b>의 교점</td><td>세 내각의 <b>이등분선</b>의 교점</td></tr>
+      <tr><th>성질</th><td>세 <b>꼭짓점</b>까지 거리가 같다<br>OA = OB = OC</td><td>세 <b>변</b>까지 거리가 같다<br>ID = IE = IF</td></tr>
+      <tr><th>원</th><td>외접원의 중심, 반지름 OA</td><td>내접원의 중심, 반지름 ID</td></tr>
+      <tr><th>위치</th><td>예각: 내부 / 직각: 빗변의 중점 / 둔각: 외부</td><td>항상 삼각형의 내부</td></tr>
+      <tr><th>각</th><td>∠BOC = 2∠A<br>∠OAB + ∠OBC + ∠OCA = 90°</td><td>∠BIC = 90° + ½∠A<br>∠IAB + ∠IBC + ∠ICA = 90°</td></tr>
+      <tr><th>길이</th><td>직각삼각형: 외접원 반지름 = 빗변 ÷ 2</td><td>넓이 = ½ × r × (세 변의 합)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- PART 1 -->
+<section class="sheet newpage" aria-labelledby="t-p1">
+  <div class="part-head">
+    <div class="tag">평가내용 1</div>
+    <h2 id="t-p1">외심과 내심의 뜻(위치)과 성질 쓰기</h2>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 1</span><span class="chip">빈칸 채우기</span></div>
+    <div class="qbody">
+      <ol class="sub">
+        <li>삼각형의 세 변의 <span class="blank">①</span>의 교점을 외심이라 하고, 기호로 <span class="blank">②</span>라 쓴다.</li>
+        <li>외심에서 세 <span class="blank">③</span>에 이르는 거리는 모두 같다.</li>
+        <li>외심은 삼각형의 <span class="blank">④</span>의 중심이다.</li>
+        <li>삼각형의 세 내각의 <span class="blank">⑤</span>의 교점을 내심이라 하고, 기호로 <span class="blank">⑥</span>라 쓴다.</li>
+        <li>내심에서 세 <span class="blank">⑦</span>에 이르는 거리는 모두 같다.</li>
+        <li>내심은 삼각형의 <span class="blank">⑧</span>의 중심이고, 반지름은 내심에서 변에 내린 <span class="blank">⑨</span>의 길이이다.</li>
+      </ol>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <p class="ans">① 수직이등분선 ② O ③ 꼭짓점 ④ 외접원 ⑤ 이등분선 ⑥ I ⑦ 변 ⑧ 내접원 ⑨ 수선</p>
+      <p class="tip">외심은 <b>꼭짓점</b>, 내심은 <b>변</b>. "외-꼭, 내-변"으로 외우면 헷갈리지 않습니다.</p>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 2</span><span class="chip">위치</span></div>
+    <div class="qbody">
+      <p>삼각형의 모양에 따라 외심과 내심이 어디에 있는지 표를 채우시오.</p>
+      <div class="tbl"><table>
+        <thead><tr><th></th><th>예각삼각형</th><th>직각삼각형</th><th>둔각삼각형</th></tr></thead>
+        <tbody>
+          <tr><th>외심</th><td></td><td></td><td></td></tr>
+          <tr><th>내심</th><td></td><td></td><td></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <div class="tbl"><table>
+        <thead><tr><th></th><th>예각삼각형</th><th>직각삼각형</th><th>둔각삼각형</th></tr></thead>
+        <tbody>
+          <tr><th>외심</th><td>삼각형의 내부</td><td>빗변의 중점</td><td>삼각형의 외부</td></tr>
+          <tr><th>내심</th><td>내부</td><td>내부</td><td>내부</td></tr>
+        </tbody>
+      </table></div>
+      <div class="figrow">
+        <figure><svg class="fig" viewBox="-1.2 7 167.4 167.4" width="167.4" style="max-width:200px" role="img" aria-label="예각삼각형: 외심이 내부"><circle class="f-cc" cx="82.5" cy="90.7" r="75.7"/><polygon class="f-tri" points="80,15 15,125 150,125"/><line class="f-rad" x1="82.5" y1="90.7" x2="80" y2="15"/><line class="f-rad" x1="82.5" y1="90.7" x2="15" y2="125"/><line class="f-rad" x1="82.5" y1="90.7" x2="150" y2="125"/><circle class="f-dotO" cx="82.5" cy="90.7" r="4"/><text class="f-lb f-lbO" x="94.5" y="100.7" text-anchor="middle" dominant-baseline="central">O</text></svg><figcaption>예각: 안</figcaption></figure>
+        <figure><svg class="fig" viewBox="-9.5 -27 199.1 199.1" width="199.1" style="max-width:200px" role="img" aria-label="직각삼각형: 외심이 빗변의 중점"><circle class="f-cc" cx="90" cy="72.5" r="91.5"/><polygon class="f-tri" points="15,20 165,125 15,125"/><line class="f-rad" x1="90" y1="72.5" x2="15" y2="20"/><line class="f-rad" x1="90" y1="72.5" x2="165" y2="125"/><line class="f-rad" x1="90" y1="72.5" x2="15" y2="125"/><polyline class="f-mk" points="15,116 24,116 24,125"/><circle class="f-dotO" cx="90" cy="72.5" r="4"/><text class="f-lb f-lbO" x="102" y="82.5" text-anchor="middle" dominant-baseline="central">O</text></svg><figcaption>직각: 빗변 위 (가운데)</figcaption></figure>
+        <figure><svg class="fig" viewBox="-22 73 244 244" width="244" style="max-width:200px" role="img" aria-label="둔각삼각형: 외심이 외부"><circle class="f-cc" cx="100" cy="195" r="114"/><polygon class="f-tri" points="70,85 10,125 190,125"/><line class="f-rad" x1="100" y1="195" x2="70" y2="85"/><line class="f-rad" x1="100" y1="195" x2="10" y2="125"/><line class="f-rad" x1="100" y1="195" x2="190" y2="125"/><circle class="f-dotO" cx="100" cy="195" r="4"/><text class="f-lb f-lbO" x="112" y="205" text-anchor="middle" dominant-baseline="central">O</text></svg><figcaption>둔각: 밖</figcaption></figure>
+      </div>
+      <p class="tip blue">내심은 세 각을 반으로 나눈 선이 만나는 점이라 <b>언제나 안쪽</b>에 있습니다.</p>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 3</span><span class="chip">서술형 · 외심의 성질</span></div>
+    <div class="qbody">
+      <p>△ABC에서 변 AB, BC, CA의 수직이등분선과 각 변이 만나는 점을 D, E, F라 하고, 수직이등분선의 교점을 O라 하자. <b>OA = OB = OC</b>임을 삼각형의 합동을 이용하여 설명하시오.</p>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <div class="figrow"><figure><svg class="fig" viewBox="13.5 -1 303.2 252.9" width="303.2" style="max-width:330px" role="img" aria-label="삼각형 OAD와 OBD의 합동"><polygon class="f-tri" points="150,30 40,220 290,220"/><polygon class="f-hl" points="165,165.5 150,30 95,125"/><polygon class="f-hl" points="165,165.5 40,220 95,125"/><line class="f-ln" x1="95" y1="125" x2="165" y2="165.5"/><polyline class="f-mk" points="91,131.9 97.9,135.9 101.9,129"/><line class="f-mk" x1="118.2" y1="75" x2="126.8" y2="80"/><line class="f-mk" x1="63.2" y1="170" x2="71.8" y2="175"/><text class="f-lb" x="82.4" y="118.9" text-anchor="middle" dominant-baseline="central">D</text><line class="f-ln" x1="165" y1="220" x2="165" y2="165.5"/><polyline class="f-mk" points="173,220 173,212 165,212"/><line class="f-mk" x1="100.5" y1="225" x2="100.5" y2="215"/><line class="f-mk" x1="104.5" y1="225" x2="104.5" y2="215"/><line class="f-mk" x1="225.5" y1="225" x2="225.5" y2="215"/><line class="f-mk" x1="229.5" y1="225" x2="229.5" y2="215"/><text class="f-lb" x="166.1" y="234" text-anchor="middle" dominant-baseline="central">E</text><line class="f-ln" x1="220" y1="125" x2="165" y2="165.5"/><polyline class="f-mk" points="215.3,118.6 208.8,123.3 213.6,129.7"/><line class="f-mk" x1="261.4" y1="172.8" x2="253.3" y2="178.7"/><line class="f-mk" x1="259" y1="169.5" x2="251" y2="175.5"/><line class="f-mk" x1="256.7" y1="166.3" x2="248.6" y2="172.2"/><line class="f-mk" x1="191.4" y1="77.8" x2="183.3" y2="83.7"/><line class="f-mk" x1="189" y1="74.5" x2="181" y2="80.5"/><line class="f-mk" x1="186.7" y1="71.3" x2="178.6" y2="77.2"/><text class="f-lb" x="232.4" y="118.5" text-anchor="middle" dominant-baseline="central">F</text><line class="f-rad" x1="165" y1="165.5" x2="150" y2="30"/><line class="f-rad" x1="165" y1="165.5" x2="40" y2="220"/><line class="f-rad" x1="165" y1="165.5" x2="290" y2="220"/><text class="f-lb" x="149" y="17" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="28.5" y="226.1" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="301.7" y="225.7" text-anchor="middle" dominant-baseline="central">C</text><circle class="f-dotO" cx="165" cy="165.5" r="4"/><text class="f-lb f-lbO" x="179" y="175.5" text-anchor="middle" dominant-baseline="central">O</text></svg><figcaption>노란색 두 삼각형 △OAD, △OBD</figcaption></figure></div>
+      <ol class="steps">
+        <li>△OAD와 △OBD에서 <b>AD = BD</b> (D는 AB의 중점), <b>∠ODA = ∠ODB = 90°</b>, <b>OD는 공통</b>.</li>
+        <li>따라서 △OAD ≡ △OBD (<b>SAS 합동</b>)이므로 <b>OA = OB</b>.</li>
+        <li>같은 방법으로 △OBE ≡ △OCE 이므로 <b>OB = OC</b>.</li>
+        <li>그러므로 <span class="o">OA = OB = OC</span>. 점 O는 세 꼭짓점에서 같은 거리에 있으므로 O를 중심으로 반지름 OA인 원(외접원)을 그리면 세 꼭짓점을 모두 지난다.</li>
+      </ol>
+      <p class="tip">합동 조건 이름(SAS)과 "공통"이라는 말을 꼭 쓰세요. 서술형에서 감점이 가장 많은 부분입니다.</p>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 4</span><span class="chip">서술형 · 내심의 성질</span></div>
+    <div class="qbody">
+      <p>△ABC에서 ∠A, ∠B, ∠C의 이등분선의 교점을 I라 하고, 점 I에서 변 AB, BC, CA에 내린 수선의 발을 각각 D, E, F라 하자. <b>ID = IE = IF</b>임을 설명하시오.</p>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <div class="figrow"><figure><svg class="fig" viewBox="3.5 -0.7 323.5 252.7" width="323.5" style="max-width:330px" role="img" aria-label="삼각형 ADI와 AFI의 합동"><polygon class="f-tri" points="120,30 30,220 300,220"/><polygon class="f-hl" points="120,30 76.8,121.3 139.3,150.9"/><polygon class="f-hl" points="120,30 189.4,103.3 139.3,150.9"/><line class="f-ln" x1="120" y1="30" x2="139.3" y2="150.9"/><path class="f-mk" d="M111.4,48.1 A20,20 0 0 0 123.1,49.8"/><path class="f-mk" d="M123.1,49.8 A20,20 0 0 0 133.8,44.5"/><line class="f-ln" x1="30" y1="220" x2="139.3" y2="150.9"/><path class="f-mk" d="M38.6,201.9 A20,20 0 0 1 46.9,209.3"/><path class="f-mk" d="M40.3,198.3 A24,24 0 0 1 50.3,207.2"/><path class="f-mk" d="M46.9,209.3 A20,20 0 0 1 50,220"/><path class="f-mk" d="M50.3,207.2 A24,24 0 0 1 54,220"/><line class="f-ln" x1="300" y1="220" x2="139.3" y2="150.9"/><path class="f-mk" d="M286.2,205.5 A20,20 0 0 0 281.6,212.1"/><path class="f-mk" d="M283.5,202.6 A24,24 0 0 0 278,210.5"/><path class="f-mk" d="M280.7,199.7 A28,28 0 0 0 274.3,208.9"/><path class="f-mk" d="M281.6,212.1 A20,20 0 0 0 280,220"/><path class="f-mk" d="M278,210.5 A24,24 0 0 0 276,220"/><path class="f-mk" d="M274.3,208.9 A28,28 0 0 0 272,220"/><line class="f-perp" x1="139.3" y1="150.9" x2="76.8" y2="121.3"/><polyline class="f-mk" points="73.3,128.5 80.6,131.9 84,124.7"/><text class="f-lb" x="64.1" y="115.3" text-anchor="middle" dominant-baseline="central">D</text><line class="f-perp" x1="139.3" y1="150.9" x2="139.3" y2="220"/><polyline class="f-mk" points="147.3,220 147.3,212 139.3,212"/><text class="f-lb" x="139.3" y="234" text-anchor="middle" dominant-baseline="central">E</text><line class="f-perp" x1="139.3" y1="150.9" x2="189.4" y2="103.3"/><polyline class="f-mk" points="183.9,97.5 178.1,103 183.6,108.8"/><text class="f-lb" x="199.6" y="93.7" text-anchor="middle" dominant-baseline="central">F</text><text class="f-lb" x="117" y="17.3" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="18.5" y="226.1" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="312" y="225.1" text-anchor="middle" dominant-baseline="central">C</text><circle class="f-dotI" cx="139.3" cy="150.9" r="4"/><text class="f-lb f-lbI" x="153.3" y="138.9" text-anchor="middle" dominant-baseline="central">I</text></svg><figcaption>노란색 두 삼각형 △ADI, △AFI</figcaption></figure></div>
+      <ol class="steps">
+        <li>△ADI와 △AFI에서 <b>∠ADI = ∠AFI = 90°</b>, <b>AI는 공통</b>(빗변), <b>∠DAI = ∠FAI</b> (AI는 ∠A의 이등분선).</li>
+        <li>따라서 △ADI ≡ △AFI (<b>RHA 합동</b>)이므로 <b>ID = IF</b>. 덤으로 AD = AF 도 성립.</li>
+        <li>같은 방법으로 △BDI ≡ △BEI 이므로 <b>ID = IE</b>.</li>
+        <li>그러므로 <span class="i">ID = IE = IF</span>. 점 I는 세 변에서 같은 거리에 있으므로 I를 중심으로 반지름 ID인 원(내접원)을 그리면 세 변에 모두 접한다.</li>
+      </ol>
+      <p class="tip blue">외심은 SAS(또는 RHS), 내심은 RHA. 합동 조건을 구분해서 기억하세요.</p>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 5</span><span class="chip">계산</span></div>
+    <div class="qbody">
+      <ol class="sub">
+        <li>점 O가 △ABC의 외심이고 ∠A = 64°일 때, ∠BOC의 크기는?</li>
+        <li>점 I가 △ABC의 내심이고 ∠A = 64°일 때, ∠BIC의 크기는?</li>
+        <li>점 O가 △ABC의 외심이고 ∠OAB = 25°, ∠OBC = 30°일 때, ∠OCA의 크기는?</li>
+        <li>∠C = 90°인 직각삼각형 ABC에서 빗변 AB = 10 cm일 때, 외접원의 반지름의 길이는?</li>
+        <li>세 변의 길이가 3 cm, 4 cm, 5 cm인 직각삼각형의 내접원의 반지름의 길이는?</li>
+      </ol>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <ol class="steps">
+        <li><span class="ans">128°</span> — OA = OB = OC라서 생기는 이등변삼각형들 때문에 ∠BOC = 2∠A = 2 × 64° = 128°.</li>
+        <li><span class="ans">122°</span> — ∠IBC + ∠ICB = ½(∠B + ∠C) = ½(180° − 64°) = 58°. 따라서 ∠BIC = 180° − 58° = 122°. (공식: 90° + ½ × 64°)</li>
+        <li><span class="ans">35°</span> — OA = OB = OC이므로 세 쌍의 밑각이 같아서 2(∠OAB + ∠OBC + ∠OCA) = 180°. 즉 25° + 30° + ∠OCA = 90°, ∠OCA = 35°.</li>
+        <li><span class="ans">5 cm</span> — 직각삼각형의 외심은 빗변의 중점이므로 반지름 = 10 ÷ 2 = 5 cm.</li>
+        <li><span class="ans">1 cm</span> — 넓이 = ½ × 3 × 4 = 6. 또 넓이 = ½ × r × (3 + 4 + 5) = 6r. 6r = 6 이므로 r = 1 cm.</li>
+      </ol>
+      <div class="figrow"><figure><svg class="fig" viewBox="-18 20.4 286.1 215.6" width="286.1" style="max-width:280px" role="img" aria-label="빗변 5, 나머지 두 변 3과 4인 직각삼각형의 내접원"><polygon class="f-tri" points="40,50 240,200 40,200"/><circle class="f-ic" cx="90" cy="150" r="50"/><polyline class="f-mk" points="50,200 50,190 40,190"/><line class="f-perp" x1="90" y1="150" x2="120" y2="110"/><circle class="f-dot" cx="120" cy="110" r="2.6"/><line class="f-perp" x1="90" y1="150" x2="90" y2="200"/><circle class="f-dot" cx="90" cy="200" r="2.6"/><line class="f-perp" x1="90" y1="150" x2="40" y2="150"/><circle class="f-dot" cx="40" cy="150" r="2.6"/><circle class="f-dotI" cx="90" cy="150" r="4"/><text class="f-lb f-lbI" x="102" y="140" text-anchor="middle" dominant-baseline="central">I</text><text class="f-lb f-small" x="96" y="175" text-anchor="start" dominant-baseline="central">r</text><text class="f-lb" x="32.2" y="38.4" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="253.1" y="204.9" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="28.8" y="208.4" text-anchor="middle" dominant-baseline="central">C</text><text class="f-lb f-small" x="140" y="218" text-anchor="middle" dominant-baseline="central">4 cm</text><text class="f-lb f-small" x="18" y="125" text-anchor="middle" dominant-baseline="central">3 cm</text><text class="f-lb f-small" x="160" y="115" text-anchor="middle" dominant-baseline="central">5 cm</text></svg><figcaption>(5) 넓이를 세 조각 △IAB, △IBC, △ICA로 나누면 높이가 모두 r</figcaption></figure></div>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 6</span><span class="chip">O / X</span></div>
+    <div class="qbody">
+      <ol class="sub">
+        <li>내심에서 세 꼭짓점까지의 거리는 같다. ( )</li>
+        <li>둔각삼각형의 외심은 삼각형의 밖에 있다. ( )</li>
+        <li>직각삼각형의 외심은 빗변의 중점이다. ( )</li>
+        <li>정삼각형은 외심과 내심이 같은 점이다. ( )</li>
+        <li>내접원의 반지름은 내심과 꼭짓점 사이의 거리이다. ( )</li>
+        <li>이등변삼각형의 외심과 내심은 모두 꼭지각의 이등분선 위에 있다. ( )</li>
+      </ol>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <p class="ans">① X ② O ③ O ④ O ⑤ X ⑥ O</p>
+      <p>① 내심은 세 <b>변</b>까지의 거리가 같습니다. 세 꼭짓점까지 거리가 같은 것은 외심입니다.</p>
+      <p>⑤ 내접원의 반지름은 내심에서 변에 내린 <b>수선</b>의 길이(ID)입니다. 문제 10에서 그림으로 확인하세요.</p>
+      <p>⑥ 이등변삼각형에서 꼭지각의 이등분선은 밑변의 수직이등분선과 같은 선이라 두 점이 모두 그 위에 있습니다.</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- PART 2 -->
+<section class="sheet newpage" aria-labelledby="t-p2">
+  <div class="part-head">
+    <div class="tag">평가내용 2</div>
+    <h2 id="t-p2">종이접기로 외심·내심 찾고 외접원·내접원 작도하기</h2>
+    <p class="muted small">시험에서는 예각·직각·둔각삼각형 색종이를 접어서 붙이고, 그 위에 작도합니다. 집에서 색종이를 오려 똑같이 연습해 보세요.</p>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 7</span><span class="chip">외심 · 접는 순서</span></div>
+    <div class="qbody">
+      <p>예각삼각형 ABC 모양의 종이를 접어 외심 O를 찾고, 외접원을 그리는 순서를 쓰시오. (접은 선, 직각 표시, 같은 길이 표시를 모두 할 것)</p>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <div class="figrow">
+        <figure><svg class="fig" viewBox="-10.5 -12 231.2 195.7" width="231.2" style="max-width:220px" role="img" aria-label="외심 종이접기 1단계"><polygon class="f-tri" points="95,18 15,160 195,160"/><line class="f-cr f-now" x1="181" y1="160" x2="55" y2="89"/><polyline class="f-mk" points="51.6,95.1 57.7,98.5 61.1,92.4"/><line class="f-mk" x1="70.6" y1="51" x2="79.4" y2="56"/><line class="f-mk" x1="30.6" y1="122" x2="39.4" y2="127"/><path class="f-arrow" d="M75.6,23.9 Q66.9,96.4 9.4,141.5" marker-end="url(#arrowhead)"/><text class="f-lb" x="94.2" y="6" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="4.5" y="165.8" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="205.7" y="165.4" text-anchor="middle" dominant-baseline="central">C</text></svg><figcaption>① 점 A를 점 B에 겹치게 접기</figcaption></figure>
+        <figure><svg class="fig" viewBox="-10.5 -12 231.2 195.7" width="231.2" style="max-width:220px" role="img" aria-label="외심 종이접기 2단계"><polygon class="f-tri" points="95,18 15,160 195,160"/><line class="f-cr" x1="181" y1="160" x2="55" y2="89"/><polyline class="f-mk" points="51.6,95.1 57.7,98.5 61.1,92.4"/><line class="f-mk" x1="70.6" y1="51" x2="79.4" y2="56"/><line class="f-mk" x1="30.6" y1="122" x2="39.4" y2="127"/><line class="f-cr f-now" x1="105" y1="32.2" x2="105" y2="160"/><polyline class="f-mk" points="112,160 112,153 105,153"/><line class="f-mk" x1="58" y1="165" x2="58" y2="155"/><line class="f-mk" x1="62" y1="165" x2="62" y2="155"/><line class="f-mk" x1="148" y1="165" x2="148" y2="155"/><line class="f-mk" x1="152" y1="165" x2="152" y2="155"/><path class="f-arrow" d="M30,174 Q106,146 182,174" marker-end="url(#arrowhead)"/><text class="f-lb" x="94.2" y="6" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="4.5" y="165.8" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="205.7" y="165.4" text-anchor="middle" dominant-baseline="central">C</text></svg><figcaption>② 점 B를 점 C에 겹치게 접기</figcaption></figure>
+        <figure><svg class="fig" viewBox="-10.5 -12 231.2 195.7" width="231.2" style="max-width:220px" role="img" aria-label="외심 종이접기 3단계"><polygon class="f-tri" points="95,18 15,160 195,160"/><line class="f-cr" x1="181" y1="160" x2="55" y2="89"/><polyline class="f-mk" points="51.6,95.1 57.7,98.5 61.1,92.4"/><line class="f-mk" x1="70.6" y1="51" x2="79.4" y2="56"/><line class="f-mk" x1="30.6" y1="122" x2="39.4" y2="127"/><line class="f-cr" x1="105" y1="32.2" x2="105" y2="160"/><polyline class="f-mk" points="112,160 112,153 105,153"/><line class="f-mk" x1="58" y1="165" x2="58" y2="155"/><line class="f-mk" x1="62" y1="165" x2="62" y2="155"/><line class="f-mk" x1="148" y1="165" x2="148" y2="155"/><line class="f-mk" x1="152" y1="165" x2="152" y2="155"/><line class="f-cr f-now" x1="44.2" y1="160" x2="145" y2="89"/><polyline class="f-mk" points="141,83.3 135.2,87.3 139.3,93"/><line class="f-mk" x1="176.4" y1="124.9" x2="168.2" y2="130.6"/><line class="f-mk" x1="174.1" y1="121.6" x2="165.9" y2="127.4"/><line class="f-mk" x1="171.8" y1="118.4" x2="163.6" y2="124.1"/><line class="f-mk" x1="126.4" y1="53.9" x2="118.2" y2="59.6"/><line class="f-mk" x1="124.1" y1="50.6" x2="115.9" y2="56.4"/><line class="f-mk" x1="121.8" y1="47.4" x2="113.6" y2="53.1"/><path class="f-arrow" d="M199.2,141.8 Q134.4,98.4 115.3,22.7" marker-end="url(#arrowhead)"/><circle class="f-dotO" cx="105" cy="117.2" r="4"/><text class="f-lb f-lbO" x="117" y="126.2" text-anchor="middle" dominant-baseline="central">O</text><text class="f-lb" x="94.2" y="6" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="4.5" y="165.8" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="205.7" y="165.4" text-anchor="middle" dominant-baseline="central">C</text></svg><figcaption>③ 점 C를 점 A에 겹치게 접기 → 교점 O</figcaption></figure>
+        <figure><svg class="fig" viewBox="-10.5 -12 231.2 236.8" width="231.2" style="max-width:220px" role="img" aria-label="외심 종이접기 4단계"><circle class="f-cc" cx="105" cy="117.2" r="99.7"/><polygon class="f-tri" points="95,18 15,160 195,160"/><line class="f-cr" x1="181" y1="160" x2="55" y2="89"/><polyline class="f-mk" points="51.6,95.1 57.7,98.5 61.1,92.4"/><line class="f-mk" x1="70.6" y1="51" x2="79.4" y2="56"/><line class="f-mk" x1="30.6" y1="122" x2="39.4" y2="127"/><line class="f-cr" x1="105" y1="32.2" x2="105" y2="160"/><polyline class="f-mk" points="112,160 112,153 105,153"/><line class="f-mk" x1="58" y1="165" x2="58" y2="155"/><line class="f-mk" x1="62" y1="165" x2="62" y2="155"/><line class="f-mk" x1="148" y1="165" x2="148" y2="155"/><line class="f-mk" x1="152" y1="165" x2="152" y2="155"/><line class="f-cr" x1="44.2" y1="160" x2="145" y2="89"/><polyline class="f-mk" points="141,83.3 135.2,87.3 139.3,93"/><line class="f-mk" x1="176.4" y1="124.9" x2="168.2" y2="130.6"/><line class="f-mk" x1="174.1" y1="121.6" x2="165.9" y2="127.4"/><line class="f-mk" x1="171.8" y1="118.4" x2="163.6" y2="124.1"/><line class="f-mk" x1="126.4" y1="53.9" x2="118.2" y2="59.6"/><line class="f-mk" x1="124.1" y1="50.6" x2="115.9" y2="56.4"/><line class="f-mk" x1="121.8" y1="47.4" x2="113.6" y2="53.1"/><circle class="f-dotO" cx="105" cy="117.2" r="4"/><text class="f-lb f-lbO" x="117" y="126.2" text-anchor="middle" dominant-baseline="central">O</text><line class="f-rad" x1="105" y1="117.2" x2="95" y2="18"/><text class="f-lb" x="94.2" y="6" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="4.5" y="165.8" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="205.7" y="165.4" text-anchor="middle" dominant-baseline="central">C</text></svg><figcaption>④ 중심 O, 반지름 OA로 원 그리기</figcaption></figure>
+      </div>
+      <ol class="steps">
+        <li><b>꼭짓점 A와 B가 정확히 겹치도록</b> 접었다 편다. 접은 선은 AB의 <b>수직이등분선</b>이다. 변과 만나는 점에 D를 쓰고, <b>직각 표시</b>와 AD = BD 표시(/)를 한다.</li>
+        <li>B와 C를 겹치게 접어 BC의 수직이등분선을 만들고 E, 직각, BE = CE 표시(//).</li>
+        <li>C와 A를 겹치게 접어 CA의 수직이등분선을 만들고 F, 직각, CF = AF 표시(///). <b>세 접은 선이 한 점에서 만나는지 확인</b>하고 그 점을 <span class="o">O</span>라 쓴다.</li>
+        <li>컴퍼스 침을 O에 놓고 A까지 벌려 원을 그린다. 원이 <b>B, C를 모두 지나는지</b> 확인한다.</li>
+      </ol>
+      <p class="tip">수직이등분선은 "<b>두 꼭짓점을 겹치게</b>" 접어서 만듭니다. 변을 반으로 접는 것과 같은 동작이에요.</p>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 8</span><span class="chip">내심 · 접는 순서</span></div>
+    <div class="qbody">
+      <p>삼각형 ABC 모양의 종이를 접어 내심 I를 찾고, 내접원을 그리는 순서를 쓰시오. (접은 선, 같은 각 표시, 직각 표시를 모두 할 것)</p>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <div class="figrow">
+        <figure><svg class="fig" viewBox="-13.5 -11.7 244.5 195.5" width="244.5" style="max-width:220px" role="img" aria-label="내심 종이접기 1단계"><polygon class="f-tri" points="75,18 12,160 205,160"/><line class="f-cr f-now" x1="75" y1="18" x2="98.2" y2="160"/><path class="f-mk" d="M67.7,34.5 A18,18 0 0 0 77.9,35.8"/><path class="f-mk" d="M77.9,35.8 A18,18 0 0 0 87.2,31.3"/><path class="f-arrow" d="M58,56.4 Q78.7,40.8 103.4,49" marker-end="url(#arrowhead)"/><text class="f-lb" x="72.2" y="6.3" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="1.5" y="165.8" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="216" y="164.8" text-anchor="middle" dominant-baseline="central">C</text></svg><figcaption>① 변 AB가 변 AC 위에 겹치게 접기</figcaption></figure>
+        <figure><svg class="fig" viewBox="-13.5 -11.7 244.5 195.5" width="244.5" style="max-width:220px" role="img" aria-label="내심 종이접기 2단계"><polygon class="f-tri" points="75,18 12,160 205,160"/><line class="f-cr" x1="75" y1="18" x2="98.2" y2="160"/><path class="f-mk" d="M67.7,34.5 A18,18 0 0 0 77.9,35.8"/><path class="f-mk" d="M77.9,35.8 A18,18 0 0 0 87.2,31.3"/><line class="f-cr f-now" x1="12" y1="160" x2="133" y2="81.3"/><path class="f-mk" d="M19.3,143.5 A18,18 0 0 1 27.1,150.2"/><path class="f-mk" d="M20.9,139.9 A22,22 0 0 1 30.4,148"/><path class="f-mk" d="M27.1,150.2 A18,18 0 0 1 30,160"/><path class="f-mk" d="M30.4,148 A22,22 0 0 1 34,160"/><path class="f-arrow" d="M29,121.6 Q31.5,147.3 54,160" marker-end="url(#arrowhead)"/><text class="f-lb" x="72.2" y="6.3" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="1.5" y="165.8" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="216" y="164.8" text-anchor="middle" dominant-baseline="central">C</text></svg><figcaption>② 변 BA가 변 BC 위에 겹치게 접기</figcaption></figure>
+        <figure><svg class="fig" viewBox="-13.5 -11.7 244.5 195.5" width="244.5" style="max-width:220px" role="img" aria-label="내심 종이접기 3단계"><polygon class="f-tri" points="75,18 12,160 205,160"/><line class="f-cr" x1="75" y1="18" x2="98.2" y2="160"/><path class="f-mk" d="M67.7,34.5 A18,18 0 0 0 77.9,35.8"/><path class="f-mk" d="M77.9,35.8 A18,18 0 0 0 87.2,31.3"/><line class="f-cr" x1="12" y1="160" x2="133" y2="81.3"/><path class="f-mk" d="M19.3,143.5 A18,18 0 0 1 27.1,150.2"/><path class="f-mk" d="M20.9,139.9 A22,22 0 0 1 30.4,148"/><path class="f-mk" d="M27.1,150.2 A18,18 0 0 1 30,160"/><path class="f-mk" d="M30.4,148 A22,22 0 0 1 34,160"/><line class="f-cr f-now" x1="205" y1="160" x2="43.5" y2="88.9"/><path class="f-mk" d="M192.8,146.7 A18,18 0 0 0 188.5,152.7"/><path class="f-mk" d="M190.1,143.8 A22,22 0 0 0 184.9,151.1"/><path class="f-mk" d="M187.4,140.8 A26,26 0 0 0 181.2,149.5"/><path class="f-mk" d="M188.5,152.7 A18,18 0 0 0 187,160"/><path class="f-mk" d="M184.9,151.1 A22,22 0 0 0 183,160"/><path class="f-mk" d="M181.2,149.5 A26,26 0 0 0 179,160"/><path class="f-arrow" d="M176.6,129 Q180.8,149.3 163,160" marker-end="url(#arrowhead)"/><circle class="f-dotI" cx="89.9" cy="109.3" r="4"/><text class="f-lb f-lbI" x="101.9" y="99.3" text-anchor="middle" dominant-baseline="central">I</text><text class="f-lb" x="72.2" y="6.3" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="1.5" y="165.8" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="216" y="164.8" text-anchor="middle" dominant-baseline="central">C</text></svg><figcaption>③ 변 CA가 변 CB 위에 겹치게 접기 → 교점 I</figcaption></figure>
+        <figure><svg class="fig" viewBox="-13.5 -11.7 244.5 201.7" width="244.5" style="max-width:220px" role="img" aria-label="내심 종이접기 4단계"><polygon class="f-tri" points="75,18 12,160 205,160"/><line class="f-cr" x1="75" y1="18" x2="98.2" y2="160"/><path class="f-mk" d="M67.7,34.5 A18,18 0 0 0 77.9,35.8"/><path class="f-mk" d="M77.9,35.8 A18,18 0 0 0 87.2,31.3"/><line class="f-cr" x1="12" y1="160" x2="133" y2="81.3"/><path class="f-mk" d="M19.3,143.5 A18,18 0 0 1 27.1,150.2"/><path class="f-mk" d="M20.9,139.9 A22,22 0 0 1 30.4,148"/><path class="f-mk" d="M27.1,150.2 A18,18 0 0 1 30,160"/><path class="f-mk" d="M30.4,148 A22,22 0 0 1 34,160"/><line class="f-cr" x1="205" y1="160" x2="43.5" y2="88.9"/><path class="f-mk" d="M192.8,146.7 A18,18 0 0 0 188.5,152.7"/><path class="f-mk" d="M190.1,143.8 A22,22 0 0 0 184.9,151.1"/><path class="f-mk" d="M187.4,140.8 A26,26 0 0 0 181.2,149.5"/><path class="f-mk" d="M188.5,152.7 A18,18 0 0 0 187,160"/><path class="f-mk" d="M184.9,151.1 A22,22 0 0 0 183,160"/><path class="f-mk" d="M181.2,149.5 A26,26 0 0 0 179,160"/><circle class="f-dotI" cx="89.9" cy="109.3" r="4"/><text class="f-lb f-lbI" x="101.9" y="99.3" text-anchor="middle" dominant-baseline="central">I</text><line class="f-perp" x1="89.9" y1="109.3" x2="43.6" y2="88.8"/><polyline class="f-mk" points="40.8,95.2 47.2,98 50,91.6"/><text class="f-lb" x="32.6" y="83.9" text-anchor="middle" dominant-baseline="central">D</text><line class="f-perp" x1="89.9" y1="109.3" x2="89.9" y2="160"/><polyline class="f-mk" points="96.9,160 96.9,153 89.9,153"/><text class="f-lb" x="89.9" y="172" text-anchor="middle" dominant-baseline="central">E</text><line class="f-perp" x1="89.9" y1="109.3" x2="127.3" y2="75.1"/><polyline class="f-mk" points="122.6,70 117.4,74.7 122.1,79.8"/><text class="f-lb" x="136.1" y="67" text-anchor="middle" dominant-baseline="central">F</text><circle class="f-ic" cx="89.9" cy="109.3" r="50.7"/><text class="f-lb" x="72.2" y="6.3" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="1.5" y="165.8" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="216" y="164.8" text-anchor="middle" dominant-baseline="central">C</text></svg><figcaption>④ I에서 세 변에 수선 → 반지름 IE로 원</figcaption></figure>
+      </div>
+      <ol class="steps">
+        <li>꼭짓점 A를 지나고 <b>변 AB가 변 AC 위에 포개어지도록</b> 접는다. 접은 선이 ∠A의 <b>이등분선</b>이다. 두 각에 같은 각 표시(호 1개)를 한다.</li>
+        <li>같은 방법으로 ∠B의 이등분선(호 2개), ∠C의 이등분선(호 3개)을 접는다. 세 선이 만나는 점이 <span class="i">I</span>.</li>
+        <li>점 I를 지나면서 <b>변 BC가 자기 자신 위에 겹치도록</b> 접으면 I에서 BC에 내린 수선이 생긴다. 수선의 발에 E를 쓰고 직각 표시. AB, CA에도 같은 방법으로 D, F를 찾는다.</li>
+        <li>컴퍼스 침을 I에 놓고 <b>E까지</b> 벌려 원을 그린다. 원이 세 변에 <b>딱 한 점씩 닿는지</b> 확인한다.</li>
+      </ol>
+      <p class="tip blue">내접원의 반지름은 IA가 아니라 <b>IE (I에서 변까지의 수선)</b>입니다. 수선을 접지 않으면 반지름을 정확히 잡을 수 없어요.</p>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 9</span><span class="chip">직각·둔각삼각형 주의점</span></div>
+    <div class="qbody">
+      <p>(1) 직각삼각형을 접어 외심을 찾을 때, 외심은 어디에 생기는가? (2) 둔각삼각형을 접어 외심을 찾을 때 주의할 점을 쓰시오.</p>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <div class="figrow">
+        <figure><svg class="fig" viewBox="-10.1 -30.1 260.1 260.1" width="260.1" style="max-width:270px" role="img" aria-label="직각삼각형 외심 종이접기"><circle class="f-cc" cx="120" cy="100" r="122.1"/><polygon class="f-tri" points="20,30 220,170 20,170"/><line class="f-cr" x1="120" y1="100" x2="71" y2="170"/><polyline class="f-mk" points="126.6,104.6 122,111.1 115.4,106.6"/><line class="f-mk" x1="67.1" y1="69.1" x2="72.9" y2="60.9"/><line class="f-mk" x1="167.1" y1="139.1" x2="172.9" y2="130.9"/><line class="f-cr" x1="120" y1="170" x2="120" y2="100"/><line class="f-ext" x1="120" y1="100" x2="120" y2="100"/><polyline class="f-mk" points="112,170 112,162 120,162"/><line class="f-mk" x1="172" y1="165" x2="172" y2="175"/><line class="f-mk" x1="168" y1="165" x2="168" y2="175"/><line class="f-mk" x1="72" y1="165" x2="72" y2="175"/><line class="f-mk" x1="68" y1="165" x2="68" y2="175"/><text class="f-lb" x="128.1" y="181.4" text-anchor="middle" dominant-baseline="central">E</text><line class="f-cr" x1="20" y1="100" x2="120" y2="100"/><line class="f-ext" x1="120" y1="100" x2="120" y2="100"/><polyline class="f-mk" points="20,92 28,92 28,100"/><line class="f-mk" x1="25" y1="139" x2="15" y2="139"/><line class="f-mk" x1="25" y1="135" x2="15" y2="135"/><line class="f-mk" x1="25" y1="131" x2="15" y2="131"/><line class="f-mk" x1="25" y1="69" x2="15" y2="69"/><line class="f-mk" x1="25" y1="65" x2="15" y2="65"/><line class="f-mk" x1="25" y1="61" x2="15" y2="61"/><text class="f-lb" x="6.8" y="95.4" text-anchor="middle" dominant-baseline="central">F</text><text class="f-lb" x="12.4" y="19.4" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="232.3" y="174.3" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="9.3" y="177.5" text-anchor="middle" dominant-baseline="central">C</text><circle class="f-dotO" cx="120" cy="100" r="4"/><polyline class="f-mk" points="30,170 30,160 20,160"/><text class="f-lb f-lbO" x="130" y="86" text-anchor="middle" dominant-baseline="central">O</text></svg><figcaption>(1) 세 접은 선이 빗변 AB의 중점에서 만남</figcaption></figure>
+        <figure><svg class="fig" viewBox="-27.6 62 375.2 388.1" width="375.2" style="max-width:320px" role="img" aria-label="둔각삼각형 외심 종이접기"><circle class="f-cc" cx="160" cy="262.5" r="179.6"/><polygon class="f-tri" points="110,90 20,150 300,150"/><line class="f-cr" x1="85" y1="150" x2="65" y2="120"/><line class="f-ext" x1="85" y1="150" x2="160" y2="262.5"/><polyline class="f-mk" points="58.3,124.4 62.8,131.1 69.4,126.7"/><line class="f-mk" x1="84.7" y1="100.8" x2="90.3" y2="109.2"/><line class="f-mk" x1="39.7" y1="130.8" x2="45.3" y2="139.2"/><line class="f-cr" x1="160" y1="105.8" x2="160" y2="150"/><line class="f-ext" x1="160" y1="150" x2="160" y2="262.5"/><polyline class="f-mk" points="168,150 168,142 160,142"/><line class="f-mk" x1="88" y1="155" x2="88" y2="145"/><line class="f-mk" x1="92" y1="155" x2="92" y2="145"/><line class="f-mk" x1="228" y1="155" x2="228" y2="145"/><line class="f-mk" x1="232" y1="155" x2="232" y2="145"/><line class="f-cr" x1="195.5" y1="150" x2="205" y2="120"/><line class="f-ext" x1="195.5" y1="150" x2="160" y2="262.5"/><polyline class="f-mk" points="197.4,117.6 195,125.2 202.6,127.6"/><line class="f-mk" x1="257.8" y1="131.4" x2="254.8" y2="141"/><line class="f-mk" x1="254" y1="130.2" x2="251" y2="139.8"/><line class="f-mk" x1="250.2" y1="129" x2="247.2" y2="138.6"/><line class="f-mk" x1="162.8" y1="101.4" x2="159.8" y2="111"/><line class="f-mk" x1="159" y1="100.2" x2="156" y2="109.8"/><line class="f-mk" x1="155.2" y1="99" x2="152.2" y2="108.6"/><text class="f-lb" x="101.7" y="80" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="7.2" y="152.1" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="312.9" y="151.6" text-anchor="middle" dominant-baseline="central">C</text><circle class="f-dotO" cx="160" cy="262.5" r="4"/><text class="f-lb f-lbO" x="174" y="266.5" text-anchor="middle" dominant-baseline="central">O</text></svg><figcaption>(2) 접은 선을 삼각형 밖으로 연장(점선)해야 O가 보임</figcaption></figure>
+      </div>
+      <p><b>(1)</b> 외심 O는 <b>빗변의 중점</b>. 빗변 AB를 이등분하는 점이 곧 외심이므로 외접원의 반지름은 빗변의 절반이고, 빗변이 외접원의 <b>지름</b>이 된다.</p>
+      <p><b>(2)</b> 접은 선들이 삼각형 안에서 만나지 않는다. <b>자로 접은 선을 삼각형 밖(활동지)까지 연장</b>해서 교점 O를 찾고, 외접원이 크게 나오므로 종이 아래쪽 여백을 충분히 둔다. 내심은 둔각삼각형에서도 안쪽에 생기므로 평소처럼 접으면 된다.</p>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 10</span><span class="chip">틀린 작도 찾기</span></div>
+    <div class="qbody">
+      <p>어떤 학생이 내심 I를 찾은 뒤 아래 그림처럼 내접원을 그렸다. 잘못된 점을 찾고 바르게 고치시오.</p>
+      <div class="figrow"><figure><svg class="fig" viewBox="-11.7 -10.9 273.7 227.8" width="273.7" style="max-width:260px" role="img" aria-label="잘못된 작도: 반지름을 IA로 그림"><polygon class="f-tri" points="110,20 15,170 235,170"/><line class="f-ln" x1="110" y1="20" x2="116.1" y2="114.3"/><path class="f-mk" d="M99.3,36.9 A20,20 0 0 0 111.3,40"/><path class="f-mk" d="M111.3,40 A20,20 0 0 0 122.8,35.4"/><line class="f-ln" x1="15" y1="170" x2="116.1" y2="114.3"/><path class="f-mk" d="M25.7,153.1 A20,20 0 0 1 32.5,160.4"/><path class="f-mk" d="M27.8,149.7 A24,24 0 0 1 36,158.4"/><path class="f-mk" d="M32.5,160.4 A20,20 0 0 1 35,170"/><path class="f-mk" d="M36,158.4 A24,24 0 0 1 39,170"/><line class="f-ln" x1="235" y1="170" x2="116.1" y2="114.3"/><path class="f-mk" d="M222.2,154.6 A20,20 0 0 0 216.9,161.5"/><path class="f-mk" d="M219.6,151.6 A24,24 0 0 0 213.3,159.8"/><path class="f-mk" d="M217.1,148.5 A28,28 0 0 0 209.6,158.1"/><path class="f-mk" d="M216.9,161.5 A20,20 0 0 0 215,170"/><path class="f-mk" d="M213.3,159.8 A24,24 0 0 0 211,170"/><path class="f-mk" d="M209.6,158.1 A28,28 0 0 0 207,170"/><text class="f-lb" x="108.7" y="7.1" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="3.3" y="175.6" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="246.9" y="175.2" text-anchor="middle" dominant-baseline="central">C</text><circle class="f-dotI" cx="116.1" cy="114.3" r="4"/><circle class="f-wrong" cx="116.1" cy="114.3" r="94.5"/><line class="f-wrongr" x1="116.1" y1="114.3" x2="110" y2="20"/><text class="f-lb f-lbI" x="130.1" y="122.3" text-anchor="middle" dominant-baseline="central">I</text></svg><figcaption>학생의 작도</figcaption></figure></div>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <div class="figrow"><figure><svg class="fig" viewBox="-11.7 -10.9 273.7 212.9" width="273.7" style="max-width:260px" role="img" aria-label="바른 작도: 반지름은 I에서 변까지의 수선"><polygon class="f-tri" points="110,20 15,170 235,170"/><line class="f-ln" x1="110" y1="20" x2="116.1" y2="114.3"/><path class="f-mk" d="M99.3,36.9 A20,20 0 0 0 111.3,40"/><path class="f-mk" d="M111.3,40 A20,20 0 0 0 122.8,35.4"/><line class="f-ln" x1="15" y1="170" x2="116.1" y2="114.3"/><path class="f-mk" d="M25.7,153.1 A20,20 0 0 1 32.5,160.4"/><path class="f-mk" d="M27.8,149.7 A24,24 0 0 1 36,158.4"/><path class="f-mk" d="M32.5,160.4 A20,20 0 0 1 35,170"/><path class="f-mk" d="M36,158.4 A24,24 0 0 1 39,170"/><line class="f-ln" x1="235" y1="170" x2="116.1" y2="114.3"/><path class="f-mk" d="M222.2,154.6 A20,20 0 0 0 216.9,161.5"/><path class="f-mk" d="M219.6,151.6 A24,24 0 0 0 213.3,159.8"/><path class="f-mk" d="M217.1,148.5 A28,28 0 0 0 209.6,158.1"/><path class="f-mk" d="M216.9,161.5 A20,20 0 0 0 215,170"/><path class="f-mk" d="M213.3,159.8 A24,24 0 0 0 211,170"/><path class="f-mk" d="M209.6,158.1 A28,28 0 0 0 207,170"/><line class="f-perp" x1="116.1" y1="114.3" x2="69.1" y2="84.5"/><polyline class="f-mk" points="64.8,91.3 71.6,95.6 75.9,88.8"/><text class="f-lb" x="57.3" y="77.1" text-anchor="middle" dominant-baseline="central">D</text><line class="f-perp" x1="116.1" y1="114.3" x2="116.1" y2="170"/><polyline class="f-mk" points="124.1,170 124.1,162 116.1,162"/><text class="f-lb" x="116.1" y="184" text-anchor="middle" dominant-baseline="central">E</text><line class="f-perp" x1="116.1" y1="114.3" x2="158.9" y2="78.7"/><polyline class="f-mk" points="153.8,72.5 147.6,77.7 152.8,83.8"/><text class="f-lb" x="169.7" y="69.7" text-anchor="middle" dominant-baseline="central">F</text><circle class="f-ic" cx="116.1" cy="114.3" r="55.7"/><text class="f-lb" x="108.7" y="7.1" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="3.3" y="175.6" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="246.9" y="175.2" text-anchor="middle" dominant-baseline="central">C</text><circle class="f-dotI" cx="116.1" cy="114.3" r="4"/><text class="f-lb f-lbI" x="130.1" y="102.3" text-anchor="middle" dominant-baseline="central">I</text></svg><figcaption>바른 작도</figcaption></figure></div>
+      <ol class="steps">
+        <li><b>반지름을 IA로 잡았다.</b> 그러면 원이 꼭짓점 A를 지나며 삼각형 밖으로 나간다. 반지름은 I에서 변에 내린 <b>수선의 길이 ID(=IE=IF)</b>여야 한다.</li>
+        <li><b>수선의 발 D, E, F와 직각 표시가 없다.</b> 채점 기준에 있으므로 반드시 표시한다.</li>
+      </ol>
+    </div></div>
+  </div>
+</section>
+
+<!-- PART 3 -->
+<section class="sheet newpage" aria-labelledby="t-p3">
+  <div class="part-head">
+    <div class="tag">평가내용 3</div>
+    <h2 id="t-p3">외심과 내심을 실생활 문제에 활용하기</h2>
+    <p class="muted small">먼저 "<b>세 점(장소)에서 같은 거리</b>"인지, "<b>세 선(도로·변)에서 같은 거리</b>"인지 구분하세요. 점이면 외심, 선이면 내심입니다.</p>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 11</span><span class="chip">교과서 167쪽 13번</span></div>
+    <div class="qbody">
+      <p>제니는 무선 이어폰 한 쪽을 잃어버렸다. 휴대 전화와 이어폰 사이의 신호가 끊긴 세 지점 P, Q, R을 지도에 표시하였다. 이 그림을 이용하여 잃어버린 이어폰을 찾는 방법을 설명하시오. (단, 이어폰의 신호 반경은 일정하다.)</p>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <div class="figrow"><figure><svg class="fig" viewBox="-8 -8 346 294.3" width="346" style="max-width:340px" role="img" aria-label="신호가 끊긴 세 지점 P, Q, R과 이어폰의 위치"><rect class="f-map" x="0" y="0" width="330" height="250" rx="8"/><line class="f-street" x1="0" y1="30" x2="330" y2="20"/><line class="f-street" x1="0" y1="74" x2="330" y2="64"/><line class="f-street" x1="0" y1="106" x2="330" y2="96"/><line class="f-street" x1="0" y1="150" x2="330" y2="140"/><line class="f-street" x1="0" y1="182" x2="330" y2="172"/><line class="f-street" x1="0" y1="226" x2="330" y2="216"/><line class="f-street" x1="42" y1="0" x2="28" y2="250"/><line class="f-street" x1="88" y1="0" x2="78" y2="250"/><line class="f-street" x1="134" y1="0" x2="128" y2="250"/><line class="f-street" x1="180" y1="0" x2="166" y2="250"/><line class="f-street" x1="226" y1="0" x2="216" y2="250"/><line class="f-street" x1="272" y1="0" x2="266" y2="250"/><line class="f-street" x1="318" y1="0" x2="304" y2="250"/><path class="f-park" d="M210,36 h70 v44 h-70 z"/><circle class="f-signal" cx="172.2" cy="157.9" r="120.4"/><polygon class="f-tri-open" points="205,42 52,150 285,200"/><line class="f-ln" x1="128.5" y1="96" x2="172.2" y2="157.9"/><polyline class="f-mk" points="122.8,100 126.8,105.8 132.5,101.7"/><line class="f-mk" x1="163.9" y1="64.9" x2="169.6" y2="73.1"/><line class="f-mk" x1="87.4" y1="118.9" x2="93.1" y2="127.1"/><line class="f-ln" x1="168.5" y1="175" x2="172.2" y2="157.9"/><polyline class="f-mk" points="175.3,176.5 176.8,169.6 170,168.2"/><line class="f-mk" x1="107.2" y1="167" x2="109.3" y2="157.2"/><line class="f-mk" x1="111.2" y1="167.8" x2="113.3" y2="158"/><line class="f-mk" x1="223.7" y1="192" x2="225.8" y2="182.2"/><line class="f-mk" x1="227.7" y1="192.8" x2="229.8" y2="183"/><line class="f-ln" x1="245" y1="121" x2="172.2" y2="157.9"/><polyline class="f-mk" points="241.8,114.8 235.6,117.9 238.8,124.2"/><line class="f-mk" x1="271.3" y1="161.8" x2="262.3" y2="166.3"/><line class="f-mk" x1="269.5" y1="158.2" x2="260.5" y2="162.8"/><line class="f-mk" x1="267.7" y1="154.7" x2="258.7" y2="159.2"/><line class="f-mk" x1="231.3" y1="82.8" x2="222.3" y2="87.3"/><line class="f-mk" x1="229.5" y1="79.2" x2="220.5" y2="83.8"/><line class="f-mk" x1="227.7" y1="75.7" x2="218.7" y2="80.2"/><line class="f-rad" x1="172.2" y1="157.9" x2="205" y2="42"/><line class="f-rad" x1="172.2" y1="157.9" x2="52" y2="150"/><line class="f-rad" x1="172.2" y1="157.9" x2="285" y2="200"/><circle class="f-dot" cx="205" cy="42" r="4"/><text class="f-lb" x="208.7" y="28.5" text-anchor="middle" dominant-baseline="central">P</text><circle class="f-dot" cx="52" cy="150" r="4"/><text class="f-lb" x="38.2" y="152.1" text-anchor="middle" dominant-baseline="central">Q</text><circle class="f-dot" cx="285" cy="200" r="4"/><text class="f-lb" x="296.7" y="207.7" text-anchor="middle" dominant-baseline="central">R</text><circle class="f-dotO" cx="172.2" cy="157.9" r="5"/><text class="f-lb f-lbO f-small" x="164.2" y="173.9" text-anchor="end" dominant-baseline="central">이어폰</text></svg><figcaption>세 지점에서 같은 거리에 있는 점 = 외심 O = 이어폰 위치</figcaption></figure></div>
+      <ol class="steps">
+        <li>신호 반경이 일정하므로 신호가 끊긴 세 지점 P, Q, R은 모두 <b>이어폰에서 같은 거리(신호 반경)</b>만큼 떨어져 있다.</li>
+        <li>세 점에서 같은 거리에 있는 점은 세 점을 꼭짓점으로 하는 △PQR의 <span class="o">외심</span>이다.</li>
+        <li>따라서 지도에서 P, Q, R을 이어 삼각형을 만들고, <b>두 변의 수직이등분선을 그려 만나는 점</b>을 찾는다. 그 점이 이어폰이 있는 곳이다.</li>
+        <li>(확인) 그 점을 중심으로 반지름 OP인 원을 그리면 Q, R을 모두 지나며, 이 원이 신호가 닿는 범위이다.</li>
+      </ol>
+      <p class="tip">서술형 핵심 문장: "<b>세 지점에서 이어폰까지의 거리가 같으므로 이어폰은 △PQR의 외심에 있다.</b>"</p>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 12</span><span class="chip">11번 응용 · 수치</span></div>
+    <div class="qbody">
+      <p>모눈 한 칸이 100 m인 지도에서 신호가 끊긴 세 지점이 P, 그 오른쪽 800 m인 Q, P의 위쪽 600 m인 R이다. 이어폰의 위치와 신호 반경을 구하시오.</p>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <div class="figrow"><figure><svg class="fig" viewBox="6 14 276 276" width="276" style="max-width:320px" role="img" aria-label="모눈 지도 위의 세 지점과 이어폰"><line class="f-grid" x1="14" y1="282" x2="14" y2="22"/><line class="f-grid" x1="40" y1="282" x2="40" y2="22"/><line class="f-grid" x1="66" y1="282" x2="66" y2="22"/><line class="f-grid" x1="92" y1="282" x2="92" y2="22"/><line class="f-grid" x1="118" y1="282" x2="118" y2="22"/><line class="f-grid" x1="144" y1="282" x2="144" y2="22"/><line class="f-grid" x1="170" y1="282" x2="170" y2="22"/><line class="f-grid" x1="196" y1="282" x2="196" y2="22"/><line class="f-grid" x1="222" y1="282" x2="222" y2="22"/><line class="f-grid" x1="248" y1="282" x2="248" y2="22"/><line class="f-grid" x1="274" y1="282" x2="274" y2="22"/><line class="f-grid" x1="14" y1="282" x2="274" y2="282"/><line class="f-grid" x1="14" y1="256" x2="274" y2="256"/><line class="f-grid" x1="14" y1="230" x2="274" y2="230"/><line class="f-grid" x1="14" y1="204" x2="274" y2="204"/><line class="f-grid" x1="14" y1="178" x2="274" y2="178"/><line class="f-grid" x1="14" y1="152" x2="274" y2="152"/><line class="f-grid" x1="14" y1="126" x2="274" y2="126"/><line class="f-grid" x1="14" y1="100" x2="274" y2="100"/><line class="f-grid" x1="14" y1="74" x2="274" y2="74"/><line class="f-grid" x1="14" y1="48" x2="274" y2="48"/><line class="f-grid" x1="14" y1="22" x2="274" y2="22"/><circle class="f-signal" cx="144" cy="152" r="130"/><polygon class="f-tri-open" points="40,230 248,230 40,74"/><polyline class="f-mk" points="49,230 49,221 40,221"/><line class="f-rad" x1="144" y1="152" x2="40" y2="230"/><circle class="f-dot" cx="40" cy="230" r="4"/><circle class="f-dot" cx="248" cy="230" r="4"/><circle class="f-dot" cx="40" cy="74" r="4"/><text class="f-lb" x="28" y="242" text-anchor="middle" dominant-baseline="central">P</text><text class="f-lb" x="260" y="242" text-anchor="middle" dominant-baseline="central">Q</text><text class="f-lb" x="26" y="70" text-anchor="middle" dominant-baseline="central">R</text><circle class="f-dotO" cx="144" cy="152" r="4.5"/><text class="f-lb f-lbO" x="158" y="142" text-anchor="middle" dominant-baseline="central">O</text></svg><figcaption>∠P = 90°이므로 외심은 빗변 QR의 중점</figcaption></figure></div>
+      <ol class="steps">
+        <li>△PQR은 ∠P = 90°인 <b>직각삼각형</b>이므로 외심은 빗변 QR의 <b>중점</b>이다. 이어폰은 P에서 오른쪽 400 m, 위쪽 300 m인 곳에 있다.</li>
+        <li>빗변 QR = √(800² + 600²) = 1000 m (3 : 4 : 5 비율).</li>
+        <li>신호 반경 = 외접원의 반지름 = 1000 ÷ 2 = <span class="ans">500 m</span>.</li>
+      </ol>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 13</span><span class="chip">교과서 169쪽 프로젝트</span></div>
+    <div class="qbody">
+      <p>세 마을을 이어서 삼각형을 그렸다. 소방서를 하나 지으려고 한다.</p>
+      <ol class="sub">
+        <li>삼각형의 <b>외심</b>의 위치에 소방서를 지으면 좋은 이유를 설명하시오.</li>
+        <li>삼각형의 <b>내심</b>의 위치에 소방서를 지으면 좋은 이유를 설명하시오.</li>
+        <li>실제로 소방서의 위치를 정할 때 더 고려해야 할 것을 두 가지 쓰시오.</li>
+      </ol>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <div class="figrow">
+        <figure><svg class="fig" viewBox="-12.9 -12.5 332.6 250.5" width="332.6" style="max-width:300px" role="img" aria-label="세 마을과 소방서 위치 (외심)"><rect class="f-map" x="0" y="0" width="300" height="230" rx="8"/><path class="f-river" d="M0,70 C80,95 140,120 300,150"/><polygon class="f-road" points="115,25 40,200 265,185"/><line class="f-rad" x1="149.2" y1="143.2" x2="115" y2="25"/><line class="f-rad" x1="149.2" y1="143.2" x2="40" y2="200"/><line class="f-rad" x1="149.2" y1="143.2" x2="265" y2="185"/><circle class="f-dotO" cx="149.2" cy="143.2" r="5"/><text class="f-lb f-lbO f-small" x="165.2" y="131.2" text-anchor="start" dominant-baseline="central">소방서(O)</text><rect class="f-house" x="108" y="18" width="14" height="14" rx="2"/><text class="f-lb f-small" x="110.6" y="5.5" text-anchor="middle" dominant-baseline="central">가 마을</text><rect class="f-house" x="33" y="193" width="14" height="14" rx="2"/><text class="f-lb f-small" x="23.1" y="210.7" text-anchor="middle" dominant-baseline="central">나 마을</text><rect class="f-house" x="258" y="178" width="14" height="14" rx="2"/><text class="f-lb f-small" x="283.7" y="192.2" text-anchor="middle" dominant-baseline="central">다 마을</text></svg><figcaption>외심: 세 마을까지 거리가 같음</figcaption></figure>
+        <figure><svg class="fig" viewBox="-12.9 -12.5 332.6 250.5" width="332.6" style="max-width:300px" role="img" aria-label="세 마을과 소방서 위치 (내심)"><rect class="f-map" x="0" y="0" width="300" height="230" rx="8"/><path class="f-river" d="M0,70 C80,95 140,120 300,150"/><polygon class="f-road" points="115,25 40,200 265,185"/><line class="f-perp" x1="134.1" y1="133.4" x2="78.7" y2="109.7"/><polyline class="f-mk" points="76,116.1 82.4,118.9 85.2,112.4"/><line class="f-perp" x1="134.1" y1="133.4" x2="138.1" y2="193.5"/><polyline class="f-mk" points="145.1,193 144.6,186 137.6,186.5"/><line class="f-perp" x1="134.1" y1="133.4" x2="178" y2="92.2"/><polyline class="f-mk" points="173.2,87.1 168.1,91.9 172.9,97"/><circle class="f-ic" cx="134.1" cy="133.4" r="60.2"/><circle class="f-dotI" cx="134.1" cy="133.4" r="5"/><text class="f-lb f-lbI f-small" x="146.1" y="121.4" text-anchor="start" dominant-baseline="central">소방서(I)</text><rect class="f-house" x="108" y="18" width="14" height="14" rx="2"/><text class="f-lb f-small" x="110.6" y="5.5" text-anchor="middle" dominant-baseline="central">가 마을</text><rect class="f-house" x="33" y="193" width="14" height="14" rx="2"/><text class="f-lb f-small" x="23.1" y="210.7" text-anchor="middle" dominant-baseline="central">나 마을</text><rect class="f-house" x="258" y="178" width="14" height="14" rx="2"/><text class="f-lb f-small" x="283.7" y="192.2" text-anchor="middle" dominant-baseline="central">다 마을</text></svg><figcaption>내심: 세 도로까지 거리가 같음</figcaption></figure>
+      </div>
+      <p><b>(1) 외심</b> — 외심은 세 꼭짓점에서 같은 거리에 있다. 따라서 소방서에서 <b>세 마을까지의 거리가 모두 같아</b> 어느 마을에 불이 나도 출동 거리(시간)가 공평하다.</p>
+      <p><b>(2) 내심</b> — 내심은 세 변에서 같은 거리에 있다. 세 변은 마을과 마을을 잇는 <b>세 도로</b>이므로, 소방서에서 <b>어느 도로로든 같은 거리</b>만 가면 진입할 수 있다. 또 내심은 항상 삼각형 <b>안쪽</b>에 있어서 세 마을 사이 지역 안에 지을 수 있다.</p>
+      <p><b>(3) 예시</b> — 마을별 인구수(사람이 많은 쪽 가까이), 강이나 다리처럼 길을 막는 지형, 실제 도로의 모양과 교통량, 땅의 가격과 넓이. 또 삼각형이 둔각삼각형이면 외심이 삼각형 <b>밖</b>에 생겨 오히려 마을에서 멀어질 수 있다.</p>
+      <p class="tip blue">평가 기준(과정·기능): "외심과 내심에 지으면 좋은 이유를 <b>논리적으로</b> 설명했나요?" → 반드시 <b>성질(같은 거리)</b>을 근거로 쓰세요.</p>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 14</span><span class="chip">외심 활용</span></div>
+    <div class="qbody">
+      <p>유물 발굴 현장에서 원 모양 접시의 조각이 나왔다. 원래 접시의 크기를 알아내려면 어떻게 해야 하는지 설명하시오.</p>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <div class="figrow"><figure><svg class="fig" viewBox="9.1 6.1 268.9 271.9" width="268.9" style="max-width:300px" role="img" aria-label="깨진 원형 접시 조각에서 원의 중심 찾기"><circle class="f-ghost" cx="150" cy="150" r="120"/><path class="f-plate" d="M31.8,129.2 A120,120 0 0 1 234.9,65.1 L216.2,83.8 A93.60000000000001,93.60000000000001 0 0 0 57.8,133.7 Z"/><line class="f-ln" x1="37.2" y1="109" x2="109" y2="37.2"/><line class="f-cr" x1="73.1" y1="73.1" x2="150" y2="150"/><polyline class="f-mk" points="78,68.1 83,73.1 78,78"/><line class="f-mk" x1="58.7" y1="94.6" x2="51.6" y2="87.5"/><line class="f-mk" x1="94.6" y1="58.7" x2="87.5" y2="51.6"/><line class="f-ln" x1="109" y1="37.2" x2="210" y2="46.1"/><line class="f-cr" x1="159.5" y1="41.7" x2="150" y2="150"/><polyline class="f-mk" points="166.5,42.3 165.8,49.2 158.9,48.6"/><line class="f-mk" x1="131.8" y1="44.3" x2="132.7" y2="34.3"/><line class="f-mk" x1="135.8" y1="44.6" x2="136.6" y2="34.6"/><line class="f-mk" x1="182.3" y1="48.7" x2="183.2" y2="38.7"/><line class="f-mk" x1="186.3" y1="49" x2="187.2" y2="39.1"/><circle class="f-dot" cx="37.2" cy="109" r="4"/><text class="f-lb" x="24.1" y="104.2" text-anchor="middle" dominant-baseline="central">P</text><circle class="f-dot" cx="109" cy="37.2" r="4"/><text class="f-lb" x="104.2" y="24.1" text-anchor="middle" dominant-baseline="central">Q</text><circle class="f-dot" cx="210" cy="46.1" r="4"/><text class="f-lb" x="217" y="34" text-anchor="middle" dominant-baseline="central">R</text><circle class="f-dotO" cx="150" cy="150" r="4.5"/><text class="f-lb f-lbO" x="164" y="154" text-anchor="middle" dominant-baseline="central">O</text><line class="f-rad" x1="150" y1="150" x2="37.2" y2="109"/></svg><figcaption>테두리 위의 세 점 → 외심 = 원래 원의 중심</figcaption></figure></div>
+      <ol class="steps">
+        <li>조각의 테두리(호) 위에 세 점 P, Q, R을 잡는다.</li>
+        <li>원의 중심은 세 점에서 같은 거리에 있으므로 △PQR의 <span class="o">외심</span>이다. PQ와 QR의 수직이등분선을 그려 만나는 점 O를 찾는다.</li>
+        <li>O를 중심, OP를 반지름으로 원을 그리면 원래 접시의 모양과 크기가 된다.</li>
+      </ol>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 15</span><span class="chip">내심 활용 · 계산</span></div>
+    <div class="qbody">
+      <p>세 변의 길이가 13 cm, 14 cm, 15 cm인 삼각형 모양의 천에서 가장 큰 원을 오려 내려고 한다. 이 삼각형의 넓이가 84 cm²일 때, 원의 중심은 어디이며 반지름은 몇 cm인지 구하시오.</p>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <div class="figrow"><figure><svg class="fig" viewBox="-6.5 18 272.5 246" width="272.5" style="max-width:290px" role="img" aria-label="세 변이 13, 14, 15인 삼각형과 내접원"><polygon class="f-tri" points="105,26 20,230 258,230"/><circle class="f-ic" cx="122" cy="162" r="68"/><line class="f-perp" x1="122" y1="162" x2="122" y2="230"/><polyline class="f-mk" points="129,230 129,223 122,223"/><circle class="f-dotI" cx="122" cy="162" r="4"/><text class="f-lb f-lbI" x="134" y="152" text-anchor="middle" dominant-baseline="central">I</text><text class="f-lb f-small" x="128" y="196" text-anchor="start" dominant-baseline="central">r</text><text class="f-lb f-small" x="139" y="246" text-anchor="middle" dominant-baseline="central">14 cm</text><text class="f-lb f-small" x="36.5" y="128" text-anchor="middle" dominant-baseline="central">13 cm</text><text class="f-lb f-small" x="209.5" y="128" text-anchor="middle" dominant-baseline="central">15 cm</text></svg><figcaption>가장 큰 원 = 내접원</figcaption></figure></div>
+      <ol class="steps">
+        <li>삼각형 안에 들어가는 가장 큰 원은 세 변에 모두 닿는 <b>내접원</b>이고, 중심은 <span class="i">내심</span>이다.</li>
+        <li>넓이 = ½ × r × (13 + 14 + 15) = 21r.</li>
+        <li>21r = 84 이므로 r = <span class="ans">4 cm</span>.</li>
+      </ol>
+    </div></div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 16</span><span class="chip">외심일까, 내심일까?</span></div>
+    <div class="qbody">
+      <p>각 상황에서 찾아야 하는 점이 외심인지 내심인지 쓰고, 이유를 한 줄로 쓰시오.</p>
+      <ol class="sub">
+        <li>세 학교에서 같은 거리에 있는 곳에 도서관을 짓는다.</li>
+        <li>삼각형 모양 공원의 세 산책로에서 같은 거리에 분수대를 만든다.</li>
+        <li>세 섬에서 같은 거리에 있는 곳에 등대를 세운다.</li>
+        <li>삼각형 모양 케이크 위에 가장 큰 원 모양 초콜릿을 올린다.</li>
+        <li>세 아파트 단지에서 같은 거리에 놀이터를 만든다.</li>
+      </ol>
+    </div>
+    <div class="sol"><div class="solhead">정답과 해설</div><div class="solbody">
+      <ol class="steps">
+        <li><span class="o">외심</span> — 세 학교는 세 <b>점</b>. 세 꼭짓점까지 거리가 같은 점.</li>
+        <li><span class="i">내심</span> — 산책로는 삼각형의 세 <b>변</b>. 세 변까지 거리가 같은 점.</li>
+        <li><span class="o">외심</span> — 세 섬은 세 <b>점</b>.</li>
+        <li><span class="i">내심</span> — 가장 큰 원은 세 변에 닿는 내접원.</li>
+        <li><span class="o">외심</span> — 세 단지는 세 <b>점</b>.</li>
+      </ol>
+    </div></div>
+  </div>
+</section>
+
+<section class="sheet" aria-labelledby="t-last">
+  <div class="part-head">
+    <div class="tag">시험 직전</div>
+    <h2 id="t-last">마지막 1분 점검</h2>
+  </div>
+  <ul class="checklist">
+    <li><span>외심 = 수직이등분선 = <b>꼭짓점</b>까지 같은 거리 = 외접원 (반지름 OA)</span></li>
+    <li><span>내심 = 각의 이등분선 = <b>변</b>까지 같은 거리 = 내접원 (반지름 ID)</span></li>
+    <li><span>외심 위치: 예각 안 · 직각 빗변 중점 · 둔각 밖. 내심은 항상 안.</span></li>
+    <li><span>종이접기: 외심은 <b>꼭짓점끼리</b> 겹치게, 내심은 <b>변끼리</b> 겹치게.</span></li>
+    <li><span>A, B, C, D, E, F, O, I 알파벳과 직각·같은 길이·같은 각 표시를 모두 했는가?</span></li>
+    <li><span>실생활: 세 <b>점</b>에서 같은 거리면 외심, 세 <b>선</b>에서 같은 거리면 내심.</span></li>
+  </ul>
+</section>
+
+</div>
+
+
+
+</body>
+</html>

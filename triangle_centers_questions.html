@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>외심·내심 수행평가 문제지</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 레이아웃: 시험지처럼 한 열로 내려가는 문항 카드, 문항마다 접히는 해설. 외심=빨강, 내심=파랑으로 끝까지 통일 */
+:root {
+  --bg: #f6f7f4;
+  --sheet: #ffffff;
+  --ink: #1f2a24;
+  --muted: #5d6b63;
+  --line: #d5dcd6;
+  --paper: #cfe8c4;        /* 학생이 쓰는 초록 색종이 */
+  --hl: rgba(255, 196, 0, .45);
+  --o: #c62828;            /* 외심 O */
+  --i: #1e5bb8;            /* 내심 I */
+  --crease: #3d6b4a;       /* 접은 선 */
+  --accent: #2f6b4f;
+  --map: #ece7dc;
+  --street: #ffffff;
+  --river: #a9c8e6;
+  --sol: #f1f6f2;
+  --font-display: "Gowun Batang", "Noto Serif KR", serif;
+  --font-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141916; --sheet: #1c231f; --ink: #e4ebe6; --muted: #9fb0a6; --line: #34413a;
+    --paper: #2c4a33; --hl: rgba(255, 196, 0, .30); --o: #ff6b5e; --i: #6aa5ff; --crease: #8fd0a2;
+    --accent: #8fd0a2; --map: #2a2e2b; --street: #3b423d; --river: #2d4a66; --sol: #18201b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141916; --sheet: #1c231f; --ink: #e4ebe6; --muted: #9fb0a6; --line: #34413a;
+  --paper: #2c4a33; --hl: rgba(255, 196, 0, .30); --o: #ff6b5e; --i: #6aa5ff; --crease: #8fd0a2;
+  --accent: #8fd0a2; --map: #2a2e2b; --street: #3b423d; --river: #2d4a66; --sol: #18201b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.7;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 64px;
+}
+.wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.3; margin: 0; }
+h1 { font-size: 1.9rem; }
+h2 { font-size: 1.45rem; }
+h3 { font-size: 1.1rem; }
+p { margin: 0; }
+.o { color: var(--o); font-weight: 700; }
+.i { color: var(--i); font-weight: 700; }
+.muted { color: var(--muted); }
+.small { font-size: .9rem; }
+
+header.top { display: grid; gap: 12px; padding-bottom: 20px; border-bottom: 2px solid var(--ink); }
+.eyebrow { font-size: .8rem; letter-spacing: .08em; color: var(--accent); font-weight: 700; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: .95rem; color: var(--muted); }
+.meta b { color: var(--ink); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+button {
+  font: inherit; font-size: .9rem; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--accent);
+  background: var(--sheet); color: var(--accent); cursor: pointer; font-weight: 500;
+}
+button:hover { background: var(--sol); }
+button:focus-visible, summary:focus-visible { outline: 3px solid var(--i); outline-offset: 2px; }
+
+.sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; padding: 22px; display: grid; gap: 16px; min-width: 0; }
+.part-head { display: grid; gap: 6px; }
+.part-head .tag { font-size: .8rem; letter-spacing: .06em; color: var(--accent); font-weight: 700; }
+
+.checklist { display: grid; gap: 6px; padding-left: 0; margin: 0; list-style: none; }
+.checklist li { display: grid; grid-template-columns: 22px 1fr; gap: 6px; }
+.checklist li::before { content: "☐"; color: var(--accent); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .9rem; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 22px; height: 0; border-top: 2px solid; display: inline-block; }
+.sw.cr { border-top: 2px dashed var(--crease); }
+.sw.oc { border-color: var(--o); }
+.sw.ic { border-color: var(--i); }
+
+.figrow { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; align-items: flex-start; }
+figure { margin: 0; display: grid; gap: 4px; justify-items: center; min-width: 0; flex: 1 1 200px; max-width: 360px; }
+figcaption { font-size: .85rem; color: var(--muted); text-align: center; }
+.fig { width: 100%; height: auto; display: block; overflow: visible; }
+
+table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+.tbl { overflow-x: auto; }
+th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: var(--sol); font-weight: 700; }
+
+.q { display: grid; gap: 12px; padding-top: 18px; border-top: 1px dashed var(--line); }
+.q:first-of-type { border-top: 0; padding-top: 0; }
+.qhead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.qnum { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; }
+.chip { font-size: .75rem; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.qbody { display: grid; gap: 10px; }
+ol.sub, ul.sub { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }
+.blank { display: inline-block; min-width: 6.5em; border-bottom: 1.5px solid var(--ink); text-align: center; color: transparent; }
+.write { height: 96px; border: 1px solid var(--line); border-radius: 6px;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--line) 31px 32px); }
+.write.tall { height: 160px; }
+
+details.sol { background: var(--sol); border-radius: 8px; border: 1px solid var(--line); }
+details.sol > summary { cursor: pointer; padding: 8px 14px; font-weight: 700; color: var(--accent); list-style: none; }
+details.sol > summary::-webkit-details-marker { display: none; }
+details.sol > summary::before { content: "▸ "; }
+details.sol[open] > summary::before { content: "▾ "; }
+.solbody { padding: 0 16px 16px; display: grid; gap: 10px; }
+.ans { font-weight: 700; }
+.tip { border-left: 3px solid var(--o); padding: 4px 0 4px 12px; font-size: .95rem; }
+.tip.blue { border-left-color: var(--i); }
+.steps { margin: 0; padding-left: 1.4em; display: grid; gap: 6px; }
+
+/* SVG 도형 */
+.f-tri { fill: var(--paper); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.f-tri-open { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-dasharray: 3 3; }
+.f-hl { fill: var(--hl); stroke: none; }
+.f-ln { stroke: var(--ink); stroke-width: 1.3; }
+.f-cr { stroke: var(--crease); stroke-width: 1.6; stroke-dasharray: 6 4; }
+.f-cr.f-now { stroke-width: 2.6; }
+.f-ext { stroke: var(--crease); stroke-width: 1.3; stroke-dasharray: 2 4; }
+.f-rad { stroke: var(--o); stroke-width: 1.3; stroke-dasharray: 5 3; }
+.f-perp { stroke: var(--i); stroke-width: 1.4; }
+.f-cc { fill: none; stroke: var(--o); stroke-width: 1.8; }
+.f-ic { fill: none; stroke: var(--i); stroke-width: 1.8; }
+.f-wrong { fill: none; stroke: var(--o); stroke-width: 1.8; stroke-dasharray: 7 4; }
+.f-wrongr { stroke: var(--o); stroke-width: 1.6; }
+.f-mk { fill: none; stroke: var(--ink); stroke-width: 1.2; }
+.f-dot { fill: var(--ink); }
+.f-dotO { fill: var(--o); }
+.f-dotI { fill: var(--i); }
+.f-lb { fill: var(--ink); font-family: var(--font-body); font-size: 15px; font-weight: 700; }
+.f-lbO { fill: var(--o); }
+.f-lbI { fill: var(--i); }
+.f-small { font-size: 12px; font-weight: 500; }
+.f-arrow { fill: none; stroke: var(--accent); stroke-width: 1.6; }
+.f-arrowhead { fill: var(--accent); }
+.f-map { fill: var(--map); stroke: none; }
+.f-street { stroke: var(--street); stroke-width: 6; }
+.f-park { fill: var(--paper); stroke: none; }
+.f-river { fill: none; stroke: var(--river); stroke-width: 16; }
+.f-road { fill: none; stroke: var(--muted); stroke-width: 5; stroke-linejoin: round; opacity: .55; }
+.f-house { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.5; }
+.f-signal { fill: var(--hl); fill-opacity: .35; stroke: var(--o); stroke-width: 1.6; stroke-dasharray: 6 4; }
+.f-grid { stroke: var(--line); stroke-width: 1; }
+.f-ghost { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 3 4; }
+.f-plate { fill: var(--paper); stroke: var(--ink); stroke-width: 1.8; }
+
+@media (max-width: 520px) {
+  .sheet { padding: 16px; }
+  h1 { font-size: 1.55rem; }
+}
+@media print {
+  body { background: #fff; padding-block: 0; }
+  .toolbar { display: none; }
+  .sheet { border: 0; padding: 0; }
+  details.sol { break-inside: avoid; }
+  .q { break-inside: avoid; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<style>
+@page { size: A4; margin: 13mm 12mm; }
+html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { background: #fff; padding: 0 !important; font-size: 13.5px; line-height: 1.6; }
+.wrap { max-width: none; gap: 14px; }
+.toolbar, .hint { display: none !important; }
+.sheet { border: 0; padding: 0; background: #fff; gap: 12px; }
+.sheet.newpage { break-before: page; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.25rem; }
+header.top { padding-bottom: 10px; }
+.namebox { display: flex; gap: 18px; justify-content: flex-end; font-size: .95rem; }
+.namebox span { white-space: nowrap; }
+.q { break-inside: avoid; }
+.sol { background: var(--sol); border: 1px solid var(--line); border-radius: 8px; }
+.solhead { padding: 6px 14px 0; font-weight: 700; color: var(--accent); }
+.solbody { padding-top: 6px; }
+.figrow, .steps li, .tbl, .tip { break-inside: avoid; }
+.figrow { display: block; text-align: center; }
+figure { display: inline-grid; vertical-align: top; width: 31%; max-width: 250px; margin: 0 4px 6px; }
+figure:first-child:nth-last-child(4), figure:first-child:nth-last-child(4) ~ figure { width: 23%; }
+.figrow figure:only-child { width: 46%; max-width: 300px; }
+.write { height: 120px; } .write.tall { height: 210px; }
+.figrow { gap: 10px; }
+.mode-sol .q { break-inside: auto; }
+.mode-sol .qhead, .mode-sol .qbody { break-after: avoid; }
+/* Chromium은 grid 안에서 페이지를 나눌 때 내용이 겹칠 수 있어 인쇄본은 block 흐름으로 */
+.wrap, .sheet, .q, .qbody, .solbody, .part-head { display: block; }
+.wrap > * + *, .sheet > * + *, .q > * + *, .qbody > * + *, .solbody > * + * { margin-top: 10px; }
+.q + .q { margin-top: 16px; }
+.solhead { break-after: avoid; }
+.sol { break-inside: auto; }
+</style>
+</head>
+<body>
+
+
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="f-arrowhead" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+</svg>
+
+<div class="wrap mode-q">
+
+<header class="top">
+  <div class="eyebrow">중학교 2학년 · 2학기 2차 수학 수행평가 대비</div>
+  <h1>삼각형의 외심과 내심 연습지 · 문제</h1>
+  <div class="meta">
+    <span>평가일 <b>10/22(목) 수업 시간</b></span>
+    <span>준비물 <b>가위, 풀, 자, 컴퍼스, 필기도구</b></span>
+    <span>참고 <b>교과서 167쪽 13번, 168~169쪽 프로젝트</b></span>
+  </div>
+  <p class="muted small hint">문제마다 먼저 직접 풀고, 아래 <b>정답과 해설</b>을 눌러 확인하세요. 그림 색은 끝까지 같은 뜻입니다.</p>
+  <div class="legend">
+    <span><i class="sw oc"></i><span class="o">외심 O</span>·외접원</span>
+    <span><i class="sw ic"></i><span class="i">내심 I</span>·내접원</span>
+    <span><i class="sw cr"></i>종이를 접은 선</span>
+  </div>
+  <div class="namebox"><span>2학년 (&emsp;&emsp;)반</span><span>(&emsp;&emsp;)번</span><span>이름 (&emsp;&emsp;&emsp;&emsp;&emsp;)</span></div>
+  <div class="toolbar">
+    <button type="button" id="openAll">해설 모두 펼치기</button>
+    <button type="button" id="closeAll">해설 모두 접기</button>
+  </div>
+</header>
+
+<!-- 선생님 체크포인트 -->
+<section class="sheet" aria-labelledby="t-check">
+  <div class="part-head">
+    <div class="tag">선생님이 알려준 채점 포인트</div>
+    <h2 id="t-check">이것만은 꼭 지키기</h2>
+  </div>
+  <ul class="checklist">
+    <li><span>삼각형의 세 꼭짓점에 <b>A, B, C</b>를 쓴다.</span></li>
+    <li><span><b>수선의 발</b>(수직으로 만나는 점)에도 알파벳(D, E, F)을 쓴다.</span></li>
+    <li><span>외심은 <span class="o">O</span>, 내심은 <span class="i">I</span>로 쓴다.</span></li>
+    <li><span>종이접기로 <b>접은 선을 모두</b> 자로 그린다.</span></li>
+    <li><span><b>직각 표시(ㄴ)</b>와 <b>같은 길이 표시(//)</b>, <b>같은 각 표시(호)</b>를 빠짐없이 한다.</span></li>
+    <li><span>외접원은 반지름 <b>OA</b>, 내접원은 반지름 <b>I에서 변까지의 수선(ID)</b>으로 컴퍼스를 벌린다.</span></li>
+  </ul>
+</section>
+
+<!-- PART 1 -->
+<section class="sheet" aria-labelledby="t-p1">
+  <div class="part-head">
+    <div class="tag">평가내용 1</div>
+    <h2 id="t-p1">외심과 내심의 뜻(위치)과 성질 쓰기</h2>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 1</span><span class="chip">빈칸 채우기</span></div>
+    <div class="qbody">
+      <ol class="sub">
+        <li>삼각형의 세 변의 <span class="blank">①</span>의 교점을 외심이라 하고, 기호로 <span class="blank">②</span>라 쓴다.</li>
+        <li>외심에서 세 <span class="blank">③</span>에 이르는 거리는 모두 같다.</li>
+        <li>외심은 삼각형의 <span class="blank">④</span>의 중심이다.</li>
+        <li>삼각형의 세 내각의 <span class="blank">⑤</span>의 교점을 내심이라 하고, 기호로 <span class="blank">⑥</span>라 쓴다.</li>
+        <li>내심에서 세 <span class="blank">⑦</span>에 이르는 거리는 모두 같다.</li>
+        <li>내심은 삼각형의 <span class="blank">⑧</span>의 중심이고, 반지름은 내심에서 변에 내린 <span class="blank">⑨</span>의 길이이다.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 2</span><span class="chip">위치</span></div>
+    <div class="qbody">
+      <p>삼각형의 모양에 따라 외심과 내심이 어디에 있는지 표를 채우시오.</p>
+      <div class="tbl"><table>
+        <thead><tr><th></th><th>예각삼각형</th><th>직각삼각형</th><th>둔각삼각형</th></tr></thead>
+        <tbody>
+          <tr><th>외심</th><td></td><td></td><td></td></tr>
+          <tr><th>내심</th><td></td><td></td><td></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 3</span><span class="chip">서술형 · 외심의 성질</span></div>
+    <div class="qbody">
+      <p>△ABC에서 변 AB, BC, CA의 수직이등분선과 각 변이 만나는 점을 D, E, F라 하고, 수직이등분선의 교점을 O라 하자. <b>OA = OB = OC</b>임을 삼각형의 합동을 이용하여 설명하시오.</p>
+      <div class="write tall"></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 4</span><span class="chip">서술형 · 내심의 성질</span></div>
+    <div class="qbody">
+      <p>△ABC에서 ∠A, ∠B, ∠C의 이등분선의 교점을 I라 하고, 점 I에서 변 AB, BC, CA에 내린 수선의 발을 각각 D, E, F라 하자. <b>ID = IE = IF</b>임을 설명하시오.</p>
+      <div class="write tall"></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 5</span><span class="chip">계산</span></div>
+    <div class="qbody">
+      <ol class="sub">
+        <li>점 O가 △ABC의 외심이고 ∠A = 64°일 때, ∠BOC의 크기는?</li>
+        <li>점 I가 △ABC의 내심이고 ∠A = 64°일 때, ∠BIC의 크기는?</li>
+        <li>점 O가 △ABC의 외심이고 ∠OAB = 25°, ∠OBC = 30°일 때, ∠OCA의 크기는?</li>
+        <li>∠C = 90°인 직각삼각형 ABC에서 빗변 AB = 10 cm일 때, 외접원의 반지름의 길이는?</li>
+        <li>세 변의 길이가 3 cm, 4 cm, 5 cm인 직각삼각형의 내접원의 반지름의 길이는?</li>
+      </ol>
+      <div class="write tall"></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 6</span><span class="chip">O / X</span></div>
+    <div class="qbody">
+      <ol class="sub">
+        <li>내심에서 세 꼭짓점까지의 거리는 같다. ( )</li>
+        <li>둔각삼각형의 외심은 삼각형의 밖에 있다. ( )</li>
+        <li>직각삼각형의 외심은 빗변의 중점이다. ( )</li>
+        <li>정삼각형은 외심과 내심이 같은 점이다. ( )</li>
+        <li>내접원의 반지름은 내심과 꼭짓점 사이의 거리이다. ( )</li>
+        <li>이등변삼각형의 외심과 내심은 모두 꼭지각의 이등분선 위에 있다. ( )</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- PART 2 -->
+<section class="sheet newpage" aria-labelledby="t-p2">
+  <div class="part-head">
+    <div class="tag">평가내용 2</div>
+    <h2 id="t-p2">종이접기로 외심·내심 찾고 외접원·내접원 작도하기</h2>
+    <p class="muted small">시험에서는 예각·직각·둔각삼각형 색종이를 접어서 붙이고, 그 위에 작도합니다. 집에서 색종이를 오려 똑같이 연습해 보세요.</p>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 7</span><span class="chip">외심 · 접는 순서</span></div>
+    <div class="qbody">
+      <p>예각삼각형 ABC 모양의 종이를 접어 외심 O를 찾고, 외접원을 그리는 순서를 쓰시오. (접은 선, 직각 표시, 같은 길이 표시를 모두 할 것)</p>
+      <div class="write tall"></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 8</span><span class="chip">내심 · 접는 순서</span></div>
+    <div class="qbody">
+      <p>삼각형 ABC 모양의 종이를 접어 내심 I를 찾고, 내접원을 그리는 순서를 쓰시오. (접은 선, 같은 각 표시, 직각 표시를 모두 할 것)</p>
+      <div class="write tall"></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 9</span><span class="chip">직각·둔각삼각형 주의점</span></div>
+    <div class="qbody">
+      <p>(1) 직각삼각형을 접어 외심을 찾을 때, 외심은 어디에 생기는가? (2) 둔각삼각형을 접어 외심을 찾을 때 주의할 점을 쓰시오.</p>
+      <div class="write"></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 10</span><span class="chip">틀린 작도 찾기</span></div>
+    <div class="qbody">
+      <p>어떤 학생이 내심 I를 찾은 뒤 아래 그림처럼 내접원을 그렸다. 잘못된 점을 찾고 바르게 고치시오.</p>
+      <div class="figrow"><figure><svg class="fig" viewBox="-11.7 -10.9 273.7 227.8" width="273.7" style="max-width:260px" role="img" aria-label="잘못된 작도: 반지름을 IA로 그림"><polygon class="f-tri" points="110,20 15,170 235,170"/><line class="f-ln" x1="110" y1="20" x2="116.1" y2="114.3"/><path class="f-mk" d="M99.3,36.9 A20,20 0 0 0 111.3,40"/><path class="f-mk" d="M111.3,40 A20,20 0 0 0 122.8,35.4"/><line class="f-ln" x1="15" y1="170" x2="116.1" y2="114.3"/><path class="f-mk" d="M25.7,153.1 A20,20 0 0 1 32.5,160.4"/><path class="f-mk" d="M27.8,149.7 A24,24 0 0 1 36,158.4"/><path class="f-mk" d="M32.5,160.4 A20,20 0 0 1 35,170"/><path class="f-mk" d="M36,158.4 A24,24 0 0 1 39,170"/><line class="f-ln" x1="235" y1="170" x2="116.1" y2="114.3"/><path class="f-mk" d="M222.2,154.6 A20,20 0 0 0 216.9,161.5"/><path class="f-mk" d="M219.6,151.6 A24,24 0 0 0 213.3,159.8"/><path class="f-mk" d="M217.1,148.5 A28,28 0 0 0 209.6,158.1"/><path class="f-mk" d="M216.9,161.5 A20,20 0 0 0 215,170"/><path class="f-mk" d="M213.3,159.8 A24,24 0 0 0 211,170"/><path class="f-mk" d="M209.6,158.1 A28,28 0 0 0 207,170"/><text class="f-lb" x="108.7" y="7.1" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="3.3" y="175.6" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="246.9" y="175.2" text-anchor="middle" dominant-baseline="central">C</text><circle class="f-dotI" cx="116.1" cy="114.3" r="4"/><circle class="f-wrong" cx="116.1" cy="114.3" r="94.5"/><line class="f-wrongr" x1="116.1" y1="114.3" x2="110" y2="20"/><text class="f-lb f-lbI" x="130.1" y="122.3" text-anchor="middle" dominant-baseline="central">I</text></svg><figcaption>학생의 작도</figcaption></figure></div>
+      <div class="write"></div>
+    </div>
+  </div>
+</section>
+
+<!-- PART 3 -->
+<section class="sheet newpage" aria-labelledby="t-p3">
+  <div class="part-head">
+    <div class="tag">평가내용 3</div>
+    <h2 id="t-p3">외심과 내심을 실생활 문제에 활용하기</h2>
+    <p class="muted small">먼저 "<b>세 점(장소)에서 같은 거리</b>"인지, "<b>세 선(도로·변)에서 같은 거리</b>"인지 구분하세요. 점이면 외심, 선이면 내심입니다.</p>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 11</span><span class="chip">교과서 167쪽 13번</span></div>
+    <div class="qbody">
+      <p>제니는 무선 이어폰 한 쪽을 잃어버렸다. 휴대 전화와 이어폰 사이의 신호가 끊긴 세 지점 P, Q, R을 지도에 표시하였다. 이 그림을 이용하여 잃어버린 이어폰을 찾는 방법을 설명하시오. (단, 이어폰의 신호 반경은 일정하다.)</p>
+      <div class="write tall"></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 12</span><span class="chip">11번 응용 · 수치</span></div>
+    <div class="qbody">
+      <p>모눈 한 칸이 100 m인 지도에서 신호가 끊긴 세 지점이 P, 그 오른쪽 800 m인 Q, P의 위쪽 600 m인 R이다. 이어폰의 위치와 신호 반경을 구하시오.</p>
+      <div class="write"></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 13</span><span class="chip">교과서 169쪽 프로젝트</span></div>
+    <div class="qbody">
+      <p>세 마을을 이어서 삼각형을 그렸다. 소방서를 하나 지으려고 한다.</p>
+      <ol class="sub">
+        <li>삼각형의 <b>외심</b>의 위치에 소방서를 지으면 좋은 이유를 설명하시오.</li>
+        <li>삼각형의 <b>내심</b>의 위치에 소방서를 지으면 좋은 이유를 설명하시오.</li>
+        <li>실제로 소방서의 위치를 정할 때 더 고려해야 할 것을 두 가지 쓰시오.</li>
+      </ol>
+      <div class="write tall"></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 14</span><span class="chip">외심 활용</span></div>
+    <div class="qbody">
+      <p>유물 발굴 현장에서 원 모양 접시의 조각이 나왔다. 원래 접시의 크기를 알아내려면 어떻게 해야 하는지 설명하시오.</p>
+      <div class="write"></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 15</span><span class="chip">내심 활용 · 계산</span></div>
+    <div class="qbody">
+      <p>세 변의 길이가 13 cm, 14 cm, 15 cm인 삼각형 모양의 천에서 가장 큰 원을 오려 내려고 한다. 이 삼각형의 넓이가 84 cm²일 때, 원의 중심은 어디이며 반지름은 몇 cm인지 구하시오.</p>
+      <div class="write"></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qhead"><span class="qnum">문제 16</span><span class="chip">외심일까, 내심일까?</span></div>
+    <div class="qbody">
+      <p>각 상황에서 찾아야 하는 점이 외심인지 내심인지 쓰고, 이유를 한 줄로 쓰시오.</p>
+      <ol class="sub">
+        <li>세 학교에서 같은 거리에 있는 곳에 도서관을 짓는다.</li>
+        <li>삼각형 모양 공원의 세 산책로에서 같은 거리에 분수대를 만든다.</li>
+        <li>세 섬에서 같은 거리에 있는 곳에 등대를 세운다.</li>
+        <li>삼각형 모양 케이크 위에 가장 큰 원 모양 초콜릿을 올린다.</li>
+        <li>세 아파트 단지에서 같은 거리에 놀이터를 만든다.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" aria-labelledby="t-last">
+  <div class="part-head">
+    <div class="tag">시험 직전</div>
+    <h2 id="t-last">마지막 1분 점검</h2>
+  </div>
+  <ul class="checklist">
+    <li><span>외심 = 수직이등분선 = <b>꼭짓점</b>까지 같은 거리 = 외접원 (반지름 OA)</span></li>
+    <li><span>내심 = 각의 이등분선 = <b>변</b>까지 같은 거리 = 내접원 (반지름 ID)</span></li>
+    <li><span>외심 위치: 예각 안 · 직각 빗변 중점 · 둔각 밖. 내심은 항상 안.</span></li>
+    <li><span>종이접기: 외심은 <b>꼭짓점끼리</b> 겹치게, 내심은 <b>변끼리</b> 겹치게.</span></li>
+    <li><span>A, B, C, D, E, F, O, I 알파벳과 직각·같은 길이·같은 각 표시를 모두 했는가?</span></li>
+    <li><span>실생활: 세 <b>점</b>에서 같은 거리면 외심, 세 <b>선</b>에서 같은 거리면 내심.</span></li>
+  </ul>
+</section>
+
+</div>
+
+
+
+</body>
+</html>
