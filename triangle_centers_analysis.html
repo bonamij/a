@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>외심·내심 수행평가 분석표</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* A4 한 장: 위 = 평가 분석(표), 아래 = 앞으로의 공부 제안. 외심=빨강, 내심=파랑은 연습지와 동일 */
+:root {
+  --ink: #1f2a24; --muted: #5d6b63; --line: #cfd8d1; --soft: #f1f6f2;
+  --paper: #cfe8c4; --hl: rgba(255,196,0,.45); --o: #c62828; --i: #1e5bb8;
+  --crease: #3d6b4a; --accent: #2f6b4f; --sheet: #fff;
+  --font-display: "Gowun Batang", "Noto Serif KR", serif;
+  --font-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+@page { size: A4; margin: 9mm 10mm; }
+* { box-sizing: border-box; }
+html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; background: #fff; color: var(--ink); font-family: var(--font-body); font-size: 9.6pt; line-height: 1.45; }
+.page { width: 190mm; margin: 0 auto; display: block; }
+h1, h2 { font-family: var(--font-display); margin: 0; line-height: 1.25; }
+h1 { font-size: 17pt; }
+h2 { font-size: 11.5pt; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+h2 .n { display: inline-grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; background: var(--accent); color: #fff; font-family: var(--font-body); font-size: 8.5pt; }
+p { margin: 0; }
+.o { color: var(--o); font-weight: 700; } .i { color: var(--i); font-weight: 700; }
+.muted { color: var(--muted); }
+b { font-weight: 700; }
+
+header { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; border-bottom: 2px solid var(--ink); padding-bottom: 5px; margin-bottom: 7px; }
+.eyebrow { font-size: 8pt; letter-spacing: .06em; color: var(--accent); font-weight: 700; }
+.namebox { font-size: 9pt; white-space: nowrap; }
+
+section { margin-bottom: 7px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid var(--line); padding: 3px 6px; vertical-align: top; text-align: left; }
+th { background: var(--soft); font-weight: 700; }
+.t-eval td:first-child, .t-eval td:nth-child(4) { font-weight: 700; white-space: nowrap; }
+.t-eval td:nth-child(2) { width: 24%; }
+.star { color: var(--accent); letter-spacing: 1px; white-space: nowrap; }
+
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.box { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; min-width: 0; }
+.box.fill { background: var(--soft); }
+ul.tight, ol.tight { margin: 0; padding-left: 1.2em; }
+ul.tight li, ol.tight li { margin: 1px 0; }
+
+.concept { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; align-items: center; }
+.concept svg { width: 100%; max-height: 92px; height: auto; display: block; }
+.concept table { grid-column: 1 / -1; }
+.concept th { white-space: nowrap; }
+.concept table td, .concept table th { padding: 2px 5px; font-size: 8.8pt; }
+
+.mist li { margin: 1px 0; }
+.mist .x { color: var(--o); font-weight: 700; }
+
+.plan { border: 2px solid var(--accent); border-radius: 8px; padding: 7px 9px; }
+.plan h2 { color: var(--accent); }
+.road { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin: 3px 0 6px; }
+.road div { border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; background: var(--soft); font-size: 8.7pt; }
+.road .now { border-color: var(--accent); background: #e2efe6; }
+.road b { display: block; font-size: 9pt; }
+.how { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-bottom: 6px; }
+.how div { min-width: 0; }
+.how b { color: var(--accent); }
+.week { width: 100%; font-size: 8.8pt; }
+.week th { text-align: center; }
+.week td { text-align: center; }
+.self { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 10px; font-size: 8.8pt; }
+.self span::before { content: "☐ "; color: var(--accent); }
+.foot { margin-top: 5px; font-family: var(--font-display); font-size: 10.5pt; text-align: center; }
+
+/* SVG 도형 */
+.f-tri { fill: var(--paper); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.f-tri-open { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-dasharray: 3 3; }
+.f-hl { fill: var(--hl); stroke: none; }
+.f-ln { stroke: var(--ink); stroke-width: 1.3; }
+.f-cr { stroke: var(--crease); stroke-width: 1.6; stroke-dasharray: 6 4; }
+.f-cr.f-now { stroke-width: 2.6; }
+.f-ext { stroke: var(--crease); stroke-width: 1.3; stroke-dasharray: 2 4; }
+.f-rad { stroke: var(--o); stroke-width: 1.3; stroke-dasharray: 5 3; }
+.f-perp { stroke: var(--i); stroke-width: 1.4; }
+.f-cc { fill: none; stroke: var(--o); stroke-width: 1.8; }
+.f-ic { fill: none; stroke: var(--i); stroke-width: 1.8; }
+.f-wrong { fill: none; stroke: var(--o); stroke-width: 1.8; stroke-dasharray: 7 4; }
+.f-wrongr { stroke: var(--o); stroke-width: 1.6; }
+.f-mk { fill: none; stroke: var(--ink); stroke-width: 1.2; }
+.f-dot { fill: var(--ink); }
+.f-dotO { fill: var(--o); }
+.f-dotI { fill: var(--i); }
+.f-lb { fill: var(--ink); font-family: var(--font-body); font-size: 15px; font-weight: 700; }
+.f-lbO { fill: var(--o); }
+.f-lbI { fill: var(--i); }
+.f-small { font-size: 12px; font-weight: 500; }
+.f-arrow { fill: none; stroke: var(--accent); stroke-width: 1.6; }
+.f-arrowhead { fill: var(--accent); }
+.f-map { fill: var(--map); stroke: none; }
+.f-street { stroke: var(--street); stroke-width: 6; }
+.f-park { fill: var(--paper); stroke: none; }
+.f-river { fill: none; stroke: var(--river); stroke-width: 16; }
+.f-road { fill: none; stroke: var(--muted); stroke-width: 5; stroke-linejoin: round; opacity: .55; }
+.f-house { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.5; }
+.f-signal { fill: var(--hl); fill-opacity: .35; stroke: var(--o); stroke-width: 1.6; stroke-dasharray: 6 4; }
+.f-grid { stroke: var(--line); stroke-width: 1; }
+.f-ghost { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 3 4; }
+.f-plate { fill: var(--paper); stroke: var(--ink); stroke-width: 1.8; }
+
+
+.f-lb { font-size: 17px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div>
+    <div class="eyebrow">중2 · 2학기 2차 수학 수행평가</div>
+    <h1>삼각형의 외심과 내심 수행평가 분석표</h1>
+  </div>
+  <div class="namebox">2학년 (&emsp;)반 (&emsp;)번 이름 (&emsp;&emsp;&emsp;&emsp;)</div>
+</header>
+
+<section>
+  <h2><span class="n">1</span>무엇을 평가하나요?</h2>
+  <table class="t-eval">
+    <thead><tr><th>평가 영역</th><th>평가하는 힘</th><th>꼭 해야 하는 것</th><th>연습지</th><th>난도</th></tr></thead>
+    <tbody>
+      <tr><td>① 뜻(위치)과 성질 쓰기</td><td>개념을 정확한 말로 쓰기</td><td>외심·내심의 뜻, 같은 거리인 대상(꼭짓점/변), 위치(예각·직각·둔각), 합동 이유</td><td>1~6번</td><td class="star">★★☆</td></tr>
+      <tr><td>② 종이접기·작도</td><td>손으로 찾고 정확히 그리기</td><td>접은 선 모두 긋기, A·B·C·D·E·F·O·I 쓰기, 직각·같은 길이·같은 각 표시, 컴퍼스 반지름 바르게</td><td>7~10번</td><td class="star">★★★</td></tr>
+      <tr><td>③ 실생활 활용</td><td>상황을 수학으로 바꿔 설명하기</td><td>교과서 167쪽 13번(이어폰, 외심), 169쪽 프로젝트(소방서, 외심·내심 둘 다): 성질을 근거로 이유 쓰기</td><td>11~16번</td><td class="star">★★★</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="two">
+  <div class="box">
+    <h2><span class="n">2</span>핵심 개념 한 줄 정리</h2>
+    <div class="concept">
+      <svg class="fig" viewBox="13.5 -1 303.2 310.8" width="303.2" style="max-width:330px" role="img" aria-label="외심 O와 세 변의 수직이등분선, 외접원"><circle class="f-cc" cx="165" cy="165.5" r="136.4"/><polygon class="f-tri" points="150,30 40,220 290,220"/><line class="f-ln" x1="95" y1="125" x2="165" y2="165.5"/><polyline class="f-mk" points="91,131.9 97.9,135.9 101.9,129"/><line class="f-mk" x1="118.2" y1="75" x2="126.8" y2="80"/><line class="f-mk" x1="63.2" y1="170" x2="71.8" y2="175"/><text class="f-lb" x="82.4" y="118.9" text-anchor="middle" dominant-baseline="central">D</text><line class="f-ln" x1="165" y1="220" x2="165" y2="165.5"/><polyline class="f-mk" points="173,220 173,212 165,212"/><line class="f-mk" x1="100.5" y1="225" x2="100.5" y2="215"/><line class="f-mk" x1="104.5" y1="225" x2="104.5" y2="215"/><line class="f-mk" x1="225.5" y1="225" x2="225.5" y2="215"/><line class="f-mk" x1="229.5" y1="225" x2="229.5" y2="215"/><text class="f-lb" x="166.1" y="234" text-anchor="middle" dominant-baseline="central">E</text><line class="f-ln" x1="220" y1="125" x2="165" y2="165.5"/><polyline class="f-mk" points="215.3,118.6 208.8,123.3 213.6,129.7"/><line class="f-mk" x1="261.4" y1="172.8" x2="253.3" y2="178.7"/><line class="f-mk" x1="259" y1="169.5" x2="251" y2="175.5"/><line class="f-mk" x1="256.7" y1="166.3" x2="248.6" y2="172.2"/><line class="f-mk" x1="191.4" y1="77.8" x2="183.3" y2="83.7"/><line class="f-mk" x1="189" y1="74.5" x2="181" y2="80.5"/><line class="f-mk" x1="186.7" y1="71.3" x2="178.6" y2="77.2"/><text class="f-lb" x="232.4" y="118.5" text-anchor="middle" dominant-baseline="central">F</text><line class="f-rad" x1="165" y1="165.5" x2="150" y2="30"/><line class="f-rad" x1="165" y1="165.5" x2="40" y2="220"/><line class="f-rad" x1="165" y1="165.5" x2="290" y2="220"/><text class="f-lb" x="149" y="17" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="28.5" y="226.1" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="301.7" y="225.7" text-anchor="middle" dominant-baseline="central">C</text><circle class="f-dotO" cx="165" cy="165.5" r="4"/><text class="f-lb f-lbO" x="179" y="175.5" text-anchor="middle" dominant-baseline="central">O</text></svg>
+      <svg class="fig" viewBox="3.5 -0.7 323.5 252.7" width="323.5" style="max-width:330px" role="img" aria-label="내심 I와 세 내각의 이등분선, 내접원"><polygon class="f-tri" points="120,30 30,220 300,220"/><line class="f-ln" x1="120" y1="30" x2="139.3" y2="150.9"/><path class="f-mk" d="M111.4,48.1 A20,20 0 0 0 123.1,49.8"/><path class="f-mk" d="M123.1,49.8 A20,20 0 0 0 133.8,44.5"/><line class="f-ln" x1="30" y1="220" x2="139.3" y2="150.9"/><path class="f-mk" d="M38.6,201.9 A20,20 0 0 1 46.9,209.3"/><path class="f-mk" d="M40.3,198.3 A24,24 0 0 1 50.3,207.2"/><path class="f-mk" d="M46.9,209.3 A20,20 0 0 1 50,220"/><path class="f-mk" d="M50.3,207.2 A24,24 0 0 1 54,220"/><line class="f-ln" x1="300" y1="220" x2="139.3" y2="150.9"/><path class="f-mk" d="M286.2,205.5 A20,20 0 0 0 281.6,212.1"/><path class="f-mk" d="M283.5,202.6 A24,24 0 0 0 278,210.5"/><path class="f-mk" d="M280.7,199.7 A28,28 0 0 0 274.3,208.9"/><path class="f-mk" d="M281.6,212.1 A20,20 0 0 0 280,220"/><path class="f-mk" d="M278,210.5 A24,24 0 0 0 276,220"/><path class="f-mk" d="M274.3,208.9 A28,28 0 0 0 272,220"/><line class="f-perp" x1="139.3" y1="150.9" x2="76.8" y2="121.3"/><polyline class="f-mk" points="73.3,128.5 80.6,131.9 84,124.7"/><text class="f-lb" x="64.1" y="115.3" text-anchor="middle" dominant-baseline="central">D</text><line class="f-perp" x1="139.3" y1="150.9" x2="139.3" y2="220"/><polyline class="f-mk" points="147.3,220 147.3,212 139.3,212"/><text class="f-lb" x="139.3" y="234" text-anchor="middle" dominant-baseline="central">E</text><line class="f-perp" x1="139.3" y1="150.9" x2="189.4" y2="103.3"/><polyline class="f-mk" points="183.9,97.5 178.1,103 183.6,108.8"/><text class="f-lb" x="199.6" y="93.7" text-anchor="middle" dominant-baseline="central">F</text><circle class="f-ic" cx="139.3" cy="150.9" r="69.1"/><text class="f-lb" x="117" y="17.3" text-anchor="middle" dominant-baseline="central">A</text><text class="f-lb" x="18.5" y="226.1" text-anchor="middle" dominant-baseline="central">B</text><text class="f-lb" x="312" y="225.1" text-anchor="middle" dominant-baseline="central">C</text><circle class="f-dotI" cx="139.3" cy="150.9" r="4"/><text class="f-lb f-lbI" x="153.3" y="138.9" text-anchor="middle" dominant-baseline="central">I</text></svg>
+      <table>
+        <tr><th></th><th class="o">외심 O</th><th class="i">내심 I</th></tr>
+        <tr><th>뜻</th><td>수직이등분선</td><td>각의 이등분선</td></tr>
+        <tr><th>같은 거리</th><td>세 <b>꼭짓점</b></td><td>세 <b>변</b></td></tr>
+        <tr><th>반지름</th><td>OA</td><td>ID (수선)</td></tr>
+        <tr><th>위치</th><td>예각 안·직각 빗변 중점·둔각 밖</td><td>항상 안</td></tr>
+        <tr><th>접기</th><td>꼭짓점끼리</td><td>변끼리</td></tr>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:3px">외우는 말: <b>"외-꼭, 내-변"</b> · 실생활에서 세 <b>점</b>이면 외심, 세 <b>선</b>이면 내심</p>
+  </div>
+  <div class="box">
+    <h2><span class="n">3</span>점수가 깎이기 쉬운 곳</h2>
+    <ul class="tight mist">
+      <li><span class="x">✗</span> 내심이 세 <b>꼭짓점</b>에서 같은 거리라고 씀 → 세 <b>변</b>까지</li>
+      <li><span class="x">✗</span> 내접원 반지름을 <b>IA</b>로 잡음 → I에서 변에 내린 <b>수선 ID</b></li>
+      <li><span class="x">✗</span> 수선의 발 D·E·F, <b>직각 표시</b>를 빠뜨림</li>
+      <li><span class="x">✗</span> 접은 선을 일부만 그림 → <b>모두</b> 자로 긋기</li>
+      <li><span class="x">✗</span> 둔각삼각형에서 접은 선을 <b>연장하지 않아</b> O를 못 찾음</li>
+      <li><span class="x">✗</span> 서술형에 "외심이니까"만 씀 → <b>성질(같은 거리)</b>을 근거로</li>
+      <li><span class="x">✗</span> 합동 설명에서 <b>조건 이름</b>(SAS, RHA)과 "공통" 생략</li>
+      <li><span class="x">✗</span> 직각삼각형의 외심을 안쪽에 찍음 → <b>빗변의 중점</b></li>
+      <li><span class="x">✗</span> 원을 그린 뒤 확인 안 함 → 외접원은 세 꼭짓점을 <b>지나고</b>, 내접원은 세 변에 <b>닿아야</b> 해요</li>
+    </ul>
+  </div>
+</section>
+
+<section class="plan">
+  <h2><span class="n">4</span>우리는 앞으로 이런 공부를 해야 해요</h2>
+  <p style="margin-bottom:3px">외심·내심은 이번 평가로 끝나는 내용이 아니에요. <b>"같은 거리"</b>, <b>"합동으로 이유 대기"</b>, <b>"작도"</b>는 앞으로 배울 도형 단원 모두에서 다시 나옵니다.</p>
+  <div class="road">
+    <div class="now"><b>지금 · 삼각형의 성질</b>이등변삼각형, 외심·내심, 합동으로 설명하기</div>
+    <div><b>다음 · 사각형의 성질</b>평행사변형·마름모·직사각형 성질을 합동으로 증명</div>
+    <div><b>중2 · 닮음, 피타고라스</b>닮음비, 직각삼각형 변의 길이 (외접원 반지름 계산에도 쓰임)</div>
+    <div><b>중3 · 원의 성질</b>현의 수직이등분선, 접선, 원주각 (외접원·내접원의 확장)</div>
+  </div>
+  <div class="how">
+    <div><b>① 말로 설명하기</b> 공식만 외우지 말고 "뜻 → 성질 → 왜 그런지"를 친구나 선생님께 30초 안에 말해 보기.</div>
+    <div><b>② 손으로 그리기</b> 눈으로 보는 공부는 금방 잊어요. 자·컴퍼스·색종이로 직접 그리고 접고, 표시까지 완성하기.</div>
+    <div><b>③ 서술형은 틀에 맞춰</b> "조건(근거) → 합동 조건 이름 → 결론" 순서로 쓰기. 근거 없는 결론은 점수가 없어요.</div>
+    <div><b>④ 오답은 이유로 정리</b> 답만 고치지 말고 "어떤 개념을 헷갈렸는지" 한 줄로 쓰기. 같은 실수가 두 번 나오면 개념부터 다시.</div>
+    <div><b>⑤ 실생활 문제는 질문부터</b> "같은 거리인 게 점인가, 선인가?"를 먼저 묻는 습관. 문제를 수학 그림으로 바꾸는 연습.</div>
+    <div><b>⑥ 조금씩 자주</b> 하루 몰아서 3시간보다 매일 20분. 배운 날 · 3일 뒤 · 1주 뒤 다시 풀면 오래 기억해요.</div>
+  </div>
+  <table class="week">
+    <thead><tr><th>요일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>주말</th></tr></thead>
+    <tbody><tr><th>하루 20분</th><td>개념 말로 설명</td><td>교과서 기본 문제</td><td>작도·종이접기</td><td>서술형 1문제</td><td>실생활 문제</td><td>오답 다시 풀기</td></tr></tbody>
+  </table>
+</section>
+
+<section class="box fill">
+  <h2><span class="n">5</span>나의 점검</h2>
+  <div class="self">
+    <span>외심·내심의 뜻을 말할 수 있다</span>
+    <span>삼각형 모양별 외심 위치를 안다</span>
+    <span>OA=OB=OC를 합동으로 설명한다</span>
+    <span>종이접기로 O와 I를 찾을 수 있다</span>
+    <span>외접원·내접원을 바르게 그린다</span>
+    <span>이어폰·소방서 문제를 설명한다</span>
+  </div>
+</section>
+
+<p class="foot">정확히 알고, 직접 그리고, 이유를 말할 수 있으면 도형은 어렵지 않아요.</p>
+
+</div>
+</body>
+</html>
