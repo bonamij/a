@@ -342,6 +342,122 @@
 
   /* 출결 관리 */
   .att-btn-group{display:flex; gap:6px; flex-wrap:wrap;}
+  /* 출결 두 번째 줄: 수업/클리닉 + 수업 태도 */
+  .att-extra{ display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+  /* ===== 주간·월간 학습 보고서 ===== */
+  #wrepSheet{
+    --wr-ink:#1D2B28; --wr-soft:#6B7D78; --wr-line:#DDE6E3; --wr-teal:#1F7A5C;
+    --wr-tealsoft:#E8F3EF; --wr-bg:#fff;
+    background:var(--wr-bg); color:var(--wr-ink); border:1px solid var(--wr-line);
+    border-radius:14px; padding:30px 32px; font-family:'Noto Sans KR',sans-serif;
+    border-left:5px solid var(--wr-teal);
+  }
+  #wrepSheet .wr-kicker{ font-size:10.5px; letter-spacing:2.2px; font-weight:800; color:var(--wr-teal); }
+  #wrepSheet .wr-title{ display:flex; justify-content:space-between; align-items:flex-start; gap:18px; flex-wrap:wrap; margin-top:6px; }
+  #wrepSheet .wr-name{ font-size:27px; font-weight:800; letter-spacing:-.5px; }
+  #wrepSheet .wr-name small{ font-size:14px; font-weight:600; color:var(--wr-soft); margin-left:7px; }
+  #wrepSheet .wr-meta{ font-size:11.5px; color:var(--wr-soft); margin-top:7px; font-weight:500; }
+  #wrepSheet .wr-badge{
+    border:1.5px solid var(--wr-teal); border-radius:10px; padding:8px 14px; text-align:center; flex:none;
+  }
+  #wrepSheet .wr-badge b{ display:block; font-size:16px; color:var(--wr-teal); font-weight:800; }
+  #wrepSheet .wr-badge span{ font-size:10.5px; color:var(--wr-soft); font-weight:600; }
+  #wrepSheet .wr-cards{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:22px 0 6px; }
+  #wrepSheet .wr-card{ background:#F7FAF9; border:1px solid var(--wr-line); border-radius:10px; padding:13px 14px; }
+  #wrepSheet .wr-card .k{ font-size:11px; color:var(--wr-soft); font-weight:700; }
+  #wrepSheet .wr-card .v{ font-size:25px; font-weight:800; margin-top:4px; line-height:1.1; }
+  #wrepSheet .wr-card .v em{ font-size:13px; font-style:normal; font-weight:700; margin-left:1px; }
+  #wrepSheet .wr-card .n{ font-size:10.5px; color:var(--wr-soft); margin-top:6px; font-weight:500; }
+  #wrepSheet .wr-mini{ height:5px; border-radius:999px; background:var(--wr-line); margin-top:8px; overflow:hidden; }
+  #wrepSheet .wr-mini > i{ display:block; height:100%; background:var(--wr-teal); border-radius:999px; }
+  #wrepSheet .wr-sec{ margin-top:26px; }
+  #wrepSheet .wr-sec > h4{
+    font-size:13.5px; font-weight:800; margin:0 0 11px; display:flex; align-items:center; gap:8px;
+  }
+  #wrepSheet .wr-sec > h4 i{
+    width:19px; height:19px; border-radius:50%; background:var(--wr-teal); color:#fff; flex:none;
+    font-size:11px; font-style:normal; display:flex; align-items:center; justify-content:center; font-weight:800;
+  }
+  #wrepSheet .wr-sec > h4 u{ margin-left:auto; text-decoration:none; font-size:11px; color:var(--wr-soft); font-weight:600; }
+  #wrepSheet .wr-row{
+    border:1px solid var(--wr-line); border-radius:10px; padding:11px 14px; margin-bottom:8px;
+    display:flex; gap:16px; align-items:center; flex-wrap:wrap;
+  }
+  #wrepSheet .wr-row .d{ flex:none; min-width:94px; }
+  #wrepSheet .wr-row .d b{ font-size:12.5px; font-weight:800; }
+  #wrepSheet .wr-row .d span{ display:block; font-size:10.5px; color:var(--wr-teal); font-weight:700; margin-top:2px; }
+  #wrepSheet .wr-row .c{ flex:1; min-width:170px; font-size:12.5px; font-weight:700; }
+  #wrepSheet .wr-row .c small{ display:block; font-weight:500; color:var(--wr-soft); font-size:11px; margin-top:3px; overflow-wrap:anywhere; }
+  #wrepSheet .wr-row .m{ flex:none; text-align:center; min-width:62px; }
+  #wrepSheet .wr-row .m b{ display:block; font-size:13px; font-weight:800; }
+  #wrepSheet .wr-row .m span{ font-size:10px; color:var(--wr-soft); font-weight:600; }
+  #wrepSheet .wr-two{ display:grid; grid-template-columns:1.25fr 1fr; gap:16px; }
+  #wrepSheet .wr-box{ border:1px solid var(--wr-line); border-radius:10px; padding:15px 16px; }
+  #wrepSheet .wr-chart{ display:flex; align-items:flex-end; gap:8px; height:118px; margin-top:14px; }
+  #wrepSheet .wr-bar{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%; gap:4px; }
+  #wrepSheet .wr-bar i{ display:block; width:100%; background:#BFDED2; border-radius:4px 4px 0 0; font-style:normal; }
+  #wrepSheet .wr-bar.now i{ background:var(--wr-teal); }
+  #wrepSheet .wr-bar u{ font-size:9.5px; color:var(--wr-soft); text-decoration:none; font-weight:700; }
+  #wrepSheet .wr-bar b{ font-size:10px; font-weight:800; }
+  #wrepSheet .wr-pills{ display:flex; gap:4px; flex-wrap:wrap; margin:10px 0; }
+  #wrepSheet .wr-pill{ width:17px; height:17px; border-radius:4px; background:var(--wr-line); }
+  #wrepSheet .wr-pill.on{ background:var(--wr-teal); }
+  #wrepSheet .wr-pct{ font-size:34px; font-weight:800; color:var(--wr-teal); line-height:1; }
+  #wrepSheet .wr-note{ background:var(--wr-tealsoft); border-radius:8px; padding:10px 12px; font-size:11.5px; font-weight:700; color:#15594291; color:#155942; }
+  #wrepSheet .wr-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; text-align:center; }
+  #wrepSheet .wr-3 div span{ display:block; font-size:10.5px; color:var(--wr-soft); font-weight:600; }
+  #wrepSheet .wr-3 div b{ font-size:15px; font-weight:800; }
+  #wrepSheet .wr-good{ border:1px solid #9CCFB5; background:#F2FAF6; }
+  #wrepSheet .wr-bad{ border:1px solid #E8B9A8; background:#FEF6F3; }
+  #wrepSheet .wr-box h5{ font-size:12px; font-weight:800; margin:0 0 9px; }
+  #wrepSheet .wr-box ul{ margin:0; padding-left:17px; font-size:11.5px; line-height:1.75; font-weight:500; }
+  #wrepSheet .wr-comment{ border:1px solid var(--wr-line); border-radius:10px; padding:15px 17px; font-size:12px; line-height:1.85; background:#FAFCFB; }
+  #wrepSheet .wr-comment textarea{
+    width:100%; border:none; background:transparent; resize:vertical; font:inherit; color:inherit;
+    line-height:1.85; outline:none; min-height:86px;
+  }
+  #wrepSheet .wr-sign{ text-align:right; font-size:11.5px; color:var(--wr-soft); margin-top:9px; font-weight:700; }
+  #wrepSheet .wr-empty{ color:var(--wr-soft); font-size:11.5px; font-weight:500; padding:9px 0; }
+  @media (max-width: 820px){
+    #wrepSheet{ padding:20px 17px; }
+    #wrepSheet .wr-cards{ grid-template-columns:repeat(2,1fr); }
+    #wrepSheet .wr-two{ grid-template-columns:1fr; }
+    #wrepSheet .wr-name{ font-size:22px; }
+  }
+  @media print{
+    body.printing-wrep > *{ display:none !important; }
+    body.printing-wrep #wrepPrintArea{ display:block !important; position:absolute; inset:0; margin:0; padding:0; }
+    body.printing-wrep #wrepSheet{ border:none; border-left:5px solid var(--wr-teal); border-radius:0; }
+  }
+
+  /* 반별 단원 진도 */
+  .up-bar{ height:10px; border-radius:999px; background:var(--line); overflow:hidden; margin:10px 0 4px; }
+  .up-bar > i{ display:block; height:100%; background:var(--brand); border-radius:999px; transition:width .25s; }
+  .up-head{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; font-family:'Noto Sans KR',sans-serif; }
+  .up-pct{ font-size:30px; font-weight:800; color:var(--brand-dark); line-height:1; }
+  .up-sub{ font-size:12.5px; color:var(--ink-soft); font-weight:600; }
+  .up-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:6px; margin-top:12px; }
+  .up-item{
+    display:flex; align-items:center; gap:8px; padding:7px 10px; border:1px solid var(--line);
+    border-radius:8px; background:#fff; cursor:pointer; font-size:12.5px; font-family:'Noto Sans KR',sans-serif;
+  }
+  .up-item:hover{ border-color:var(--ink-soft); }
+  .up-item.done{ background:#EAF5EF; border-color:#9CCFB5; color:#1F6B4A; font-weight:700; }
+  .up-item input{ margin:0; flex:none; }
+  .up-item span{ min-width:0; overflow-wrap:anywhere; }
+  @media (max-width: 700px){ .up-list{ grid-template-columns:1fr; } }
+  .att-chipset{ display:flex; gap:4px; align-items:center; }
+  .att-chipset > span{ font-size:11px; color:var(--ink-soft); font-weight:700; margin-right:2px; font-family:'Noto Sans KR',sans-serif; }
+  .att-chip{
+    border:1px solid var(--line); background:#fff; color:var(--ink-soft);
+    border-radius:999px; padding:4px 10px; font-size:11.5px; font-weight:700; cursor:pointer;
+    font-family:'Noto Sans KR',sans-serif; line-height:1.4;
+  }
+  .att-chip:hover{ border-color:var(--ink-soft); }
+  .att-chip.on{ background:var(--ink); border-color:var(--ink); color:#fff; }
+  .att-chip.good.on{ background:#2E7D5B; border-color:#2E7D5B; }
+  .att-chip.soso.on{ background:#C9A227; border-color:#C9A227; }
+  .att-chip.bad.on{ background:#B8391F; border-color:#B8391F; }
   /* 출결: 반 묶음 머리줄 + 오늘 요약 */
   .att-today-bar{
     display:flex; align-items:center; gap:12px; flex-wrap:wrap;
@@ -803,6 +919,19 @@
 
     <!-- ---------- 진도 관리 (완성) ---------- -->
     <section class="panel" id="panel-progress">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-head">
+          <div>
+            <h3>📘 반별 단원 진도</h3>
+            <div class="sub">나간 단원을 체크해주세요. 주간·월간 보고서의 진도율(예: 8/12단원 67%)이 여기서 나와요. 단원 목록은 개념빈칸 테스트의 "커리큘럼 단원"을 그대로 써요.</div>
+          </div>
+          <div class="field">
+            <label for="unitProgClass">반</label>
+            <select id="unitProgClass" onchange="renderUnitProgress_()"><option value="">선택</option></select>
+          </div>
+        </div>
+        <div id="unitProgBody"></div>
+      </div>
       <div class="card">
         <div class="card-head">
           <div>
@@ -1390,6 +1519,31 @@
       </div>
     </section>
     <section class="panel" id="panel-report">
+      <div class="card no-print" style="margin-bottom:16px;">
+        <div class="card-head">
+          <div>
+            <h3>🗒️ 주간 · 월간 학습 보고서</h3>
+            <div class="sub">출결·숙제·데일리 테스트·태도·진도를 한 장으로 묶어요. 선생님 한마디만 쓰시고 인쇄하거나 PDF로 저장해 보내시면 돼요.</div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+            <div class="field">
+              <label for="wrepStudent">학생</label>
+              <select id="wrepStudent" onchange="renderWeeklyReport_()"><option value="">선택</option></select>
+            </div>
+            <div class="field">
+              <label for="wrepPeriod">기간</label>
+              <select id="wrepPeriod" onchange="renderWeeklyReport_()">
+                <option value="thisWeek">이번 주</option>
+                <option value="lastWeek">지난 주</option>
+                <option value="thisMonth">이번 달 (누적)</option>
+                <option value="lastMonth">지난 달 (누적)</option>
+              </select>
+            </div>
+            <button type="button" class="btn small ghost" onclick="printWeeklyReport_()">🖨️ 인쇄 · PDF</button>
+          </div>
+        </div>
+        <div id="wrepPrintArea"><div id="wrepSheet"></div></div>
+      </div>
       <div class="card no-print">
         <div class="card-head">
           <div>
@@ -2584,9 +2738,388 @@ function renderAttendanceRoster(){
       <tr>
         <td><strong>${escapeHtml(s.name)}</strong></td>
         <td><span class="badge gray">${escapeHtml(s.grade)}</span></td>
-        <td><div class="att-btn-group">${btns}</div>${rec && (rec.status === '결석' || rec.status === '지각') ? `<button type="button" class="btn small ghost" style="margin-top:6px;" onclick="openSmsModal_({ studentId: ${s.id}, kind: '${rec.status === '결석' ? 'absence' : 'late'}' })">📨 문자</button>` : ''}</td>
+        <td><div class="att-btn-group">${btns}</div>${attendanceExtraRow_(s, rec)}${rec && (rec.status === '결석' || rec.status === '지각') ? `<button type="button" class="btn small ghost" style="margin-top:6px;" onclick="openSmsModal_({ studentId: ${s.id}, kind: '${rec.status === '결석' ? 'absence' : 'late'}' })">📨 문자</button>` : ''}</td>
       </tr>`;
   }).join('');
+}
+
+
+/* ======================= 주간 · 월간 학습 보고서 ======================= */
+
+const WREP_DOW = ['일','월','화','수','목','금','토'];
+
+function wrepIso_(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function wrepParse_(iso){ return new Date(iso + 'T00:00:00'); }
+function wrepAddDays_(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+
+/** 고른 기간의 시작·끝 날짜와 제목을 돌려줘요 (주는 월요일 시작) */
+function wrepRange_(kind){
+  const now = new Date();
+  if(kind === 'thisMonth' || kind === 'lastMonth'){
+    const base = new Date(now.getFullYear(), now.getMonth() + (kind === 'lastMonth' ? -1 : 0), 1);
+    const end = new Date(base.getFullYear(), base.getMonth()+1, 0);
+    return {
+      from: wrepIso_(base), to: wrepIso_(end), monthly: true,
+      label: (base.getMonth()+1) + '월',
+      sub: '한 달 누적'
+    };
+  }
+  const dow = (now.getDay() + 6) % 7;            // 월=0
+  let mon = wrepAddDays_(now, -dow);
+  if(kind === 'lastWeek') mon = wrepAddDays_(mon, -7);
+  const sun = wrepAddDays_(mon, 6);
+  const weekNo = Math.floor((mon.getDate() - 1) / 7) + 1;
+  return {
+    from: wrepIso_(mon), to: wrepIso_(sun), monthly: false,
+    label: (mon.getMonth()+1) + '월 ' + weekNo + '주차',
+    sub: '한 주'
+  };
+}
+
+function wrepInRange_(iso, r){ return iso && iso >= r.from && iso <= r.to; }
+
+/** 그 학생에게 그 기간에 나간 숙제들 */
+function wrepHomework_(student, r){
+  return homeworkAssignments.filter(a =>
+    wrepInRange_(a.date, r) && getAssignmentTargetStudents(a).some(s => s.id === student.id)
+  ).sort((a,b) => String(a.date).localeCompare(String(b.date)));
+}
+
+/** 반 평균 (같은 반 학생들의 그 기간 데일리 테스트 평균) */
+function wrepClassAvg_(student, r){
+  if(!student.className) return null;
+  const ids = students.filter(s => s.className === student.className).map(s => s.id);
+  const list = dailyTests.filter(t => ids.indexOf(t.studentId) >= 0 && wrepInRange_(t.date, r) && t.score != null);
+  if(!list.length) return null;
+  return Math.round(list.reduce((a,t) => a + Number(t.score), 0) / list.length);
+}
+
+function wrepAvg_(list){
+  const v = list.filter(t => t.score != null);
+  return v.length ? Math.round(v.reduce((a,t) => a + Number(t.score), 0) / v.length) : null;
+}
+
+function refreshWeeklyReportSelect_(){
+  const sel = document.getElementById('wrepStudent');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">선택</option>' +
+    students.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + ' (' + escapeHtml(s.grade || '') + ')</option>').join('');
+  if(students.some(s => String(s.id) === prev)) sel.value = prev;
+  renderWeeklyReport_();
+}
+
+function renderWeeklyReport_(){
+  const box = document.getElementById('wrepSheet');
+  const sel = document.getElementById('wrepStudent');
+  if(!box || !sel) return;
+  const student = students.find(s => String(s.id) === sel.value);
+  if(!student){
+    box.innerHTML = '<div class="wr-empty">학생을 고르면 보고서가 만들어져요.</div>';
+    return;
+  }
+  const r = wrepRange_(document.getElementById('wrepPeriod').value);
+
+  // ---- 모으기
+  const atts = attendanceRecords.filter(a => a.studentId === student.id && wrepInRange_(a.date, r))
+    .sort((a,b) => String(a.date).localeCompare(String(b.date)));
+  const tests = dailyTests.filter(t => t.studentId === student.id && wrepInRange_(t.date, r))
+    .sort((a,b) => String(a.date).localeCompare(String(b.date)));
+  const hws = wrepHomework_(student, r);
+
+  const present = atts.filter(a => a.status !== '결석');
+  const lateN = atts.filter(a => a.status === '지각').length;
+  const absentN = atts.length - present.length;
+  const attNote = !atts.length ? '기록 없음'
+    : absentN ? ('결석 ' + absentN + '회' + (lateN ? ' · 지각 ' + lateN + '회' : ''))
+    : lateN ? ('지각 ' + lateN + '회')
+    : '모두 출석';
+  const avg = wrepAvg_(tests);
+  const classAvg = wrepClassAvg_(student, r);
+
+  // 지난 같은 기간과 비교
+  const span = (wrepParse_(r.to) - wrepParse_(r.from)) / 86400000 + 1;
+  const prevR = { from: wrepIso_(wrepAddDays_(wrepParse_(r.from), -span)), to: wrepIso_(wrepAddDays_(wrepParse_(r.from), -1)) };
+  const prevAvg = wrepAvg_(dailyTests.filter(t => t.studentId === student.id && wrepInRange_(t.date, prevR)));
+  const delta = (avg != null && prevAvg != null) ? avg - prevAvg : null;
+
+  const hwDone = hws.filter(a => (a.doneBy || []).indexOf(student.id) >= 0).length;
+  const hwPct = hws.length ? Math.round(hwDone / hws.length * 100) : null;
+
+  const moods = atts.map(a => a.attitude).filter(Boolean);
+  const moodTop = moods.length
+    ? Object.entries(moods.reduce((m,v) => (m[v]=(m[v]||0)+1, m), {})).sort((a,b) => b[1]-a[1])[0]
+    : null;
+
+  const prog = student.className ? classProgressStat_(student.className) : { done:0, total:0, pct:0, lastUnit:'', nextUnit:'' };
+
+  // ---- ① 날짜별 기록
+  const days = [...new Set(atts.map(a => a.date).concat(tests.map(t => t.date)))].sort();
+  const rowsHtml = days.length ? days.map(d => {
+    const a = atts.find(x => x.date === d);
+    const t = tests.find(x => x.date === d);
+    const hw = hws.filter(x => x.date === d);
+    const dt = wrepParse_(d);
+    const hwText = hw.length ? hw.map(x => x.text).join(' / ') : '';
+    return '<div class="wr-row">' +
+      '<div class="d"><b>' + (dt.getMonth()+1) + '/' + dt.getDate() + '(' + WREP_DOW[dt.getDay()] + ')</b>' +
+        '<span>' + escapeHtml((a && a.kind) || '수업') + (a ? ' · ' + escapeHtml(a.status) : '') + '</span></div>' +
+      '<div class="c">' + escapeHtml(t ? (t.unit || '테스트') : (hwText ? '수업' : '-')) +
+        (hwText ? '<small>숙제: ' + escapeHtml(hwText) + '</small>' : '') + '</div>' +
+      '<div class="m"><b>' + (hw.length ? (hw.filter(x => (x.doneBy||[]).indexOf(student.id) >= 0).length === hw.length ? '100%' : Math.round(hw.filter(x => (x.doneBy||[]).indexOf(student.id) >= 0).length / hw.length * 100) + '%') : '-') + '</b><span>숙제</span></div>' +
+      '<div class="m"><b>' + (t ? (t.correct != null && t.total != null ? t.correct + ' / ' + t.total : t.score + '점') : '-') + '</b><span>테스트</span></div>' +
+      '<div class="m"><b>' + escapeHtml((a && a.attitude) || '-') + '</b><span>태도</span></div>' +
+    '</div>';
+  }).join('') : '<div class="wr-empty">이 기간에 기록이 없어요. 출결·데일리 테스트를 먼저 남겨주세요.</div>';
+
+  // ---- ② 추이 (최근 8회, 기간 밖 기록도 함께 보여줘요)
+  const all = dailyTests.filter(t => t.studentId === student.id && t.score != null)
+    .sort((a,b) => String(a.date).localeCompare(String(b.date))).slice(-8);
+  const chartHtml = all.length ? all.map(t => {
+    const dt = wrepParse_(t.date);
+    const inNow = wrepInRange_(t.date, r);
+    return '<div class="wr-bar ' + (inNow ? 'now' : '') + '">' +
+      '<b>' + t.score + '</b>' +
+      '<i style="height:' + Math.max(4, Math.round(Number(t.score) * 0.78)) + '%"></i>' +
+      '<u>' + (dt.getMonth()+1) + '/' + dt.getDate() + '</u></div>';
+  }).join('') : '<div class="wr-empty">아직 테스트 기록이 없어요.</div>';
+
+  // ---- 월 누적 (보고서 기간이 속한 달)
+  const mPrefix = r.from.slice(0,7);
+  const mAtt = attendanceRecords.filter(a => a.studentId === student.id && String(a.date).slice(0,7) === mPrefix);
+  const mTests = dailyTests.filter(t => t.studentId === student.id && String(t.date).slice(0,7) === mPrefix);
+  const mHw = homeworkAssignments.filter(a => String(a.date).slice(0,7) === mPrefix && getAssignmentTargetStudents(a).some(s => s.id === student.id));
+  const mHwPct = mHw.length ? Math.round(mHw.filter(a => (a.doneBy||[]).indexOf(student.id) >= 0).length / mHw.length * 100) : null;
+  const mAvg = wrepAvg_(mTests);
+
+  // ---- ④ 포인트 (시험지 분석에서 끌어와요)
+  const goods = [...new Set(tests.map(t => t.analysis && t.analysis.strengths).filter(Boolean))];
+  const bads = [];
+  tests.forEach(t => {
+    const a = t.analysis || {};
+    (a.weakTypes || []).forEach(w => {
+      if(w && w.type) bads.push(w.type + (w.numbers && w.numbers.length ? ' (' + w.numbers.join('·') + '번)' : ''));
+    });
+    if(a.causeGuess) bads.push(a.causeGuess);
+  });
+  const badList = [...new Set(bads)];
+
+  const teacherName = (appSettings && appSettings.teacherName) || '';
+  const fromD = wrepParse_(r.from), toD = wrepParse_(r.to);
+  const fmt = d => d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0') + '(' + WREP_DOW[d.getDay()] + ')';
+
+  box.innerHTML =
+  '<div class="wr-kicker">' + (r.monthly ? 'MONTHLY LEARNING NOTE' : 'WEEKLY LEARNING NOTE') + '</div>' +
+  '<div class="wr-title">' +
+    '<div><div class="wr-name">' + escapeHtml(student.name) + '<small>학생 ' + (r.monthly ? '월간' : '주간') + ' 학습 보고서</small></div>' +
+      '<div class="wr-meta">' + fmt(fromD) + ' ~ ' + fmt(toD) +
+        (student.className ? ' · ' + escapeHtml(student.className) : '') +
+        (student.grade ? ' · ' + escapeHtml(student.grade) : '') +
+        (teacherName ? ' · ' + escapeHtml(teacherName) : '') + '</div></div>' +
+    '<div class="wr-badge"><b>' + r.label + '</b><span>' +
+      (atts.length ? (absentN ? present.length + '/' + atts.length + '회 출석' : attNote) : '출결 기록 없음') +
+      (hwPct === 100 ? ' · 숙제 완료' : '') + '</span></div>' +
+  '</div>' +
+
+  '<div class="wr-cards">' +
+    '<div class="wr-card"><div class="k">' + (r.monthly ? '월 테스트 평균' : '테스트 평균') + '</div>' +
+      '<div class="v">' + (avg != null ? avg + '<em>점</em>' : '-') + '</div>' +
+      '<div class="wr-mini"><i style="width:' + (avg != null ? avg : 0) + '%"></i></div>' +
+      '<div class="n">' + (classAvg != null ? '반 평균 ' + classAvg + '점' : '반 평균 -') +
+        (delta != null ? ' · 지난 기간 ' + prevAvg + '점 ' + (delta > 0 ? '▲' + delta : delta < 0 ? '▼' + Math.abs(delta) : '—') : '') + '</div></div>' +
+    '<div class="wr-card"><div class="k">출석</div>' +
+      '<div class="v">' + present.length + '<em>/' + atts.length + '회</em></div>' +
+      '<div class="wr-mini"><i style="width:' + (atts.length ? present.length/atts.length*100 : 0) + '%"></i></div>' +
+      '<div class="n">' + attNote + '</div></div>' +
+    '<div class="wr-card"><div class="k">숙제</div>' +
+      '<div class="v">' + (hwPct != null ? hwPct + '<em>%</em>' : '-') + '</div>' +
+      '<div class="wr-mini"><i style="width:' + (hwPct || 0) + '%"></i></div>' +
+      '<div class="n">' + (hws.length ? hwDone + '/' + hws.length + '개 해옴' : '나간 숙제 없음') + '</div></div>' +
+    '<div class="wr-card"><div class="k">수업 태도</div>' +
+      '<div class="v" style="font-size:21px;">' + (moodTop ? escapeHtml(moodTop[0]) : '-') + '</div>' +
+      '<div class="n" style="margin-top:12px;">' + (moodTop ? moods.length + '회 중 ' + moodTop[1] + '회 ' + escapeHtml(moodTop[0]) : '출결 찍을 때 태도도 눌러주세요') + '</div></div>' +
+  '</div>' +
+
+  '<div class="wr-sec"><h4><i>1</i>' + (r.monthly ? '이번 달 기록' : '이번 주 기록') + '<u>수업 ' +
+    present.filter(a => (a.kind || '수업') === '수업').length + '회 · 클리닉 ' +
+    present.filter(a => a.kind === '클리닉').length + '회</u></h4>' + rowsHtml + '</div>' +
+
+  '<div class="wr-sec wr-two">' +
+    '<div class="wr-box"><h4 style="font-size:13px; font-weight:800; margin:0 0 2px;"><i style="width:19px;height:19px;border-radius:50%;background:var(--wr-teal);color:#fff;font-size:11px;font-style:normal;display:inline-flex;align-items:center;justify-content:center;font-weight:800;margin-right:6px;">2</i>테스트 추이</h4>' +
+      '<div style="font-size:10.5px;color:var(--wr-soft);font-weight:600;">최근 ' + all.length + '회 · 100점 환산 · 진한 막대가 이번 기간</div>' +
+      '<div class="wr-chart">' + chartHtml + '</div></div>' +
+    '<div class="wr-box"><h4 style="font-size:13px; font-weight:800; margin:0 0 10px;"><i style="width:19px;height:19px;border-radius:50%;background:var(--wr-teal);color:#fff;font-size:11px;font-style:normal;display:inline-flex;align-items:center;justify-content:center;font-weight:800;margin-right:6px;">3</i>진도 현황</h4>' +
+      (prog.total
+        ? '<div class="wr-pct">' + prog.pct + '%</div>' +
+          '<div style="font-size:11px;color:var(--wr-soft);font-weight:600;margin-top:3px;">' + prog.done + ' / ' + prog.total + '단원</div>' +
+          '<div class="wr-pills">' + Array.from({length: prog.total}, (_, i) => '<span class="wr-pill ' + (i < prog.done ? 'on' : '') + '"></span>').join('') + '</div>' +
+          '<div class="wr-note">' + (prog.lastUnit ? '최근 진도 ' + escapeHtml(prog.lastUnit) : '아직 체크한 단원이 없어요') +
+            (prog.nextUnit ? ' → 다음 ' + escapeHtml(prog.nextUnit) : '') + '</div>'
+        : '<div class="wr-empty">진도 관리 탭에서 이 반의 단원을 체크하면 진도율이 나와요.</div>') +
+      '<div class="wr-3">' +
+        '<div><span>' + mPrefix.slice(5) + '월 출석</span><b>' + mAtt.filter(a => a.status !== '결석').length + '/' + mAtt.length + '회</b></div>' +
+        '<div><span>' + mPrefix.slice(5) + '월 숙제</span><b>' + (mHwPct != null ? mHwPct + '%' : '-') + '</b></div>' +
+        '<div><span>' + mPrefix.slice(5) + '월 평균</span><b>' + (mAvg != null ? mAvg + '점' : '-') + '</b></div>' +
+      '</div></div>' +
+  '</div>' +
+
+  '<div class="wr-sec"><h4><i>4</i>' + (r.monthly ? '이번 달' : '이번 주') + ' 포인트</h4>' +
+    '<div class="wr-two">' +
+      '<div class="wr-box wr-good"><h5>잘한 점</h5>' +
+        (goods.length ? '<ul>' + goods.map(g => '<li>' + escapeHtml(g) + '</li>').join('') + '</ul>'
+                      : '<div class="wr-empty">시험지 사진을 올려 AI 분석을 하면 여기에 채워져요.</div>') + '</div>' +
+      '<div class="wr-box wr-bad"><h5>보완할 점</h5>' +
+        (badList.length ? '<ul>' + badList.map(b => '<li>' + escapeHtml(b) + '</li>').join('') + '</ul>'
+                        : '<div class="wr-empty">아직 분석된 약한 유형이 없어요.</div>') + '</div>' +
+    '</div></div>' +
+
+  '<div class="wr-sec"><h4><i>5</i>선생님 한마디</h4>' +
+    '<div class="wr-comment"><textarea placeholder="이번 ' + (r.monthly ? '달' : '주') + ' 아이에 대해 학부모님께 전하고 싶은 말을 적어주세요." ' +
+      'oninput="updateTeacherComment(' + student.id + ', this.value)">' + escapeHtml(teacherComments[student.id] || '') + '</textarea>' +
+      (teacherName ? '<div class="wr-sign">— ' + escapeHtml(teacherName) + '</div>' : '') + '</div></div>';
+}
+
+function printWeeklyReport_(){
+  if(!document.getElementById('wrepStudent').value){ alert('먼저 학생을 골라주세요.'); return; }
+  document.body.classList.add('printing-wrep');
+  window.print();
+  setTimeout(() => document.body.classList.remove('printing-wrep'), 400);
+}
+
+/* ---------------- 반별 단원 진도 (settings.unitProgress 에 저장) ---------------- */
+
+
+function unitProgressMap_(){
+  const v = appSettings && appSettings.unitProgress;
+  return (v && typeof v === 'object') ? v : {};
+}
+
+/** 그 반의 단원 목록 — 개념빈칸의 "켠 단원"을 그대로 써요 */
+function unitsOfClass_(className){
+  const m = (typeof conceptEnabledUnits !== 'undefined' && conceptEnabledUnits) || {};
+  const list = m[className];
+  return Array.isArray(list) ? list : [];
+}
+
+/** 보고서용: 그 반의 진도 {done, total, pct, lastUnit, nextUnit} */
+function classProgressStat_(className){
+  const units = unitsOfClass_(className);
+  const done = (unitProgressMap_()[className]) || {};
+  const doneList = units.filter(u => done[u]);
+  const lastUnit = doneList.length
+    ? doneList.slice().sort((a, b) => String(done[a]).localeCompare(String(done[b]))).slice(-1)[0]
+    : '';
+  const nextUnit = units.find(u => !done[u]) || '';
+  return {
+    done: doneList.length,
+    total: units.length,
+    pct: units.length ? Math.round(doneList.length / units.length * 100) : 0,
+    lastUnit, nextUnit
+  };
+}
+
+function refreshUnitProgressClasses_(){
+  const sel = document.getElementById('unitProgClass');
+  if(!sel) return;
+  const prev = sel.value;
+  const names = [...new Set(students.map(s => s.className).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
+  sel.innerHTML = '<option value="">선택</option>' + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  if(names.indexOf(prev) >= 0) sel.value = prev;
+  else if(names.length === 1) sel.value = names[0];
+  renderUnitProgress_();
+}
+
+function renderUnitProgress_(){
+  const box = document.getElementById('unitProgBody');
+  const sel = document.getElementById('unitProgClass');
+  if(!box || !sel) return;
+  const cls = sel.value;
+  if(!cls){ box.innerHTML = '<div class="placeholder-box"><span class="icon">📘</span>반을 고르면 단원 목록이 나와요.</div>'; return; }
+  const units = unitsOfClass_(cls);
+  if(!units.length){
+    box.innerHTML = `<div class="placeholder-box"><span class="icon">📘</span><b>${escapeHtml(cls)}</b> 반의 단원 목록이 아직 없어요.<br>개념빈칸 테스트 탭의 "커리큘럼 단원 관리"에서 이 반의 단원을 먼저 켜주세요.</div>`;
+    return;
+  }
+  const done = unitProgressMap_()[cls] || {};
+  const st = classProgressStat_(cls);
+  box.innerHTML = `
+    <div class="up-head"><span class="up-pct">${st.pct}%</span><span class="up-sub">${st.done} / ${st.total}단원${st.nextUnit ? ' · 다음: ' + escapeHtml(st.nextUnit) : ' · 다 나갔어요'}</span></div>
+    <div class="up-bar"><i style="width:${st.pct}%"></i></div>
+    <div class="up-list">${units.map((u, i) => `
+      <label class="up-item ${done[u] ? 'done' : ''}">
+        <input type="checkbox" ${done[u] ? 'checked' : ''} onchange="toggleUnitDone_('${encodeURIComponent(cls)}', '${encodeURIComponent(u)}', this.checked)">
+        <span>${escapeHtml(u)}</span>
+      </label>`).join('')}</div>`;
+}
+
+async function toggleUnitDone_(clsEnc, unitEnc, checked){
+  const cls = decodeURIComponent(clsEnc), unit = decodeURIComponent(unitEnc);
+  const map = JSON.parse(JSON.stringify(unitProgressMap_()));
+  map[cls] = map[cls] || {};
+  if(checked) map[cls][unit] = todayIso_();
+  else delete map[cls][unit];
+  appSettings = Object.assign({}, appSettings, { unitProgress: map });
+  renderUnitProgress_();
+  try {
+    await apiCall_('adminCommit', { baseRev: lastRev, ops: [{ op: 'put', c: 'settings', id: 'unitProgress', data: map }] });
+  } catch(err){
+    showToast('❌ 진도 저장 실패: ' + err.message, 'error');
+  }
+}
+
+function todayIso_(){
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+}
+
+const ATT_KINDS = [
+  { key: '수업', label: '수업' },
+  { key: '클리닉', label: '클리닉' }
+];
+const ATT_ATTITUDES = [
+  { key: '좋음', cls: 'good' },
+  { key: '보통', cls: 'soso' },
+  { key: '아쉬움', cls: 'bad' }
+];
+
+// 온 학생에게만 "수업/클리닉"과 "태도"를 물어봐요. 결석한 학생에겐 안 물어요.
+function attendanceExtraRow_(student, rec){
+  if(!rec || rec.status === '결석') return '';
+  const kind = rec.kind || '수업';
+  const kinds = ATT_KINDS.map(k =>
+    `<button type="button" class="att-chip ${kind === k.key ? 'on' : ''}" onclick="setAttendanceKind(${student.id}, '${k.key}')">${k.label}</button>`
+  ).join('');
+  const moods = ATT_ATTITUDES.map(a =>
+    `<button type="button" class="att-chip ${a.cls} ${rec.attitude === a.key ? 'on' : ''}" onclick="setAttendanceAttitude(${student.id}, '${a.key}')">${a.key}</button>`
+  ).join('');
+  return `<div class="att-extra">
+      <div class="att-chipset">${kinds}</div>
+      <div class="att-chipset"><span>태도</span>${moods}</div>
+    </div>`;
+}
+
+function updateAttendanceField_(studentId, patch){
+  const date = document.getElementById('att-date').value;
+  const rec = getAttendanceRecord(studentId, date);
+  if(!rec) return;
+  Object.assign(rec, patch);
+  renderAttendanceRoster();
+  scheduleSync();
+}
+
+/** 수업 ↔ 클리닉 */
+function setAttendanceKind(studentId, kind){
+  updateAttendanceField_(studentId, { kind: kind });
+}
+
+/** 수업 태도. 같은 걸 다시 누르면 지워져요. */
+function setAttendanceAttitude(studentId, attitude){
+  const date = document.getElementById('att-date').value;
+  const rec = getAttendanceRecord(studentId, date);
+  if(!rec) return;
+  updateAttendanceField_(studentId, { attitude: rec.attitude === attitude ? '' : attitude });
 }
 
 // 아직 안 찍은 학생을 한 번에 출석으로. 이미 찍어둔 결석·지각은 건드리지 않아요.
@@ -6723,6 +7256,8 @@ function renderAll_(){
   renderDashboard();
   renderStudents();
   refreshProgressStudentSelects();
+  refreshUnitProgressClasses_();
+  refreshWeeklyReportSelect_();
   renderProgressList();
   refreshAttendanceStudentSelect();
   renderAttendanceRoster();
