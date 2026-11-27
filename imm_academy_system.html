@@ -690,7 +690,9 @@
             <h3>학생 등록</h3>
             <div class="sub">이름·학년·학교와 등록 시점의 시작 진도를 입력하세요. 이후 진도 변경은 <strong>진도 관리</strong> 탭에서 기록하면 자동으로 반영돼요.</div>
           </div>
+          <button type="button" class="btn small ghost" id="studentFormToggle" onclick="toggleStudentForm_()">＋ 새 학생 등록하기</button>
         </div>
+        <div id="studentFormBody" hidden>
         <form class="inline-form" id="studentForm" onsubmit="addStudent(event)">
           <div class="field">
             <label for="s-name">이름</label>
@@ -738,6 +740,7 @@
         <div style="margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);">
           <div class="sub" style="margin-bottom:8px;">구글시트에 미리 적어두셨던 학생 10명을 한 번에 등록할 수 있어요.</div>
           <button type="button" class="btn small ghost" onclick="bulkImportStudents()">📥 기존 학생 10명 한번에 추가</button>
+        </div>
         </div>
       </div>
 
@@ -1852,9 +1855,24 @@ function closeSidebar(){
   document.getElementById('sidebarOverlay').classList.remove('open');
 }
 
+// 학생 등록 폼은 가끔만 쓰니까 평소엔 접어둬요 (폰에서 목록이 바로 보이게)
+function toggleStudentForm_(open){
+  const body = document.getElementById('studentFormBody');
+  const btn = document.getElementById('studentFormToggle');
+  if(!body) return;
+  const show = (open === undefined) ? body.hidden : !!open;
+  body.hidden = !show;
+  if(btn) btn.textContent = show ? '✕ 접기' : '＋ 새 학생 등록하기';
+  return show;
+}
+
 function openTopbarModal(){
-  const studentForm = document.getElementById('s-name');
-  if(studentForm) studentForm.scrollIntoView({ behavior:'smooth', block:'center' });
+  switchTab('students');
+  toggleStudentForm_(true);
+  setTimeout(() => {
+    const el = document.getElementById('s-name');
+    if(el){ el.scrollIntoView({ behavior:'smooth', block:'center' }); el.focus({ preventScroll:true }); }
+  }, 120);
 }
 
 function sidebarSearch(q){
