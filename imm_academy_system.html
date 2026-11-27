@@ -121,6 +121,32 @@
   }
   .notice-bar.good{ background:#fff; border-color:var(--line); color:var(--ink-soft); font-weight:600; }
 
+  /* 포털 로그인이 막힌 학생 (비밀번호 미설정) */
+  #loginBlockedCard{
+    border:2px solid #E2573C; background:#FDECE7; border-radius:14px;
+    padding:16px 18px; margin-bottom:18px; font-family:'Noto Sans KR',sans-serif;
+  }
+  #loginBlockedCard h3{ margin:0; font-size:16px; color:#B4472B; font-family:'Noto Sans KR',sans-serif; }
+  .lb-help{ font-size:12.5px; color:#8C4A36; line-height:1.55; margin:8px 0 14px; font-weight:500; }
+  .lb-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:10px; }
+  .lb-row{
+    display:flex; align-items:center; gap:10px; background:#fff;
+    border:1px solid rgba(226,87,60,0.35); border-radius:10px; padding:8px 10px;
+  }
+  .lb-name{ flex:1; min-width:0; font-size:14px; font-weight:700; color:var(--ink); }
+  .lb-name small{ display:block; font-size:11px; font-weight:600; color:var(--ink-soft); margin-top:1px; }
+  .lb-pin{
+    width:88px; flex:none; padding:8px 6px; text-align:center; letter-spacing:3px;
+    font-size:16px; font-weight:700; border:1.5px solid #E2573C; border-radius:8px;
+    background:#fff; color:var(--ink);
+  }
+  .lb-pin::placeholder{ letter-spacing:0; font-size:12px; font-weight:500; color:#C9A295; }
+  .lb-actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px; }
+  @media (max-width: 700px){
+    .lb-list{ grid-template-columns:1fr; }
+    .lb-pin{ width:96px; }
+  }
+
   /* 오늘의 수업 칩 */
   .today-classes{ display:flex; gap:10px; flex-wrap:wrap; }
   .class-chip{ background:var(--cream-alt); border:1px solid var(--line); border-radius:10px; padding:10px 14px; min-width:120px; }
@@ -542,6 +568,19 @@
     <!-- ---------- 대시보드 (신규) ---------- -->
     <section class="panel active" id="panel-dashboard">
       <div id="dashNoticeBanner" class="notice-bar dash-clickable" style="display:none;" onclick="goToDashboardAlert()"></div>
+
+      <div id="loginBlockedCard" style="display:none;">
+        <h3>🔑 포털에 로그인할 수 없는 학생 <span id="loginBlockedCount"></span></h3>
+        <div class="lb-help">
+          비밀번호가 없거나 <b>0000</b>이면 학생이 로그인을 못 해요. 숙제 체크·개념빈칸 테스트도 못 하고요.<br>
+          학생 <b>본인 핸드폰 끝 4자리</b>를 넣고 저장하면 바로 들어갈 수 있어요.
+        </div>
+        <div class="lb-list" id="loginBlockedList"></div>
+        <div class="lb-actions">
+          <button type="button" class="btn small" onclick="saveLoginBlockedPins()">저장하고 로그인 열어주기</button>
+          <span style="font-size:12px; color:#8C4A36; font-weight:600;">빈칸으로 둔 학생은 그대로 둬요.</span>
+        </div>
+      </div>
 
       <div class="dash-stat-grid">
         <div class="dash-stat-card dash-clickable" onclick="switchTab('students')"><div><div class="ds-label">전체 학생</div><div class="ds-value" id="dashStat1">0<small> 명</small></div></div><span class="ds-icon">👥</span></div>
@@ -5130,6 +5169,61 @@ function goToDashboardAlert(){
   if(dashAlertTarget) switchTab(dashAlertTarget);
 }
 
+// 비밀번호가 없거나 0000이면 학부모 포털에 로그인할 수 없어요
+function loginBlockedStudents_(){
+  return students.filter(s => {
+    const pin = String(s.pin || '').trim();
+    return !/^\d{4}$/.test(pin) || pin === '0000';
+  });
+}
+
+function renderLoginBlockedCard_(){
+  const card = document.getElementById('loginBlockedCard');
+  if(!card) return;
+  const list = loginBlockedStudents_();
+  card.style.display = list.length ? '' : 'none';
+  if(!list.length) return;
+  const countEl = document.getElementById('loginBlockedCount');
+  if(countEl) countEl.textContent = list.length + '명';
+  const box = document.getElementById('loginBlockedList');
+  if(!box) return;
+  // 이미 입력해 둔 값은 다시 그릴 때 지우지 않아요
+  const typed = {};
+  box.querySelectorAll('.lb-pin').forEach(el => { if(el.value) typed[el.dataset.sid] = el.value; });
+  box.innerHTML = list.map(s => `
+    <div class="lb-row">
+      <div class="lb-name">${escapeHtml(s.name)}<small>${escapeHtml(s.grade || '')}${s.className ? ' · ' + escapeHtml(s.className) : ''}</small></div>
+      <input type="text" class="lb-pin" id="lb-pin-${s.id}" data-sid="${s.id}" value="${escapeHtml(typed[s.id] || '')}"
+             maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="끝 4자리" autocomplete="off"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();saveLoginBlockedPins();}">
+    </div>`).join('');
+}
+
+function saveLoginBlockedPins(){
+  const inputs = Array.from(document.querySelectorAll('#loginBlockedList .lb-pin'));
+  const filled = inputs.filter(el => el.value.trim() !== '');
+  if(!filled.length){ showToast('비밀번호를 한 명이라도 넣어주세요.', 'error'); return; }
+  const bad = filled.filter(el => !/^\d{4}$/.test(el.value.trim()) || el.value.trim() === '0000');
+  if(bad.length){
+    showToast('비밀번호는 0000이 아닌 숫자 4자리여야 해요.', 'error');
+    bad[0].focus();
+    return;
+  }
+  const names = [];
+  filled.forEach(el => {
+    const s = students.find(x => String(x.id) === String(el.dataset.sid));
+    if(!s) return;
+    s.pin = el.value.trim();
+    names.push(s.name);
+  });
+  if(!names.length) return;
+  renderAll_();
+  updateSyncSettingsUi_();
+  scheduleSync();
+  const left = loginBlockedStudents_().length;
+  showToast('✅ ' + names.join(', ') + ' 로그인할 수 있어요.' + (left ? ' (아직 ' + left + '명 남았어요)' : ''), 'ok');
+}
+
 function renderDashboard(){
   const now = new Date();
   const todayIso = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
@@ -5137,6 +5231,8 @@ function renderDashboard(){
   weekStart.setDate(now.getDate() - now.getDay());
   const weekStartIso = weekStart.toISOString().slice(0,10);
   const monthPrefix = todayIso.slice(0,7);
+
+  renderLoginBlockedCard_();
 
   // === 새 6개 stat 카드 ===
   const s1 = document.getElementById('dashStat1');
