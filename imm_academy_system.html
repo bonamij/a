@@ -445,15 +445,6 @@
   .up-item.done{ background:#EAF5EF; border-color:#9CCFB5; color:#1F6B4A; font-weight:700; }
   .up-item input{ margin:0; flex:none; }
   .up-item span{ min-width:0; overflow-wrap:anywhere; }
-  .up-grade{ display:flex; gap:5px; flex-wrap:wrap; align-items:center; padding-bottom:12px; border-bottom:1px solid var(--line); font-family:'Noto Sans KR',sans-serif; }
-  .up-grade-label{ font-size:11.5px; font-weight:800; color:var(--ink-soft); margin-right:3px; }
-  .up-grade-btn{
-    border:1px solid var(--line); background:#fff; color:var(--ink-soft); border-radius:999px;
-    padding:5px 13px; font-size:12px; font-weight:700; cursor:pointer; font-family:'Noto Sans KR',sans-serif; line-height:1.4;
-  }
-  .up-grade-btn:hover{ border-color:var(--ink-soft); }
-  .up-grade-btn.on{ background:var(--brand); border-color:var(--brand); color:#fff; }
-  .up-grade-note{ font-size:11px; color:var(--ink-soft); font-weight:600; margin-left:6px; }
   .up-term{
     margin-top:18px; font-family:'Noto Sans KR',sans-serif; font-size:12.5px; font-weight:800;
     color:var(--brand-dark); background:#EAF5EF; border-radius:7px; padding:6px 11px; display:inline-block;
@@ -943,11 +934,17 @@
         <div class="card-head">
           <div>
             <h3>📘 반별 단원 진도</h3>
-            <div class="sub">나가는 과정을 먼저 고르고(선행하면 학교 학년과 달라도 돼요), 나간 소단원을 체크해주세요. 주간·월간 보고서의 진도율이 여기서 나와요. 반이 없는 학생은 한 명씩 따로 잡아요.</div>
+            <div class="sub">반(또는 학생)과 나가는 과정을 고르고, 나간 소단원을 체크해주세요. 학생 학년은 학교 학년 그대로 두시고, 선행하면 과정만 앞 학년으로 고르시면 돼요. 초1~고3 전 과정이 들어 있어요. 주간·월간 보고서의 진도율이 여기서 나와요.</div>
           </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
           <div class="field">
             <label for="unitProgClass">반 · 학생</label>
             <select id="unitProgClass" onchange="renderUnitProgress_()"><option value="">선택</option></select>
+          </div>
+          <div class="field">
+            <label for="unitProgGrade">나가는 과정</label>
+            <select id="unitProgGrade" onchange="onProgressGradeChange_()"><option value="">선택</option></select>
+          </div>
           </div>
         </div>
         <div id="unitProgBody"></div>
@@ -3018,10 +3015,26 @@ function unitProgressMap_(){
   return (v && typeof v === 'object') ? v : {};
 }
 
-/* ============ 학년별 교육과정 소단원 (진도용) ============
-   초5·초6·중1·중2 = 2022 개정 (2026년 적용), 중3 = 2015 개정 (2027년에 22개정으로 교체)
+/* ============ 학년·과목별 교육과정 소단원 (진도용) ============
+   초1~중2와 고1·2 과목은 2022 개정, 중3과 고3 과목은 2015 개정(2027년에 22개정으로 교체).
    개념빈칸 자동출제의 CONCEPT_CURRICULUM 과는 별개예요. 여긴 진도 체크용 목록이에요. */
 const PROGRESS_CURRICULUM = {
+  '초1': [
+    { term: '1학기', chapter: '초1 1학기', units: ['1-1-1 9까지의 수','1-1-2 여러 가지 모양','1-1-3 덧셈과 뺄셈','1-1-4 비교하기','1-1-5 50까지의 수'] },
+    { term: '2학기', chapter: '초1 2학기', units: ['1-2-1 100까지의 수','1-2-2 덧셈과 뺄셈(1)','1-2-3 여러 가지 모양','1-2-4 덧셈과 뺄셈(2)','1-2-5 시계 보기와 규칙 찾기','1-2-6 덧셈과 뺄셈(3)'] }
+  ],
+  '초2': [
+    { term: '1학기', chapter: '초2 1학기', units: ['2-1-1 세 자리 수','2-1-2 여러 가지 도형','2-1-3 덧셈과 뺄셈','2-1-4 길이 재기','2-1-5 분류하기','2-1-6 곱셈'] },
+    { term: '2학기', chapter: '초2 2학기', units: ['2-2-1 네 자리 수','2-2-2 곱셈구구','2-2-3 길이 재기','2-2-4 시각과 시간','2-2-5 표와 그래프','2-2-6 규칙 찾기'] }
+  ],
+  '초3': [
+    { term: '1학기', chapter: '초3 1학기', units: ['3-1-1 덧셈과 뺄셈','3-1-2 평면도형','3-1-3 나눗셈','3-1-4 곱셈','3-1-5 길이와 시간','3-1-6 분수와 소수'] },
+    { term: '2학기', chapter: '초3 2학기', units: ['3-2-1 곱셈','3-2-2 나눗셈','3-2-3 원','3-2-4 분수','3-2-5 들이와 무게','3-2-6 자료의 정리'] }
+  ],
+  '초4': [
+    { term: '1학기', chapter: '초4 1학기', units: ['4-1-1 큰 수','4-1-2 각도','4-1-3 곱셈과 나눗셈','4-1-4 평면도형의 이동','4-1-5 막대그래프','4-1-6 규칙 찾기'] },
+    { term: '2학기', chapter: '초4 2학기', units: ['4-2-1 분수의 덧셈과 뺄셈','4-2-2 삼각형','4-2-3 소수의 덧셈과 뺄셈','4-2-4 사각형','4-2-5 꺾은선그래프','4-2-6 다각형'] }
+  ],
   '초5': [
     { term: '1학기', chapter: '초5 1학기', units: ['5-1-1 자연수의 혼합 계산','5-1-2 약수와 배수','5-1-3 규칙과 대응','5-1-4 약분과 통분','5-1-5 분수의 덧셈과 뺄셈','5-1-6 다각형의 둘레와 넓이'] },
     { term: '2학기', chapter: '초5 2학기', units: ['5-2-1 수의 범위와 어림하기','5-2-2 분수의 곱셈','5-2-3 합동과 대칭','5-2-4 소수의 곱셈','5-2-5 직육면체','5-2-6 평균과 가능성'] }
@@ -3065,11 +3078,68 @@ const PROGRESS_CURRICULUM = {
     { term: '2학기', chapter: '5단원 삼각비', units: ['5-1 삼각비의 뜻','5-2 특수한 각의 삼각비','5-3 예각의 삼각비와 삼각비의 표','5-4 삼각비의 활용(길이)','5-5 삼각비의 활용(넓이)'] },
     { term: '2학기', chapter: '6단원 원의 성질', units: ['6-1 원과 현','6-2 원의 접선','6-3 원주각과 중심각','6-4 원주각의 활용','6-5 원에 내접하는 사각형','6-6 접선과 현이 이루는 각'] },
     { term: '2학기', chapter: '7단원 통계', units: ['7-1 대푯값과 산포도','7-2 산점도와 상관관계'] }
+  ],
+  '공통수학1': [
+    { term: '', chapter: '1단원 다항식', units: ['1-1 다항식의 연산','1-2 나머지정리','1-3 인수분해'] },
+    { term: '', chapter: '2단원 방정식과 부등식', units: ['2-1 복소수','2-2 이차방정식','2-3 이차방정식과 이차함수','2-4 여러 가지 방정식','2-5 여러 가지 부등식'] },
+    { term: '', chapter: '3단원 경우의 수', units: ['3-1 순열','3-2 조합'] },
+    { term: '', chapter: '4단원 행렬', units: ['4-1 행렬과 그 연산'] }
+  ],
+  '공통수학2': [
+    { term: '', chapter: '1단원 도형의 방정식', units: ['1-1 평면좌표','1-2 직선의 방정식','1-3 원의 방정식','1-4 도형의 이동'] },
+    { term: '', chapter: '2단원 집합과 명제', units: ['2-1 집합','2-2 집합의 연산','2-3 명제'] },
+    { term: '', chapter: '3단원 함수와 그래프', units: ['3-1 함수','3-2 유리함수','3-3 무리함수'] }
+  ],
+  '대수': [
+    { term: '', chapter: '1단원 지수함수와 로그함수', units: ['1-1 지수','1-2 로그','1-3 지수함수와 로그함수','1-4 지수·로그함수의 활용'] },
+    { term: '', chapter: '2단원 삼각함수', units: ['2-1 삼각함수의 뜻','2-2 삼각함수의 그래프','2-3 사인법칙과 코사인법칙'] },
+    { term: '', chapter: '3단원 수열', units: ['3-1 등차수열','3-2 등비수열','3-3 수열의 합','3-4 수학적 귀납법'] }
+  ],
+  '미적분Ⅰ': [
+    { term: '', chapter: '1단원 함수의 극한과 연속', units: ['1-1 함수의 극한','1-2 함수의 연속'] },
+    { term: '', chapter: '2단원 미분', units: ['2-1 미분계수와 도함수','2-2 접선의 방정식','2-3 함수의 증가·감소와 극대·극소','2-4 도함수의 활용'] },
+    { term: '', chapter: '3단원 적분', units: ['3-1 부정적분','3-2 정적분','3-3 정적분의 활용'] }
+  ],
+  '확률과 통계': [
+    { term: '', chapter: '1단원 경우의 수', units: ['1-1 여러 가지 순열','1-2 중복조합과 이항정리'] },
+    { term: '', chapter: '2단원 확률', units: ['2-1 확률의 뜻과 활용','2-2 조건부확률'] },
+    { term: '', chapter: '3단원 통계', units: ['3-1 확률분포','3-2 정규분포','3-3 통계적 추정'] }
+  ],
+  '미적분Ⅱ': [
+    { term: '', chapter: '1단원 수열의 극한', units: ['1-1 수열의 극한','1-2 급수'] },
+    { term: '', chapter: '2단원 미분법', units: ['2-1 여러 가지 함수의 미분','2-2 여러 가지 미분법','2-3 도함수의 활용'] },
+    { term: '', chapter: '3단원 적분법', units: ['3-1 여러 가지 적분법','3-2 정적분의 활용'] }
+  ],
+  '기하': [
+    { term: '', chapter: '1단원 이차곡선', units: ['1-1 포물선','1-2 타원','1-3 쌍곡선','1-4 이차곡선과 직선'] },
+    { term: '', chapter: '2단원 벡터', units: ['2-1 벡터의 연산','2-2 평면벡터의 성분과 내적'] },
+    { term: '', chapter: '3단원 공간도형과 공간좌표', units: ['3-1 공간도형','3-2 공간좌표'] }
+  ],
+  '수학Ⅰ (15개정)': [
+    { term: '', chapter: '1단원 지수함수와 로그함수', units: ['1-1 지수','1-2 로그','1-3 지수함수와 로그함수'] },
+    { term: '', chapter: '2단원 삼각함수', units: ['2-1 삼각함수의 뜻','2-2 삼각함수의 그래프','2-3 사인법칙과 코사인법칙'] },
+    { term: '', chapter: '3단원 수열', units: ['3-1 등차수열과 등비수열','3-2 수열의 합','3-3 수학적 귀납법'] }
+  ],
+  '수학Ⅱ (15개정)': [
+    { term: '', chapter: '1단원 함수의 극한과 연속', units: ['1-1 함수의 극한','1-2 함수의 연속'] },
+    { term: '', chapter: '2단원 미분', units: ['2-1 미분계수와 도함수','2-2 도함수의 활용'] },
+    { term: '', chapter: '3단원 적분', units: ['3-1 부정적분과 정적분','3-2 정적분의 활용'] }
+  ],
+  '미적분 (15개정)': [
+    { term: '', chapter: '1단원 수열의 극한', units: ['1-1 수열의 극한','1-2 급수'] },
+    { term: '', chapter: '2단원 미분법', units: ['2-1 여러 가지 함수의 미분','2-2 여러 가지 미분법','2-3 도함수의 활용'] },
+    { term: '', chapter: '3단원 적분법', units: ['3-1 여러 가지 적분법','3-2 정적분의 활용'] }
   ]
 };
 
-/** 진도를 묶는 단위. 반이 있으면 반 이름, 반이 없으면 학년으로 묶어요. */
-const PROGRESS_GRADES = ['초5','초6','중1','중2','중3'];
+// 진도 카드의 "나가는 과정" 선택에 묶음으로 나와요
+const PROGRESS_GRADE_GROUPS = [
+  { label: '초등 (2022 개정)', grades: ['초1','초2','초3','초4','초5','초6'] },
+  { label: '중등 (중3은 2015 개정)', grades: ['중1','중2','중3'] },
+  { label: '고등 1·2학년 (2022 개정)', grades: ['공통수학1','공통수학2','대수','미적분Ⅰ','확률과 통계','미적분Ⅱ','기하'] },
+  { label: '고등 3학년 (2015 개정, 2026년 기준)', grades: ['수학Ⅰ (15개정)','수학Ⅱ (15개정)','미적분 (15개정)'] }
+];
+const PROGRESS_GRADES = PROGRESS_GRADE_GROUPS.reduce((a, g) => a.concat(g.grades), []);
 
 /** 진도를 묶는 단위. 반이 있으면 반, 반이 없으면 학생 한 명씩. */
 function progressKeyOf_(student){
@@ -3162,32 +3232,27 @@ function renderUnitProgress_(){
   const sel = document.getElementById('unitProgClass');
   if(!box || !sel) return;
   const cls = sel.value;
-  if(!cls){ box.innerHTML = '<div class="placeholder-box"><span class="icon">📘</span>반이나 학생을 고르면 단원 목록이 나와요.</div>'; return; }
+  if(!cls){ fillProgressGradeSelect_(''); box.innerHTML = '<div class="placeholder-box"><span class="icon">📘</span>반이나 학생을 고르면 단원 목록이 나와요.</div>'; return; }
 
   const grade = gradeOfProgressKey_(cls);
   const auto = defaultGradeOfKey_(cls);
   const label = progressKeyLabel_(cls);
-  // 나가는 과정 고르는 줄 — 학교 학년과 달라도 돼요 (선행하는 아이들)
-  const gradeBar = `
-    <div class="up-grade">
-      <span class="up-grade-label">나가는 과정</span>
-      ${PROGRESS_GRADES.map(g => `
-        <button type="button" class="up-grade-btn ${grade === g ? 'on' : ''}"
-          onclick="setProgressGrade_('${encodeURIComponent(cls)}', '${g}')">${g}</button>`).join('')}
-      <span class="up-grade-note">${auto ? (grade === auto ? '학교 학년(' + escapeHtml(auto) + ')과 같아요' : '학교 학년은 ' + escapeHtml(auto) + ' — 선행 중') : '학생 학년이 없어서 직접 골라주세요'}</span>
-    </div>`;
+  fillProgressGradeSelect_(grade);
 
   const chapters = chaptersOfKey_(cls);
   if(!chapters.length){
-    box.innerHTML = gradeBar + `<div class="placeholder-box" style="margin-top:12px;"><span class="icon">📘</span><b>${escapeHtml(label)}</b>가 나가는 과정을 위에서 골라주세요.</div>`;
+    box.innerHTML = `<div class="placeholder-box"><span class="icon">📘</span><b>${escapeHtml(label)}</b>가 나가는 과정을 오른쪽 위에서 골라주세요.</div>`;
     return;
   }
 
   const done = unitProgressMap_()[cls] || {};
   const st = classProgressStat_(cls);
+  const note = auto
+    ? (grade === auto ? '' : ' · 학교 학년은 ' + escapeHtml(auto) + ', 선행 중')
+    : '';
   let lastTerm = '';
-  box.innerHTML = gradeBar + `
-    <div class="up-head"><span class="up-pct">${st.pct}%</span><span class="up-sub">${st.done} / ${st.total}개 소단원 · ${escapeHtml(grade)} 과정${st.nextUnit ? ' · 다음: ' + escapeHtml(st.nextUnit) : ' · 다 나갔어요'}</span></div>
+  box.innerHTML = `
+    <div class="up-head"><span class="up-pct">${st.pct}%</span><span class="up-sub">${st.done} / ${st.total}개 소단원 · ${escapeHtml(grade)}${st.nextUnit ? ' · 다음: ' + escapeHtml(st.nextUnit) : ' · 다 나갔어요'}${note}</span></div>
     <div class="up-bar"><i style="width:${st.pct}%"></i></div>
     ${chapters.map(ch => {
       const n = ch.units.filter(u => done[u]).length;
@@ -3203,6 +3268,25 @@ function renderUnitProgress_(){
           </label>`).join('')}</div>
       </div>`;
     }).join('')}`;
+}
+
+/** 과정 선택 상자를 묶음(초등·중등·고등)으로 채워요 */
+function fillProgressGradeSelect_(current){
+  const sel = document.getElementById('unitProgGrade');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">선택</option>' + PROGRESS_GRADE_GROUPS.map(g =>
+    `<optgroup label="${escapeHtml(g.label)}">` +
+    g.grades.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('') +
+    '</optgroup>').join('');
+  sel.value = current || '';
+}
+
+function onProgressGradeChange_(){
+  const cls = document.getElementById('unitProgClass').value;
+  const grade = document.getElementById('unitProgGrade').value;
+  if(!cls){ showToast('먼저 반이나 학생을 골라주세요.', 'error'); fillProgressGradeSelect_(''); return; }
+  if(!grade) return;
+  setProgressGrade_(encodeURIComponent(cls), grade);
 }
 
 /** 나가는 과정 바꾸기. 바꾸면 그 과정의 소단원 체크가 다시 나와요. */
