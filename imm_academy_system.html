@@ -445,6 +445,19 @@
   .up-item.done{ background:#EAF5EF; border-color:#9CCFB5; color:#1F6B4A; font-weight:700; }
   .up-item input{ margin:0; flex:none; }
   .up-item span{ min-width:0; overflow-wrap:anywhere; }
+  .up-grade{ display:flex; gap:5px; flex-wrap:wrap; align-items:center; padding-bottom:12px; border-bottom:1px solid var(--line); font-family:'Noto Sans KR',sans-serif; }
+  .up-grade-label{ font-size:11.5px; font-weight:800; color:var(--ink-soft); margin-right:3px; }
+  .up-grade-btn{
+    border:1px solid var(--line); background:#fff; color:var(--ink-soft); border-radius:999px;
+    padding:5px 13px; font-size:12px; font-weight:700; cursor:pointer; font-family:'Noto Sans KR',sans-serif; line-height:1.4;
+  }
+  .up-grade-btn:hover{ border-color:var(--ink-soft); }
+  .up-grade-btn.on{ background:var(--brand); border-color:var(--brand); color:#fff; }
+  .up-grade-note{ font-size:11px; color:var(--ink-soft); font-weight:600; margin-left:6px; }
+  .up-term{
+    margin-top:18px; font-family:'Noto Sans KR',sans-serif; font-size:12.5px; font-weight:800;
+    color:var(--brand-dark); background:#EAF5EF; border-radius:7px; padding:6px 11px; display:inline-block;
+  }
   .up-chapter{ margin-top:14px; }
   .up-chapter-head{
     display:flex; align-items:baseline; gap:8px; font-family:'Noto Sans KR',sans-serif;
@@ -930,10 +943,10 @@
         <div class="card-head">
           <div>
             <h3>📘 반별 단원 진도</h3>
-            <div class="sub">나간 소단원을 체크해주세요. 주간·월간 보고서의 진도율이 여기서 나와요. 단원 목록은 학년별 교육과정(초5·초6·중1·중2는 2022 개정, 중3은 2015 개정)이고, 반 학생들의 학년을 보고 자동으로 골라요.</div>
+            <div class="sub">나가는 과정을 먼저 고르고(선행하면 학교 학년과 달라도 돼요), 나간 소단원을 체크해주세요. 주간·월간 보고서의 진도율이 여기서 나와요. 반이 없는 학생은 한 명씩 따로 잡아요.</div>
           </div>
           <div class="field">
-            <label for="unitProgClass">반</label>
+            <label for="unitProgClass">반 · 학생</label>
             <select id="unitProgClass" onchange="renderUnitProgress_()"><option value="">선택</option></select>
           </div>
         </div>
@@ -3010,67 +3023,101 @@ function unitProgressMap_(){
    개념빈칸 자동출제의 CONCEPT_CURRICULUM 과는 별개예요. 여긴 진도 체크용 목록이에요. */
 const PROGRESS_CURRICULUM = {
   '초5': [
-    { chapter: '5-1학기', units: ['1. 자연수의 혼합 계산','2. 약수와 배수','3. 규칙과 대응','4. 약분과 통분','5. 분수의 덧셈과 뺄셈','6. 다각형의 둘레와 넓이'] },
-    { chapter: '5-2학기', units: ['1. 수의 범위와 어림하기','2. 분수의 곱셈','3. 합동과 대칭','4. 소수의 곱셈','5. 직육면체','6. 평균과 가능성'] }
+    { term: '1학기', chapter: '초5 1학기', units: ['5-1-1 자연수의 혼합 계산','5-1-2 약수와 배수','5-1-3 규칙과 대응','5-1-4 약분과 통분','5-1-5 분수의 덧셈과 뺄셈','5-1-6 다각형의 둘레와 넓이'] },
+    { term: '2학기', chapter: '초5 2학기', units: ['5-2-1 수의 범위와 어림하기','5-2-2 분수의 곱셈','5-2-3 합동과 대칭','5-2-4 소수의 곱셈','5-2-5 직육면체','5-2-6 평균과 가능성'] }
   ],
   '초6': [
-    { chapter: '6-1학기', units: ['1. 분수의 나눗셈','2. 각기둥과 각뿔','3. 소수의 나눗셈','4. 비와 비율','5. 여러 가지 그래프','6. 직육면체의 부피와 겉넓이'] },
-    { chapter: '6-2학기', units: ['1. 분수의 나눗셈','2. 소수의 나눗셈','3. 공간과 입체','4. 비례식과 비례배분','5. 원의 둘레와 넓이','6. 원기둥, 원뿔, 구'] }
+    { term: '1학기', chapter: '초6 1학기', units: ['6-1-1 분수의 나눗셈','6-1-2 각기둥과 각뿔','6-1-3 소수의 나눗셈','6-1-4 비와 비율','6-1-5 여러 가지 그래프','6-1-6 직육면체의 부피와 겉넓이'] },
+    { term: '2학기', chapter: '초6 2학기', units: ['6-2-1 분수의 나눗셈','6-2-2 소수의 나눗셈','6-2-3 공간과 입체','6-2-4 비례식과 비례배분','6-2-5 원의 둘레와 넓이','6-2-6 원기둥, 원뿔, 구'] }
   ],
   '중1': [
-    { chapter: '1단원 소인수분해', units: ['1-1 소인수분해','1-2 최대공약수와 최소공배수'] },
-    { chapter: '2단원 정수와 유리수', units: ['2-1 정수와 유리수','2-2 정수와 유리수의 대소 관계','2-3 정수와 유리수의 덧셈과 뺄셈','2-4 정수와 유리수의 곱셈과 나눗셈'] },
-    { chapter: '3단원 문자와 식', units: ['3-1 문자의 사용과 식의 값','3-2 일차식과 그 계산'] },
-    { chapter: '4단원 일차방정식', units: ['4-1 방정식과 그 해','4-2 일차방정식의 풀이','4-3 일차방정식의 활용'] },
-    { chapter: '5단원 좌표평면과 그래프', units: ['5-1 순서쌍과 좌표','5-2 그래프와 그 해석','5-3 정비례와 반비례'] },
-    { chapter: '6단원 기본 도형', units: ['6-1 점, 선, 면, 각','6-2 위치 관계','6-3 평행선의 성질'] },
-    { chapter: '7단원 작도와 합동', units: ['7-1 삼각형의 작도','7-2 삼각형의 합동 조건'] },
-    { chapter: '8단원 평면도형의 성질', units: ['8-1 다각형','8-2 원과 부채꼴'] },
-    { chapter: '9단원 입체도형의 성질', units: ['9-1 다면체','9-2 회전체','9-3 기둥과 뿔의 겉넓이와 부피','9-4 구의 겉넓이와 부피'] },
-    { chapter: '10단원 자료의 정리와 해석', units: ['10-1 대푯값','10-2 줄기와 잎 그림, 도수분포표','10-3 히스토그램과 도수분포다각형','10-4 상대도수와 그 그래프'] }
+    { term: '1학기', chapter: '1단원 소인수분해', units: ['1-1 소인수분해','1-2 최대공약수와 최소공배수'] },
+    { term: '1학기', chapter: '2단원 정수와 유리수', units: ['2-1 정수와 유리수','2-2 정수와 유리수의 대소 관계','2-3 정수와 유리수의 덧셈과 뺄셈','2-4 정수와 유리수의 곱셈과 나눗셈'] },
+    { term: '1학기', chapter: '3단원 문자와 식', units: ['3-1 문자의 사용과 식의 값','3-2 일차식과 그 계산'] },
+    { term: '1학기', chapter: '4단원 일차방정식', units: ['4-1 방정식과 그 해','4-2 일차방정식의 풀이','4-3 일차방정식의 활용'] },
+    { term: '1학기', chapter: '5단원 좌표평면과 그래프', units: ['5-1 순서쌍과 좌표','5-2 그래프와 그 해석','5-3 정비례와 반비례'] },
+    { term: '2학기', chapter: '6단원 기본 도형', units: ['6-1 점, 선, 면, 각','6-2 위치 관계','6-3 평행선의 성질'] },
+    { term: '2학기', chapter: '7단원 작도와 합동', units: ['7-1 삼각형의 작도','7-2 삼각형의 합동 조건'] },
+    { term: '2학기', chapter: '8단원 평면도형의 성질', units: ['8-1 다각형','8-2 원과 부채꼴'] },
+    { term: '2학기', chapter: '9단원 입체도형의 성질', units: ['9-1 다면체','9-2 회전체','9-3 기둥과 뿔의 겉넓이와 부피','9-4 구의 겉넓이와 부피'] },
+    { term: '2학기', chapter: '10단원 자료의 정리와 해석', units: ['10-1 대푯값','10-2 줄기와 잎 그림, 도수분포표','10-3 히스토그램과 도수분포다각형','10-4 상대도수와 그 그래프'] }
   ],
   '중2': [
-    { chapter: '1단원 유리수와 순환소수', units: ['1-1 유리수와 소수','1-2 순환소수를 분수로 나타내기'] },
-    { chapter: '2단원 식의 계산', units: ['2-1 지수법칙','2-2 단항식의 곱셈과 나눗셈','2-3 다항식의 덧셈과 뺄셈','2-4 단항식과 다항식의 혼합 계산'] },
-    { chapter: '3단원 일차부등식', units: ['3-1 부등식의 해와 성질','3-2 일차부등식의 풀이','3-3 일차부등식의 활용'] },
-    { chapter: '4단원 연립일차방정식', units: ['4-1 연립방정식과 그 해','4-2 연립방정식의 풀이','4-3 여러 가지 연립방정식','4-4 연립방정식의 활용'] },
-    { chapter: '5단원 일차함수와 그 그래프', units: ['5-1 함수와 함숫값','5-2 일차함수와 그 그래프','5-3 일차함수 그래프의 절편과 기울기','5-4 일차함수 그래프의 성질','5-5 일차함수의 활용'] },
-    { chapter: '6단원 일차함수와 일차방정식의 관계', units: ['6-1 일차함수와 일차방정식','6-2 연립방정식의 해와 그래프'] },
-    { chapter: '7단원 삼각형의 성질', units: ['7-1 이등변삼각형','7-2 이등변삼각형의 성질의 활용','7-3 직각삼각형의 합동 조건','7-4 삼각형의 외심과 내심','7-5 외심과 내심의 응용'] },
-    { chapter: '8단원 사각형의 성질', units: ['8-1 평행사변형','8-2 평행사변형과 넓이','8-3 여러 가지 사각형','8-4 여러 가지 사각형 사이의 관계','8-5 평행선과 넓이'] },
-    { chapter: '9단원 도형의 닮음', units: ['9-1 닮음의 뜻과 성질','9-2 삼각형의 닮음조건','9-3 직각삼각형의 닮음'] },
-    { chapter: '10단원 평행선과 선분의 길이의 비', units: ['10-1 삼각형과 평행선','10-2 삼각형의 각의 이등분선','10-3 중점연결정리','10-4 사각형의 중점을 연결한 선분','10-5 평행선 사이의 선분의 길이의 비','10-6 평행선과 선분의 길이의 비의 응용','10-7 삼각형의 무게중심','10-8 삼각형의 중선과 무게중심','10-9 삼각형의 무게중심과 넓이','10-10 닮은 도형의 넓이와 부피의 비'] },
-    { chapter: '11단원 피타고라스 정리', units: ['11-1 피타고라스 정리','11-2 피타고라스 정리의 활용','11-3 피타고라스 정리의 활용(사각형·내부의 점)'] },
-    { chapter: '12단원 경우의 수', units: ['12-1 경우의 수','12-2 여러 가지 경우의 수'] },
-    { chapter: '13단원 확률', units: ['13-1 확률의 뜻과 성질','13-2 확률의 계산'] }
+    { term: '1학기', chapter: '1단원 유리수와 순환소수', units: ['1-1 유리수와 소수','1-2 순환소수를 분수로 나타내기'] },
+    { term: '1학기', chapter: '2단원 식의 계산', units: ['2-1 지수법칙','2-2 단항식의 곱셈과 나눗셈','2-3 다항식의 덧셈과 뺄셈','2-4 단항식과 다항식의 혼합 계산'] },
+    { term: '1학기', chapter: '3단원 일차부등식', units: ['3-1 부등식의 해와 성질','3-2 일차부등식의 풀이','3-3 일차부등식의 활용'] },
+    { term: '1학기', chapter: '4단원 연립일차방정식', units: ['4-1 연립방정식과 그 해','4-2 연립방정식의 풀이','4-3 여러 가지 연립방정식','4-4 연립방정식의 활용'] },
+    { term: '1학기', chapter: '5단원 일차함수와 그 그래프', units: ['5-1 함수와 함숫값','5-2 일차함수와 그 그래프','5-3 일차함수 그래프의 절편과 기울기','5-4 일차함수 그래프의 성질','5-5 일차함수의 활용'] },
+    { term: '1학기', chapter: '6단원 일차함수와 일차방정식의 관계', units: ['6-1 일차함수와 일차방정식','6-2 연립방정식의 해와 그래프'] },
+    { term: '2학기', chapter: '7단원 삼각형의 성질', units: ['7-1 이등변삼각형','7-2 이등변삼각형의 성질의 활용','7-3 직각삼각형의 합동 조건','7-4 삼각형의 외심과 내심','7-5 외심과 내심의 응용'] },
+    { term: '2학기', chapter: '8단원 사각형의 성질', units: ['8-1 평행사변형','8-2 평행사변형과 넓이','8-3 여러 가지 사각형','8-4 여러 가지 사각형 사이의 관계','8-5 평행선과 넓이'] },
+    { term: '2학기', chapter: '9단원 도형의 닮음', units: ['9-1 닮음의 뜻과 성질','9-2 삼각형의 닮음조건','9-3 직각삼각형의 닮음'] },
+    { term: '2학기', chapter: '10단원 평행선과 선분의 길이의 비', units: ['10-1 삼각형과 평행선','10-2 삼각형의 각의 이등분선','10-3 중점연결정리','10-4 사각형의 중점을 연결한 선분','10-5 평행선 사이의 선분의 길이의 비','10-6 평행선과 선분의 길이의 비의 응용','10-7 삼각형의 무게중심','10-8 삼각형의 중선과 무게중심','10-9 삼각형의 무게중심과 넓이','10-10 닮은 도형의 넓이와 부피의 비'] },
+    { term: '2학기', chapter: '11단원 피타고라스 정리', units: ['11-1 피타고라스 정리','11-2 피타고라스 정리의 활용','11-3 피타고라스 정리의 활용(사각형·내부의 점)'] },
+    { term: '2학기', chapter: '12단원 경우의 수', units: ['12-1 경우의 수','12-2 여러 가지 경우의 수'] },
+    { term: '2학기', chapter: '13단원 확률', units: ['13-1 확률의 뜻과 성질','13-2 확률의 계산'] }
   ],
   '중3': [
-    { chapter: '1단원 제곱근과 실수', units: ['1-1 제곱근의 뜻과 성질','1-2 무리수와 실수','1-3 근호를 포함한 식의 곱셈과 나눗셈','1-4 근호를 포함한 식의 덧셈과 뺄셈'] },
-    { chapter: '2단원 다항식의 곱셈과 인수분해', units: ['2-1 곱셈 공식','2-2 곱셈 공식의 활용','2-3 인수분해 공식','2-4 인수분해 공식의 활용'] },
-    { chapter: '3단원 이차방정식', units: ['3-1 이차방정식과 그 해','3-2 인수분해를 이용한 풀이','3-3 제곱근과 근의 공식을 이용한 풀이','3-4 이차방정식의 활용'] },
-    { chapter: '4단원 이차함수와 그 그래프', units: ['4-1 이차함수의 뜻','4-2 y=ax²의 그래프','4-3 y=a(x-p)²+q의 그래프','4-4 y=ax²+bx+c의 그래프','4-5 이차함수의 활용'] },
-    { chapter: '5단원 삼각비', units: ['5-1 삼각비의 뜻','5-2 특수한 각의 삼각비','5-3 예각의 삼각비와 삼각비의 표','5-4 삼각비의 활용(길이)','5-5 삼각비의 활용(넓이)'] },
-    { chapter: '6단원 원의 성질', units: ['6-1 원과 현','6-2 원의 접선','6-3 원주각과 중심각','6-4 원주각의 활용','6-5 원에 내접하는 사각형','6-6 접선과 현이 이루는 각'] },
-    { chapter: '7단원 통계', units: ['7-1 대푯값과 산포도','7-2 산점도와 상관관계'] }
+    { term: '1학기', chapter: '1단원 제곱근과 실수', units: ['1-1 제곱근의 뜻과 성질','1-2 무리수와 실수','1-3 근호를 포함한 식의 곱셈과 나눗셈','1-4 근호를 포함한 식의 덧셈과 뺄셈'] },
+    { term: '1학기', chapter: '2단원 다항식의 곱셈과 인수분해', units: ['2-1 곱셈 공식','2-2 곱셈 공식의 활용','2-3 인수분해 공식','2-4 인수분해 공식의 활용'] },
+    { term: '1학기', chapter: '3단원 이차방정식', units: ['3-1 이차방정식과 그 해','3-2 인수분해를 이용한 풀이','3-3 제곱근과 근의 공식을 이용한 풀이','3-4 이차방정식의 활용'] },
+    { term: '1학기', chapter: '4단원 이차함수와 그 그래프', units: ['4-1 이차함수의 뜻','4-2 y=ax²의 그래프','4-3 y=a(x-p)²+q의 그래프','4-4 y=ax²+bx+c의 그래프','4-5 이차함수의 활용'] },
+    { term: '2학기', chapter: '5단원 삼각비', units: ['5-1 삼각비의 뜻','5-2 특수한 각의 삼각비','5-3 예각의 삼각비와 삼각비의 표','5-4 삼각비의 활용(길이)','5-5 삼각비의 활용(넓이)'] },
+    { term: '2학기', chapter: '6단원 원의 성질', units: ['6-1 원과 현','6-2 원의 접선','6-3 원주각과 중심각','6-4 원주각의 활용','6-5 원에 내접하는 사각형','6-6 접선과 현이 이루는 각'] },
+    { term: '2학기', chapter: '7단원 통계', units: ['7-1 대푯값과 산포도','7-2 산점도와 상관관계'] }
   ]
 };
 
 /** 진도를 묶는 단위. 반이 있으면 반 이름, 반이 없으면 학년으로 묶어요. */
+const PROGRESS_GRADES = ['초5','초6','중1','중2','중3'];
+
+/** 진도를 묶는 단위. 반이 있으면 반, 반이 없으면 학생 한 명씩. */
 function progressKeyOf_(student){
-  return (student && (student.className || student.grade)) || '';
+  if(!student) return '';
+  return student.className || ('s:' + student.id);
 }
 
-/** 진도키가 어느 학년 과정인지 */
-function gradeOfProgressKey_(key){
+function progressKeyLabel_(key){
+  if(String(key).startsWith('s:')){
+    const s = students.find(x => String(x.id) === String(key).slice(2));
+    return s ? (s.name + ' (' + (s.grade || '반 없음') + ')') : '(없는 학생)';
+  }
+  return key;
+}
+
+/** 진도 카드에 뜨는 목록 — 반 먼저, 그다음 반 없는 학생 */
+function progressTargets_(){
+  const classes = [...new Set(students.map(s => s.className).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
+  const solos = students.filter(s => !s.className).sort((a, b) => (a.grade || '').localeCompare(b.grade || '', 'ko') || a.name.localeCompare(b.name, 'ko'));
+  return classes.map(c => ({ key: c, label: c })).concat(solos.map(s => ({ key: 's:' + s.id, label: progressKeyLabel_('s:' + s.id) })));
+}
+
+/** 선생님이 "나가는 과정"을 직접 골라둔 것 { 진도키: '중2' } */
+function progressGradeMap_(){
+  const v = appSettings && appSettings.unitProgressGrade;
+  return (v && typeof v === 'object') ? v : {};
+}
+
+/** 학년에서 짐작한 기본 과정 (선행하는 아이는 아래 과정 선택으로 바꿔요) */
+function defaultGradeOfKey_(key){
   if(!key) return '';
-  if(PROGRESS_CURRICULUM[key]) return key;                  // 키 자체가 학년 ('초5' 등)
-  const inClass = students.filter(s => s.className === key).map(s => s.grade).filter(Boolean);
-  if(inClass.length){
-    const top = Object.entries(inClass.reduce((m, g) => (m[g] = (m[g]||0)+1, m), {})).sort((a,b) => b[1]-a[1])[0][0];
+  const grades = String(key).startsWith('s:')
+    ? students.filter(s => String(s.id) === String(key).slice(2)).map(s => s.grade)
+    : students.filter(s => s.className === key).map(s => s.grade);
+  const list = grades.filter(Boolean);
+  if(list.length){
+    const top = Object.entries(list.reduce((m, g) => (m[g] = (m[g]||0)+1, m), {})).sort((a,b) => b[1]-a[1])[0][0];
     if(PROGRESS_CURRICULUM[top]) return top;
   }
-  const m = String(key).match(/(초[1-6]|중[1-3]|고[1-3])/);  // 반 이름에서 찾기 ('화금중1')
+  const m = String(key).match(/(초[1-6]|중[1-3])/);   // 반 이름에서 찾기 ('화금중1')
   return (m && PROGRESS_CURRICULUM[m[1]]) ? m[1] : '';
+}
+
+/** 그 진도키가 실제로 나가는 과정 */
+function gradeOfProgressKey_(key){
+  const picked = progressGradeMap_()[key];
+  if(picked && PROGRESS_CURRICULUM[picked]) return picked;
+  return defaultGradeOfKey_(key);
 }
 
 /** 그 반(또는 학년)의 대단원 묶음 */
@@ -3102,11 +3149,11 @@ function refreshUnitProgressClasses_(){
   const sel = document.getElementById('unitProgClass');
   if(!sel) return;
   const prev = sel.value;
-  const names = [...new Set(students.map(progressKeyOf_).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, 'ko'));
-  sel.innerHTML = '<option value="">선택</option>' + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-  if(names.indexOf(prev) >= 0) sel.value = prev;
-  else if(names.length === 1) sel.value = names[0];
+  const targets = progressTargets_();
+  sel.innerHTML = '<option value="">선택</option>' +
+    targets.map(t => `<option value="${escapeHtml(t.key)}">${escapeHtml(t.label)}</option>`).join('');
+  if(targets.some(t => t.key === prev)) sel.value = prev;
+  else if(targets.length === 1) sel.value = targets[0].key;
   renderUnitProgress_();
 }
 
@@ -3115,22 +3162,40 @@ function renderUnitProgress_(){
   const sel = document.getElementById('unitProgClass');
   if(!box || !sel) return;
   const cls = sel.value;
-  if(!cls){ box.innerHTML = '<div class="placeholder-box"><span class="icon">📘</span>반을 고르면 단원 목록이 나와요.</div>'; return; }
+  if(!cls){ box.innerHTML = '<div class="placeholder-box"><span class="icon">📘</span>반이나 학생을 고르면 단원 목록이 나와요.</div>'; return; }
+
+  const grade = gradeOfProgressKey_(cls);
+  const auto = defaultGradeOfKey_(cls);
+  const label = progressKeyLabel_(cls);
+  // 나가는 과정 고르는 줄 — 학교 학년과 달라도 돼요 (선행하는 아이들)
+  const gradeBar = `
+    <div class="up-grade">
+      <span class="up-grade-label">나가는 과정</span>
+      ${PROGRESS_GRADES.map(g => `
+        <button type="button" class="up-grade-btn ${grade === g ? 'on' : ''}"
+          onclick="setProgressGrade_('${encodeURIComponent(cls)}', '${g}')">${g}</button>`).join('')}
+      <span class="up-grade-note">${auto ? (grade === auto ? '학교 학년(' + escapeHtml(auto) + ')과 같아요' : '학교 학년은 ' + escapeHtml(auto) + ' — 선행 중') : '학생 학년이 없어서 직접 골라주세요'}</span>
+    </div>`;
+
   const chapters = chaptersOfKey_(cls);
   if(!chapters.length){
-    box.innerHTML = `<div class="placeholder-box"><span class="icon">📘</span><b>${escapeHtml(cls)}</b>가 어느 학년 과정인지 몰라서 단원을 못 불러왔어요.<br>학생 목록에서 이 반 학생들의 학년을 초5·초6·중1·중2·중3 중 하나로 맞춰주세요.</div>`;
+    box.innerHTML = gradeBar + `<div class="placeholder-box" style="margin-top:12px;"><span class="icon">📘</span><b>${escapeHtml(label)}</b>가 나가는 과정을 위에서 골라주세요.</div>`;
     return;
   }
+
   const done = unitProgressMap_()[cls] || {};
   const st = classProgressStat_(cls);
-  const grade = gradeOfProgressKey_(cls);
-  box.innerHTML = `
+  let lastTerm = '';
+  box.innerHTML = gradeBar + `
     <div class="up-head"><span class="up-pct">${st.pct}%</span><span class="up-sub">${st.done} / ${st.total}개 소단원 · ${escapeHtml(grade)} 과정${st.nextUnit ? ' · 다음: ' + escapeHtml(st.nextUnit) : ' · 다 나갔어요'}</span></div>
     <div class="up-bar"><i style="width:${st.pct}%"></i></div>
     ${chapters.map(ch => {
       const n = ch.units.filter(u => done[u]).length;
-      return `<div class="up-chapter">
-        <div class="up-chapter-head"><b>${escapeHtml(ch.chapter)}</b><span>${n}/${ch.units.length}</span></div>
+      const termLabel = grade + ' ' + (ch.term || '');
+      const termHead = (ch.term && ch.term !== lastTerm) ? (lastTerm = ch.term, `<div class="up-term">${escapeHtml(termLabel)}</div>`) : '';
+      const sameAsTerm = (ch.chapter === termLabel);
+      return termHead + `<div class="up-chapter"${sameAsTerm ? ' style="margin-top:8px;"' : ''}>
+        ${sameAsTerm ? '' : `<div class="up-chapter-head"><b>${escapeHtml(ch.chapter)}</b><span>${n}/${ch.units.length}</span></div>`}
         <div class="up-list">${ch.units.map(u => `
           <label class="up-item ${done[u] ? 'done' : ''}">
             <input type="checkbox" ${done[u] ? 'checked' : ''} onchange="toggleUnitDone_('${encodeURIComponent(cls)}', '${encodeURIComponent(u)}', this.checked)">
@@ -3138,6 +3203,21 @@ function renderUnitProgress_(){
           </label>`).join('')}</div>
       </div>`;
     }).join('')}`;
+}
+
+/** 나가는 과정 바꾸기. 바꾸면 그 과정의 소단원 체크가 다시 나와요. */
+async function setProgressGrade_(keyEnc, grade){
+  const key = decodeURIComponent(keyEnc);
+  const map = Object.assign({}, progressGradeMap_());
+  if(map[key] === grade) return;
+  map[key] = grade;
+  appSettings = Object.assign({}, appSettings, { unitProgressGrade: map });
+  renderUnitProgress_();
+  try {
+    await apiCall_('adminCommit', { baseRev: lastRev, ops: [{ op: 'put', c: 'settings', id: 'unitProgressGrade', data: map }] });
+  } catch(err){
+    showToast('❌ 과정 저장 실패: ' + err.message, 'error');
+  }
 }
 
 async function toggleUnitDone_(clsEnc, unitEnc, checked){
@@ -3153,11 +3233,6 @@ async function toggleUnitDone_(clsEnc, unitEnc, checked){
   } catch(err){
     showToast('❌ 진도 저장 실패: ' + err.message, 'error');
   }
-}
-
-function todayIso_(){
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
 }
 
 const ATT_KINDS = [
