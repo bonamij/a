@@ -3730,7 +3730,8 @@ function renderGeneralMakeupList(){
 /* =========================================================
    개념빈칸 테스트
 ========================================================= */
-// 중2-2 개념노트 기준 소단원 목록 (자동 출제 대상 선택용)
+// 자동 출제 대상 소단원 목록. 중2-2가 기본이고, 선행하는 반을 위해 중1·중2-1도 있어요.
+// 반마다 여기서 체크한 단원만 AI가 출제해요.
 const CONCEPT_CURRICULUM = [
   { chapter: "1단원 삼각형의 성질", units: ["1-1 이등변삼각형","1-1-2 이등변삼각형의 성질의 활용","1-2 직각삼각형의 합동조건","1-3 삼각형의 외심과 내심","1-3-2 외심과 내심의 응용"] },
   { chapter: "2단원 사각형의 성질", units: ["2-1 평행사변형","2-1-2 평행사변형과 넓이","2-2 여러 가지 사각형","2-2-2 여러 가지 사각형 사이의 관계","2-3 평행선과 넓이"] },
@@ -3739,6 +3740,22 @@ const CONCEPT_CURRICULUM = [
   { chapter: "5단원 피타고라스 정리", units: ["5-1 피타고라스 정리","5-2 피타고라스 정리의 활용","5-2-2 피타고라스 정리의 활용(사각형·내부의 점)"] },
   { chapter: "6단원 경우의 수", units: ["6-1 경우의 수","6-2 여러 가지 경우의 수"] },
   { chapter: "7단원 확률", units: ["7-1 확률의 뜻과 성질","7-2 확률의 계산"] },
+  { chapter: "[중1] 1단원 소인수분해", units: ["중1 1-1 소인수분해","중1 1-2 최대공약수와 최소공배수"] },
+  { chapter: "[중1] 2단원 정수와 유리수", units: ["중1 2-1 정수와 유리수","중1 2-2 정수와 유리수의 대소 관계","중1 2-3 정수와 유리수의 덧셈과 뺄셈","중1 2-4 정수와 유리수의 곱셈과 나눗셈"] },
+  { chapter: "[중1] 3단원 문자와 식", units: ["중1 3-1 문자의 사용과 식의 값","중1 3-2 일차식과 그 계산"] },
+  { chapter: "[중1] 4단원 일차방정식", units: ["중1 4-1 방정식과 그 해","중1 4-2 일차방정식의 풀이","중1 4-3 일차방정식의 활용"] },
+  { chapter: "[중1] 5단원 좌표평면과 그래프", units: ["중1 5-1 순서쌍과 좌표","중1 5-2 그래프와 그 해석","중1 5-3 정비례와 반비례"] },
+  { chapter: "[중1] 6단원 기본 도형", units: ["중1 6-1 점, 선, 면, 각","중1 6-2 위치 관계","중1 6-3 평행선의 성질"] },
+  { chapter: "[중1] 7단원 작도와 합동", units: ["중1 7-1 삼각형의 작도","중1 7-2 삼각형의 합동 조건"] },
+  { chapter: "[중1] 8단원 평면도형의 성질", units: ["중1 8-1 다각형","중1 8-2 원과 부채꼴"] },
+  { chapter: "[중1] 9단원 입체도형의 성질", units: ["중1 9-1 다면체","중1 9-2 회전체","중1 9-3 기둥과 뿔의 겉넓이와 부피","중1 9-4 구의 겉넓이와 부피"] },
+  { chapter: "[중1] 10단원 자료의 정리와 해석", units: ["중1 10-1 대푯값","중1 10-2 줄기와 잎 그림, 도수분포표","중1 10-3 히스토그램과 도수분포다각형","중1 10-4 상대도수와 그 그래프"] },
+  { chapter: "[중2-1] 1단원 유리수와 순환소수", units: ["중2-1 1-1 유리수와 소수","중2-1 1-2 순환소수를 분수로 나타내기"] },
+  { chapter: "[중2-1] 2단원 식의 계산", units: ["중2-1 2-1 지수법칙","중2-1 2-2 단항식의 곱셈과 나눗셈","중2-1 2-3 다항식의 덧셈과 뺄셈","중2-1 2-4 단항식과 다항식의 혼합 계산"] },
+  { chapter: "[중2-1] 3단원 일차부등식", units: ["중2-1 3-1 부등식의 해와 성질","중2-1 3-2 일차부등식의 풀이","중2-1 3-3 일차부등식의 활용"] },
+  { chapter: "[중2-1] 4단원 연립일차방정식", units: ["중2-1 4-1 연립방정식과 그 해","중2-1 4-2 연립방정식의 풀이","중2-1 4-3 여러 가지 연립방정식","중2-1 4-4 연립방정식의 활용"] },
+  { chapter: "[중2-1] 5단원 일차함수와 그 그래프", units: ["중2-1 5-1 함수와 함숫값","중2-1 5-2 일차함수와 그 그래프","중2-1 5-3 일차함수 그래프의 절편과 기울기","중2-1 5-4 일차함수 그래프의 성질","중2-1 5-5 일차함수의 활용"] },
+  { chapter: "[중2-1] 6단원 일차함수와 일차방정식의 관계", units: ["중2-1 6-1 일차함수와 일차방정식","중2-1 6-2 연립방정식의 해와 그래프"] },
 ];
 
 function refreshConceptClassSelects(){
@@ -3864,15 +3881,25 @@ function renderConceptUnitPicker(classNames){
     const selected = conceptEnabledUnits[c]; // 빈 배열/미설정 = 전체 범위
     const isAll = !selected || selected.length === 0;
 
-    const chaptersHtml = CONCEPT_CURRICULUM.map(ch => {
+    const chaptersHtml = CONCEPT_CURRICULUM.map((ch, chIdx) => {
+      const onCount = ch.units.filter(u => isAll || selected.includes(u)).length;
       const unitChips = ch.units.map(u => {
         const active = isAll || selected.includes(u);
         return `<button type="button" class="btn small"
           style="padding:4px 10px; font-size:11.5px; ${active ? 'background:var(--brand); color:#fff; border-color:var(--brand);' : 'background:var(--cream-alt); color:var(--ink-soft); border-color:var(--line);'}"
           onclick="toggleConceptUnit('${safeC}', '${u.replace(/'/g,"\\'")}')">${u}</button>`;
       }).join('');
+      const scopeBtn = (mode, label, title) => `<button type="button" class="btn small"
+        style="padding:2px 7px; font-size:10.5px; background:var(--cream-alt); color:var(--ink-soft); border-color:var(--line);"
+        title="${title}" onclick="setConceptUnitScope('${safeC}', '${mode}', ${chIdx})">${label}</button>`;
       return `<div style="margin-bottom:8px;">
-        <div style="font-size:11px; font-weight:700; color:var(--ink-soft); margin-bottom:4px; font-family:'Noto Sans KR',sans-serif;">${ch.chapter}</div>
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
+          <span style="font-size:11px; font-weight:700; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">${ch.chapter}</span>
+          <span style="font-size:10.5px; color:var(--ink-soft);">${onCount}/${ch.units.length}</span>
+          ${scopeBtn('only', '이 단원만', '이 반은 이 대단원만 자동 출제해요')}
+          ${scopeBtn('add', '＋전부', '이 대단원을 모두 켜요')}
+          ${scopeBtn('remove', '－전부', '이 대단원을 모두 꺼요')}
+        </div>
         <div style="display:flex; gap:5px; flex-wrap:wrap;">${unitChips}</div>
       </div>`;
     }).join('');
@@ -3881,6 +3908,8 @@ function renderConceptUnitPicker(classNames){
       <div style="padding:12px 14px; border:1px solid var(--line); border-radius:10px;">
         <div style="font-size:13px; font-weight:700; margin-bottom:10px; font-family:'Noto Sans KR',sans-serif;">
           ${escapeHtml(c)} <span style="font-weight:500; color:var(--ink-soft); font-size:11.5px;">${isAll ? '(전체 범위 자동 출제)' : `(${selected.length}개 소단원만 자동 출제)`}</span>
+          ${isAll ? '' : `<button type="button" class="btn small" style="padding:2px 7px; font-size:10.5px; margin-left:6px; background:var(--cream-alt); color:var(--ink-soft); border-color:var(--line);"
+            onclick="setConceptUnitScope('${safeC}', 'all', -1)">전체 범위로</button>`}
         </div>
         ${chaptersHtml}
       </div>`;
@@ -3900,6 +3929,31 @@ function applyConceptUnitToggle_(data, className, unitName){
   else current.push(unitName);
 
   data.conceptEnabledUnits[className] = (current.length === allUnits.length) ? [] : current;
+}
+
+/** 대단원 단위로 한 번에 켜고/끄기. mode: only | add | remove | all */
+async function setConceptUnitScope(className, mode, chapterIdx){
+  const allUnits = CONCEPT_CURRICULUM.flatMap(ch => ch.units);
+  const chUnits = (CONCEPT_CURRICULUM[chapterIdx] || {}).units || [];
+  const current = (conceptEnabledUnits[className] && conceptEnabledUnits[className].length > 0)
+    ? conceptEnabledUnits[className].slice()
+    : allUnits.slice();
+
+  let next;
+  if(mode === 'all') next = [];
+  else if(mode === 'only') next = chUnits.slice();
+  else if(mode === 'add') next = allUnits.filter(u => current.indexOf(u) >= 0 || chUnits.indexOf(u) >= 0);
+  else if(mode === 'remove') next = current.filter(u => chUnits.indexOf(u) < 0);
+  else return;
+
+  if(mode !== 'all' && next.length === 0){
+    showToast('소단원을 하나도 안 켜두면 전체 범위로 출제돼요.', 'warn');
+  }
+  conceptEnabledUnits[className] = (next.length === allUnits.length) ? [] : next;
+
+  const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
+  renderConceptUnitPicker(classNames);
+  scheduleSync();
 }
 
 async function toggleConceptUnit(className, unitName){
