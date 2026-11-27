@@ -3758,6 +3758,40 @@ const CONCEPT_CURRICULUM = [
   { chapter: "[중2-1] 6단원 일차함수와 일차방정식의 관계", units: ["중2-1 6-1 일차함수와 일차방정식","중2-1 6-2 연립방정식의 해와 그래프"] },
 ];
 
+/**
+ * 반이 소단원을 하나도 안 골랐을 때 기본으로 출제할 학년.
+ * 서버(gas/concept_autogen)의 CONCEPT_FALLBACK_GRADES_BY_CLASS 와 같게 맞춰주세요.
+ */
+const CONCEPT_FALLBACK_GRADES_BY_CLASS = {
+  '화금중1': ['중1', '중2-1']   // 민창 — 중1이지만 중2-1 과정을 나가요
+};
+const CONCEPT_FALLBACK_GRADES = ['중2-2'];
+
+/** 소단원 이름 앞의 학년 표시로 학년을 알아내요. 표시가 없으면 중2-2예요. */
+function conceptUnitGrade_(unitName){
+  const n = String(unitName || '');
+  if(n.indexOf('중2-1 ') === 0) return '중2-1';
+  if(n.indexOf('중1 ') === 0) return '중1';
+  return '중2-2';
+}
+
+/** 그 반이 아무것도 안 골랐을 때 실제로 출제되는 소단원 목록 */
+function conceptDefaultUnits_(className){
+  const grades = CONCEPT_FALLBACK_GRADES_BY_CLASS[className] || CONCEPT_FALLBACK_GRADES;
+  const all = CONCEPT_CURRICULUM.flatMap(ch => ch.units);
+  const picked = all.filter(u => grades.indexOf(conceptUnitGrade_(u)) >= 0);
+  return picked.length ? picked : all;
+}
+
+/** 고른 목록이 기본값과 같으면 저장은 빈 배열(= 기본값 따라감)로 해요 */
+function conceptCollapseToDefault_(className, units){
+  const def = conceptDefaultUnits_(className);
+  if(units.length !== def.length) return units;
+  const a = units.slice().sort().join('\u0001');
+  const b = def.slice().sort().join('\u0001');
+  return (a === b) ? [] : units;
+}
+
 function refreshConceptClassSelects(){
   const filterSel = document.getElementById('conceptItemFilterClass');
   const weeklyFilterSel = document.getElementById('conceptWeeklyFilterClass');
@@ -3867,7 +3901,21 @@ function renderConceptWeeklyGrid(){
   container.innerHTML = html;
 }
 
-// 반마다 자동 출제 대상 소단원을 체크박스(칩)로 고르는 화면
+// 반마다 자동 출제 대상 소단원을 고르는 화면.
+// 반이 늘면 화면이 너무 길어져서, 반 이름 줄만 보여주고 누르면 펼쳐지게 했어요.
+const conceptPickerOpen_ = {};        // { '화금중1': true }
+const conceptPickerGradeOpen_ = {};   // { '화금중1|중2-1': true }
+
+function toggleConceptPickerClass(className){
+  conceptPickerOpen_[className] = !conceptPickerOpen_[className];
+  renderConceptUnitPicker(Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort());
+}
+function toggleConceptPickerGrade(className, gradeLabel){
+  const k = className + '|' + gradeLabel;
+  conceptPickerGradeOpen_[k] = !conceptPickerGradeOpen_[k];
+  renderConceptUnitPicker(Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort());
+}
+
 function renderConceptUnitPicker(classNames){
   const wrap = document.getElementById('conceptUnitPickerList');
   if(!wrap) return;
@@ -3876,73 +3924,118 @@ function renderConceptUnitPicker(classNames){
     return;
   }
 
+  const groups = conceptGradeGroups_();
+
   wrap.innerHTML = classNames.map(c => {
     const safeC = escapeHtml(c).replace(/'/g,"\\'");
-    const selected = conceptEnabledUnits[c]; // 빈 배열/미설정 = 전체 범위
-    const isAll = !selected || selected.length === 0;
+    const saved = conceptEnabledUnits[c];           // 빈 배열/미설정 = 그 반의 기본 학년
+    const isAll = !saved || saved.length === 0;
+    const selected = isAll ? conceptDefaultUnits_(c) : saved;
+    const open = !!conceptPickerOpen_[c];
 
-    const chaptersHtml = CONCEPT_CURRICULUM.map((ch, chIdx) => {
-      const onCount = ch.units.filter(u => isAll || selected.includes(u)).length;
-      const unitChips = ch.units.map(u => {
-        const active = isAll || selected.includes(u);
-        return `<button type="button" class="btn small"
-          style="padding:4px 10px; font-size:11.5px; ${active ? 'background:var(--brand); color:#fff; border-color:var(--brand);' : 'background:var(--cream-alt); color:var(--ink-soft); border-color:var(--line);'}"
-          onclick="toggleConceptUnit('${safeC}', '${u.replace(/'/g,"\\'")}')">${u}</button>`;
+    // 접힌 상태에서 보여줄 한 줄 요약: 켜진 게 있는 학년과 개수
+    const onGrades = groups.filter(g => g.units.some(u => selected.includes(u)));
+    const summary = onGrades.map(g => {
+      const on = g.units.filter(u => selected.includes(u)).length;
+      return g.label + ' ' + on + (on === g.units.length ? '개(전부)' : '개');
+    }).join(' · ') || '없음';
+
+    const head = `
+      <button type="button" onclick="toggleConceptPickerClass('${safeC}')"
+        style="width:100%; display:flex; align-items:center; gap:10px; padding:11px 13px; background:none; border:0; cursor:pointer; text-align:left; font:inherit;">
+        <span style="font-size:12px; color:var(--ink-soft); width:12px;">${open ? '▾' : '▸'}</span>
+        <span style="font-size:13px; font-weight:700; font-family:'Noto Sans KR',sans-serif;">${escapeHtml(c)}</span>
+        <span style="font-size:11.5px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">${escapeHtml(summary)}</span>
+        ${isAll ? '<span style="font-size:10.5px; color:var(--ink-soft); background:var(--cream-alt); padding:2px 7px; border-radius:999px;">기본값</span>' : ''}
+        <span style="margin-left:auto; font-size:11px; color:var(--ink-soft);">${open ? '접기' : '설정'}</span>
+      </button>`;
+
+    if(!open){
+      return `<div style="border:1px solid var(--line); border-radius:10px;">${head}</div>`;
+    }
+
+    // 학년 묶음마다 또 접어요. 켜진 단원이 있는 학년만 기본으로 펼쳐요.
+    const body = groups.map(g => {
+      const on = g.units.filter(u => selected.includes(u)).length;
+      const key = c + '|' + g.label;
+      const gOpen = (key in conceptPickerGradeOpen_) ? conceptPickerGradeOpen_[key] : (on > 0);
+      const safeG = g.label.replace(/'/g,"\\'");
+      const gBtn = (mode, label, title) => `<button type="button" class="btn small"
+        style="padding:2px 7px; font-size:10.5px; background:var(--card); color:var(--ink-soft); border-color:var(--line);"
+        title="${title}" onclick="event.stopPropagation(); setConceptGradeScope('${safeC}', '${mode}', '${safeG}')">${label}</button>`;
+
+      const chapters = !gOpen ? '' : CONCEPT_CURRICULUM.map((ch, chIdx) => {
+        if(((/^\[([^\]]+)\]/.exec(ch.chapter) || [])[1] || '중2-2') !== g.label) return '';
+        const onCount = ch.units.filter(u => selected.includes(u)).length;
+        const chipTitle = ch.chapter.replace(/^\[[^\]]+\]\s*/, '');
+        const unitChips = ch.units.map(u => {
+          const active = selected.includes(u);
+          const shown = u.replace(/^중2-1 /, '').replace(/^중1 /, '');
+          return `<button type="button" class="btn small"
+            style="padding:4px 10px; font-size:11.5px; ${active ? 'background:var(--brand); color:#fff; border-color:var(--brand);' : 'background:var(--cream-alt); color:var(--ink-soft); border-color:var(--line);'}"
+            onclick="toggleConceptUnit('${safeC}', '${u.replace(/'/g,"\\'")}')">${shown}</button>`;
+        }).join('');
+        const scopeBtn = (mode, label, title) => `<button type="button" class="btn small"
+          style="padding:2px 7px; font-size:10.5px; background:var(--cream-alt); color:var(--ink-soft); border-color:var(--line);"
+          title="${title}" onclick="setConceptUnitScope('${safeC}', '${mode}', ${chIdx})">${label}</button>`;
+        return `<div style="margin:0 0 8px 20px;">
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
+            <span style="font-size:11px; font-weight:700; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">${chipTitle}</span>
+            <span style="font-size:10.5px; color:var(--ink-soft);">${onCount}/${ch.units.length}</span>
+            ${scopeBtn('only', '이 단원만', '이 반은 이 대단원만 자동 출제해요')}
+            ${scopeBtn('add', '＋전부', '이 대단원을 모두 켜요')}
+            ${scopeBtn('remove', '－전부', '이 대단원을 모두 꺼요')}
+          </div>
+          <div style="display:flex; gap:5px; flex-wrap:wrap;">${unitChips}</div>
+        </div>`;
       }).join('');
-      const scopeBtn = (mode, label, title) => `<button type="button" class="btn small"
-        style="padding:2px 7px; font-size:10.5px; background:var(--cream-alt); color:var(--ink-soft); border-color:var(--line);"
-        title="${title}" onclick="setConceptUnitScope('${safeC}', '${mode}', ${chIdx})">${label}</button>`;
-      return `<div style="margin-bottom:8px;">
-        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
-          <span style="font-size:11px; font-weight:700; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">${ch.chapter}</span>
-          <span style="font-size:10.5px; color:var(--ink-soft);">${onCount}/${ch.units.length}</span>
-          ${scopeBtn('only', '이 단원만', '이 반은 이 대단원만 자동 출제해요')}
-          ${scopeBtn('add', '＋전부', '이 대단원을 모두 켜요')}
-          ${scopeBtn('remove', '－전부', '이 대단원을 모두 꺼요')}
+
+      return `<div style="margin-bottom:10px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:7px 10px; background:var(--cream-alt); border-radius:8px;">
+          <button type="button" onclick="toggleConceptPickerGrade('${safeC}', '${safeG}')"
+            style="display:flex; align-items:center; gap:7px; background:none; border:0; cursor:pointer; padding:0; font:inherit;">
+            <span style="font-size:11px; color:var(--ink-soft);">${gOpen ? '▾' : '▸'}</span>
+            <strong style="font-size:12px; font-family:'Noto Sans KR',sans-serif; color:${on ? 'var(--brand-dark)' : 'var(--ink-soft)'};">${g.label}</strong>
+            <span style="font-size:10.5px; color:var(--ink-soft);">${on}/${g.units.length}</span>
+          </button>
+          ${gBtn('only', '이 학년만', '이 반은 이 학년만 자동 출제해요')}
+          ${gBtn('add', '＋', '이 학년을 모두 켜요')}
+          ${gBtn('remove', '－', '이 학년을 모두 꺼요')}
         </div>
-        <div style="display:flex; gap:5px; flex-wrap:wrap;">${unitChips}</div>
+        ${chapters}
       </div>`;
     }).join('');
 
-    return `
-      <div style="padding:12px 14px; border:1px solid var(--line); border-radius:10px;">
-        <div style="font-size:13px; font-weight:700; margin-bottom:10px; font-family:'Noto Sans KR',sans-serif;">
-          ${escapeHtml(c)} <span style="font-weight:500; color:var(--ink-soft); font-size:11.5px;">${isAll ? '(전체 범위 자동 출제)' : `(${selected.length}개 소단원만 자동 출제)`}</span>
+    const note = isAll
+      ? `따로 안 골라서 기본 ${(CONCEPT_FALLBACK_GRADES_BY_CLASS[c] || CONCEPT_FALLBACK_GRADES).join('·')} ${selected.length}개가 나가요.`
+      : `${selected.length}개 소단원에서만 나가요.`;
+
+    return `<div style="border:1px solid var(--line); border-radius:10px;">
+      ${head}
+      <div style="padding:0 13px 13px 13px;">
+        <div style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px; font-family:'Noto Sans KR',sans-serif;">
+          ${note}
           ${isAll ? '' : `<button type="button" class="btn small" style="padding:2px 7px; font-size:10.5px; margin-left:6px; background:var(--cream-alt); color:var(--ink-soft); border-color:var(--line);"
-            onclick="setConceptUnitScope('${safeC}', 'all', -1)">전체 범위로</button>`}
+            onclick="setConceptUnitScope('${safeC}', 'all', -1)">기본값으로</button>`}
         </div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:8px 10px; margin-bottom:10px; background:var(--cream-alt); border-radius:8px;">
-          <span style="font-size:11px; font-weight:700; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">학년 통째로</span>
-          ${conceptGradeGroups_().map(g => {
-            const on = g.units.filter(u => isAll || selected.includes(u)).length;
-            const btn = (mode, label) => `<button type="button" class="btn small"
-              style="padding:2px 7px; font-size:10.5px; background:var(--card); color:var(--ink-soft); border-color:var(--line);"
-              onclick="setConceptGradeScope('${safeC}', '${mode}', '${g.label.replace(/'/g,"\\'")}')">${label}</button>`;
-            return `<span style="display:inline-flex; gap:4px; align-items:center;">
-              <strong style="font-size:11.5px; font-family:'Noto Sans KR',sans-serif; color:${on ? 'var(--brand-dark)' : 'var(--ink-soft)'};">${g.label}</strong>
-              <span style="font-size:10.5px; color:var(--ink-soft);">${on}/${g.units.length}</span>
-              ${btn('only', '이 학년만')}${btn('add', '＋')}${btn('remove', '－')}
-            </span>`;
-          }).join('')}
-        </div>
-        ${chaptersHtml}
-      </div>`;
+        ${body}
+      </div>
+    </div>`;
   }).join('');
 }
 
 // 소단원 칩 클릭 시 켜고/끄고. 전부 켜지면 "전체"로 취급(빈 배열)
 function applyConceptUnitToggle_(data, className, unitName){
-  const allUnits = CONCEPT_CURRICULUM.flatMap(ch => ch.units);
   data.conceptEnabledUnits = data.conceptEnabledUnits || {};
   const current = (data.conceptEnabledUnits[className] && data.conceptEnabledUnits[className].length > 0)
     ? data.conceptEnabledUnits[className].slice()
-    : allUnits.slice(); // 지금까지 "전체"였으면 전체 목록에서 시작해서 하나씩 뺄 수 있게
+    : conceptDefaultUnits_(className).slice(); // 아직 안 골랐으면 기본값에서 시작해 하나씩 더하고 빼요
 
   const pos = current.indexOf(unitName);
   if(pos >= 0) current.splice(pos, 1);
   else current.push(unitName);
 
-  data.conceptEnabledUnits[className] = (current.length === allUnits.length) ? [] : current;
+  data.conceptEnabledUnits[className] = conceptCollapseToDefault_(className, current);
 }
 
 /** 대단원 이름 앞의 [중1] 같은 표시로 학년 묶음을 만들어요. 표시가 없으면 중2-2예요. */
@@ -3964,7 +4057,7 @@ function applyConceptScope_(className, mode, scopeUnits){
   const target = scopeUnits || [];
   const current = (conceptEnabledUnits[className] && conceptEnabledUnits[className].length > 0)
     ? conceptEnabledUnits[className].slice()
-    : allUnits.slice();
+    : conceptDefaultUnits_(className).slice();
 
   let next;
   if(mode === 'all') next = [];
@@ -3974,9 +4067,9 @@ function applyConceptScope_(className, mode, scopeUnits){
   else return;
 
   if(mode !== 'all' && next.length === 0){
-    showToast('소단원을 하나도 안 켜두면 전체 범위로 출제돼요.', 'warn');
+    showToast('소단원을 하나도 안 켜두면 기본값으로 출제돼요.', 'warn');
   }
-  conceptEnabledUnits[className] = (next.length === allUnits.length) ? [] : next;
+  conceptEnabledUnits[className] = (mode === 'all') ? [] : conceptCollapseToDefault_(className, next);
 
   const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
   renderConceptUnitPicker(classNames);
@@ -4095,35 +4188,136 @@ async function deleteAllConceptItems(){
   scheduleSync();
 }
 
+let showFinishedConceptItems_ = false;
+
+function toggleFinishedConceptItems(){
+  showFinishedConceptItems_ = !showFinishedConceptItems_;
+  renderConceptItemList();
+}
+
+/**
+ * 학생마다 "아직 안 끝난 문제"와 "맞혀서 끝낸 문제"를 모아요.
+ * 포털의 getOutstandingWrongIds 와 같은 규칙이에요 — 틀리면 쌓이고, 맞히면 빠져요.
+ */
+function conceptProgressByStudent_(){
+  const map = {};
+  const recs = (conceptTestRecords || []).slice().sort((a, b) => a.id - b.id);
+  recs.forEach(r => {
+    const m = map[r.studentId] || (map[r.studentId] = { outstanding: new Set(), done: new Set() });
+    (r.wrongItemIds || []).forEach(id => { m.outstanding.add(String(id)); m.done.delete(String(id)); });
+    (r.correctItemIds || []).forEach(id => { m.outstanding.delete(String(id)); m.done.add(String(id)); });
+  });
+  return map;
+}
+
+/** 한 문제가 그 반에서 어디까지 왔는지 */
+function conceptItemStatus_(item, progress, studentsByClass){
+  const kids = studentsByClass[item.className] || [];
+  const key = String(item.id);
+  let done = 0, outstanding = 0;
+  kids.forEach(s => {
+    const m = progress[s.id];
+    if(!m) return;
+    if(m.outstanding.has(key)) outstanding++;
+    else if(m.done.has(key)) done++;
+  });
+  return {
+    kids: kids.length,
+    done: done,
+    outstanding: outstanding,
+    finished: kids.length > 0 && done === kids.length
+  };
+}
+
 function renderConceptItemList(){
   const listEl = document.getElementById('conceptItemListBody');
   const filterEl = document.getElementById('conceptItemFilterClass');
   if(!listEl || !filterEl) return;
   const filter = filterEl.value;
 
+  const progress = conceptProgressByStudent_();
+  const studentsByClass = {};
+  students.forEach(s => {
+    if(!s.className) return;
+    (studentsByClass[s.className] || (studentsByClass[s.className] = [])).push(s);
+  });
+
   let list = conceptBankItems.slice();
   if(filter !== 'all') list = list.filter(i => i.className === filter);
   list.sort((a,b) => a.className.localeCompare(b.className) || a.id - b.id);
 
-  document.getElementById('conceptItemCountSub').textContent =
-    `등록된 문제 ${conceptBankItems.length}개 (표시 중 ${list.length}개)`;
+  const withStatus = list.map(item => ({ item: item, st: conceptItemStatus_(item, progress, studentsByClass) }));
+  const finished = withStatus.filter(x => x.st.finished);
+  const shown = showFinishedConceptItems_ ? withStatus : withStatus.filter(x => !x.st.finished);
 
-  if(list.length === 0){
+  document.getElementById('conceptItemCountSub').textContent =
+    `등록된 문제 ${conceptBankItems.length}개 · 아직 안 끝난 것 ${withStatus.length - finished.length}개` +
+    (finished.length ? ` · 반 전원이 맞힌 것 ${finished.length}개` : '');
+
+  const finishedBar = finished.length ? `
+    <li style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:var(--cream-alt);">
+      <span style="font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">
+        ✅ 반 전원이 맞혀서 끝난 문제 ${finished.length}개${showFinishedConceptItems_ ? '' : '는 접어뒀어요'}
+      </span>
+      <button type="button" class="btn small" style="padding:2px 8px; font-size:11px;"
+        onclick="toggleFinishedConceptItems()">${showFinishedConceptItems_ ? '접기' : '펼쳐 보기'}</button>
+      <button type="button" class="btn small danger-text" style="padding:2px 8px; font-size:11px;"
+        onclick="deleteFinishedConceptItems()">${finished.length}개 지우기</button>
+    </li>` : '';
+
+  if(shown.length === 0 && !finishedBar){
     listEl.innerHTML = `<li style="justify-content:center; color:var(--ink-soft);">등록된 문제가 없어요.</li>`;
     return;
   }
+  if(shown.length === 0){
+    listEl.innerHTML = finishedBar + `<li style="justify-content:center; color:var(--ink-soft);">아직 안 끝난 문제가 없어요.</li>`;
+    return;
+  }
 
-  listEl.innerHTML = list.map(item => `
-    <li>
+  listEl.innerHTML = finishedBar + shown.map(({ item, st }) => {
+    const badge = !st.kids ? '<span style="font-size:11px; color:var(--ink-soft);">· 반에 학생 없음</span>'
+      : st.finished ? `<span style="font-size:11px; color:var(--brand-dark); font-weight:700;">✅ ${st.done}/${st.kids} 끝</span>`
+      : st.outstanding ? `<span style="font-size:11px; color:#B4472B; font-weight:700;">🔁 ${st.outstanding}명 다시 풀 예정</span>`
+      : st.done ? `<span style="font-size:11px; color:var(--ink-soft);">${st.done}/${st.kids} 맞힘</span>`
+      : '<span style="font-size:11px; color:var(--ink-soft);">· 아직 안 냄</span>';
+    return `
+    <li${st.finished ? ' style="opacity:.55;"' : ''}>
       <div class="left">
-        <span class="date" style="font-family:'Noto Sans KR',sans-serif;">🏷️ ${escapeHtml(item.className)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}${item.autoDate ? ` · 🤖 AI 자동출제 ${escapeHtml(item.autoDate.slice(5).replace('-', '/'))}` : ''}</span>
+        <span class="date" style="font-family:'Noto Sans KR',sans-serif;">🏷️ ${escapeHtml(item.className)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}${item.autoDate ? ` · 🤖 AI 자동출제 ${escapeHtml(item.autoDate.slice(5).replace('-', '/'))}` : ''} ${badge}</span>
         <strong style="font-size:13px;">${escapeHtml(item.question)}</strong>
         <span style="font-size:12px; color:var(--ink-soft);">보기: ${item.choices.map((c,i) => i === item.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)}✓</strong>` : escapeHtml(c)).join(' / ')}</span>
         ${item.example ? `<span style="font-size:12px; color:var(--ink-soft); margin-top:3px;">✏️ 유제: ${escapeHtml(item.example.question)} — ${item.example.choices.map((c,i) => i === item.example.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)}✓</strong>` : escapeHtml(c)).join(' / ')}</span>` : '<span style="font-size:11.5px; color:#B4472B;">✏️ 유제 없음</span>'}
       </div>
       <button class="btn small danger-text" onclick="deleteConceptItem(${item.id})">삭제</button>
-    </li>
-  `).join('');
+    </li>`;
+  }).join('');
+}
+
+/** 반 전원이 맞혀서 끝난 문제만 한 번에 지워요 */
+async function deleteFinishedConceptItems(){
+  const filterEl = document.getElementById('conceptItemFilterClass');
+  const filter = filterEl ? filterEl.value : 'all';
+  const progress = conceptProgressByStudent_();
+  const studentsByClass = {};
+  students.forEach(s => {
+    if(!s.className) return;
+    (studentsByClass[s.className] || (studentsByClass[s.className] = [])).push(s);
+  });
+
+  const targets = conceptBankItems.filter(i =>
+    (filter === 'all' || i.className === filter) &&
+    conceptItemStatus_(i, progress, studentsByClass).finished);
+
+  if(!targets.length){ showToast('끝난 문제가 없어요.', 'warn'); return; }
+  const where = filter === 'all' ? '전체 반' : filter;
+  if(!confirm(`${where}에서 반 전원이 맞힌 문제 ${targets.length}개를 지울까요?\n\n되돌릴 수 없어요. 지운 문제는 다시 안 나와요.`)) return;
+
+  const ids = new Set(targets.map(i => i.id));
+  conceptBankItems = conceptBankItems.filter(i => !ids.has(i.id));
+  allowBulkDelete_ = true;
+  renderConceptItemList();
+  scheduleSync();
+  showToast(`🧹 끝난 문제 ${targets.length}개를 지웠어요.`, 'ok');
 }
 
 /** 묶음 넣기: 반 선택칸 채우기 */

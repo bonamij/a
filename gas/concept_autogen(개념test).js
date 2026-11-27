@@ -158,6 +158,33 @@ const CONCEPT_CURRICULUM_BY_UNIT = {
   "7-2 확률의 계산": "또는(동시에 안 일어남)=덧셈 p+q, 동시에(독립)=곱셈 p×q, 비복원추출=종속시행.",
 };
 
+/**
+ * 반이 "자동 출제 대상 소단원"을 아직 하나도 안 골랐을 때 쓰는 기본 학년이에요.
+ * 여기 없는 반은 중2-2로 봐요(예전부터 그랬어요).
+ * 선행하는 반은 여기 적어두면 선생님이 아무것도 안 눌러도 제 학년 문제만 받아요.
+ */
+var CONCEPT_FALLBACK_GRADES_BY_CLASS = {
+  '화금중1': ['중1', '중2-1']   // 민창 — 중1이지만 중2-1 과정을 나가요
+};
+var CONCEPT_FALLBACK_GRADES = ['중2-2'];
+
+/** 소단원 이름 앞의 학년 표시로 학년을 알아내요. 표시가 없으면 중2-2예요. */
+function conceptUnitGrade_(unitName){
+  var n = String(unitName || '');
+  if(n.indexOf('중2-1 ') === 0) return '중2-1';
+  if(n.indexOf('중1 ') === 0) return '중1';
+  return '중2-2';
+}
+
+/** 설정이 없을 때 쓸 개념 요약 목록 */
+function conceptFallbackEntries_(target){
+  var cls = target && target.className;
+  var grades = (cls && CONCEPT_FALLBACK_GRADES_BY_CLASS[cls]) || CONCEPT_FALLBACK_GRADES;
+  var all = Object.keys(CONCEPT_CURRICULUM_BY_UNIT).map(function (u) { return [u, CONCEPT_CURRICULUM_BY_UNIT[u]]; });
+  var picked = all.filter(function (e) { return grades.indexOf(conceptUnitGrade_(e[0])) >= 0; });
+  return picked.length ? picked : all;
+}
+
 // 2026-09-18 변경: 검토 대기함을 거치지 않고 만든 문제를 바로 문제은행에 넣어요(선생님 결정).
 // 새 문제에는 autoDate(한국 날짜)를 붙이고, 학생 화면은 그날 새로 만든 문제를 먼저 내요.
 // 개별학생 대상 문제만 예전처럼 검토 대기함으로 가요 (문제은행은 반 단위라서).
@@ -374,11 +401,12 @@ function generateConceptQuestionsForTarget_(target, existingItems, activeUnitsFo
 
   const existingQuestionTexts = existingItems.map(i => i.question);
 
-  // 관리자 앱의 "커리큘럼 단원 관리"에서 이 대상에 체크(활성화)해둔 단원이 있으면 그걸 쓰고,
-  // 하나도 없으면(아직 설정 안 했으면) 기본 18개 단원으로 대체해요.
+  // 관리자 앱의 "자동 출제 대상 소단원"에서 이 대상에 체크해둔 단원이 있으면 그걸 쓰고,
+  // 하나도 없으면(아직 설정 안 했으면) 그 반의 기본 학년 단원만 써요.
+  // 예전엔 여기서 "전부"를 썼는데, 중1·중2-1 요약이 들어온 뒤로는 학년이 섞여서 바꿨어요.
   const unitEntries = (activeUnitsForTarget && activeUnitsForTarget.length > 0)
     ? activeUnitsForTarget.map(u => [u.unitName, u.summary])
-    : Object.entries(CONCEPT_CURRICULUM_BY_UNIT);
+    : conceptFallbackEntries_(target);
 
   const curriculumText = unitEntries
     .map(([unit, summary]) => `[${unit}] ${summary}`)
