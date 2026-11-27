@@ -155,7 +155,7 @@ function generateDailyConceptQuestions(){
 
       newItems.forEach(item => {
         if(isClass){
-          newBankItems.push({
+          const bankItem = {
             id: ++idSeed,
             className: target.className,
             unit: item.unit || '',
@@ -165,9 +165,11 @@ function generateDailyConceptQuestions(){
             autoDate: todayKst,
             source: 'ai',
             createdAt: new Date().toISOString()
-          });
+          };
+          if(item.example) bankItem.example = item.example;
+          newBankItems.push(bankItem);
         } else {
-          newDraftItems.push({
+          const draftItem = {
             id: data.nextConceptDraftId++,
             target: target,
             unit: item.unit || '',
@@ -175,7 +177,9 @@ function generateDailyConceptQuestions(){
             choices: item.choices,
             correctIndex: item.correctIndex,
             createdAt: new Date().toISOString()
-          });
+          };
+          if(item.example) draftItem.example = item.example;
+          newDraftItems.push(draftItem);
         }
       });
       done.push(`${label} ${newItems.length}개`);
@@ -310,7 +314,8 @@ function generateConceptQuestionsForTarget_(target, existingItems, activeUnitsFo
     .join('\n');
 
   const promptText = `너는 중학교 2학년 2학기 수학 개념 문제를 만드는 출제자야.
-아래 "개념 요약"을 바탕으로, 서로 다른 소단원에서 총 ${questionsPerClass}개의 "빈칸채우기 3지선다" 문제를 새로 만들어줘.
+아래 "개념 요약"을 바탕으로, 서로 다른 소단원에서 총 ${questionsPerClass}개의 문제를 새로 만들어줘.
+문제 하나는 [빈칸채우기 3지선다 개념문제 1개] + [그 개념을 바로 써먹는 아주 기초적인 3지선다 유제 1개] 한 쌍이야.
 [개념 요약]
 ${curriculumText}
 
@@ -321,13 +326,19 @@ ${existingQuestionTexts.length ? existingQuestionTexts.map(q => '- ' + q).join('
 - question에는 빈칸을 "___"로 표시
 - choices는 정답 1개 + 오답 2개(실제로 헷갈리기 쉬운 개념으로), 총 3개
 - correctIndex는 정답이 choices 배열에서 몇 번째 인덱스인지(0부터 시작)
+- 정답 위치를 0, 1, 2에 고루 섞어줘. 전부 0번이 되지 않게.
 - unit은 위 개념 요약의 소단원 이름 중 하나를 그대로 사용
+- example(유제)은 그 개념을 알면 한두 줄 계산으로 풀리는 가장 기초적인 문제로 만들어줘.
+  숫자는 깔끔하게(정수나 간단한 분수) 떨어지게 하고, 개념을 모르면 못 푸는 문제여야 해.
+  example.question에는 빈칸("___")을 쓰지 말고 완전한 물음 문장으로 써줘.
+  그림을 봐야만 풀리는 문제는 만들지 마. 필요한 조건은 문장 안에 다 적어줘.
 - 제곱·세제곱 등은 반드시 위첨자 문자(²,³)를 사용해. "^2", "^3" 같은 표기나 "$...$" 같은 LaTeX 기호는 절대 쓰지 마.
   예: "a² + b² = c²" (O), "a^2 + b^2 = c^2" (X), "$a^2+b^2$" (X)
 - 문장은 자연스러운 한국어 존댓말/평서문으로, 오타 없이 정확하게 써줘.
 
 다른 설명 없이, 아래 JSON 배열 형식으로만 답해줘:
-[{"unit":"...", "question":"...", "choices":["...","...","..."], "correctIndex":0}, ...]`;
+[{"unit":"...", "question":"...", "choices":["...","...","..."], "correctIndex":0,
+  "example":{"question":"...", "choices":["...","...","..."], "correctIndex":0}}, ...]`;
 
   const payload = {
     contents: [{ parts: [{ text: promptText }] }],
@@ -356,14 +367,28 @@ ${existingQuestionTexts.length ? existingQuestionTexts.map(q => '- ' + q).join('
     throw new Error('AI 응답을 JSON으로 해석하지 못했어요: ' + jsonMatch[0].slice(0, 300));
   }
 
+  // 유제는 형식이 맞을 때만 붙여요. 유제가 이상해도 개념문제는 살려요.
+  function cleanExample_(ex){
+    if(!ex || typeof ex.question !== 'string' || !ex.question.trim() || !Array.isArray(ex.choices)) return null;
+    const choices = ex.choices.map(function (c) { return normalizeMathNotation_(String(c)); });
+    if(choices.length < 2 || choices.some(function (c) { return !c.trim(); })) return null;
+    if(!Number.isInteger(ex.correctIndex) || ex.correctIndex < 0 || ex.correctIndex >= choices.length) return null;
+    return { question: normalizeMathNotation_(ex.question), choices: choices, correctIndex: ex.correctIndex };
+  }
+
   const cleaned = parsed
     .filter(q => q && q.question && Array.isArray(q.choices))
-    .map(q => ({
-      unit: q.unit,
-      question: normalizeMathNotation_(q.question),
-      choices: q.choices.map(c => normalizeMathNotation_(c)),
-      correctIndex: q.correctIndex
-    }));
+    .map(q => {
+      const out = {
+        unit: q.unit,
+        question: normalizeMathNotation_(q.question),
+        choices: q.choices.map(c => normalizeMathNotation_(c)),
+        correctIndex: q.correctIndex
+      };
+      const ex = cleanExample_(q.example);
+      if(ex) out.example = ex;
+      return out;
+    });
 
   return cleaned.filter(q =>
     q.choices.length >= 2 &&

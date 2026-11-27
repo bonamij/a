@@ -1319,6 +1319,25 @@
       <div class="card">
         <div class="card-head">
           <div>
+            <h3>📦 문제 묶음 한 번에 넣기</h3>
+            <div class="sub">개념빈칸과 유제를 짝지어 JSON으로 붙여넣으면 한 번에 들어가요. 같은 반에 똑같은 문제가 이미 있으면 건너뛰어요.</div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="cqImportClass">넣을 반</label>
+            <select id="cqImportClass" multiple size="3" style="min-width:140px;"></select>
+          </div>
+        </div>
+        <textarea id="cqImportJson" rows="5" placeholder='[{"unit":"3-1 닮음의 뜻과 성질","question":"두 도형이 닮음일 때 대응변의 길이의 ___는 일정하다.","choices":["비","합","차"],"correctIndex":0,"example":{"question":"닮음비가 2:3인 두 삼각형에서 한 변이 4cm일 때 대응변은?","choices":["6cm","5cm","8cm"],"correctIndex":0}}]'
+          style="width:100%; box-sizing:border-box; padding:10px; border:1px solid var(--line); border-radius:8px; font-family:'Space Mono',monospace; font-size:12px;"></textarea>
+        <div style="display:flex; gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap;">
+          <button type="button" class="btn small" onclick="importConceptBundle()">📦 문제은행에 넣기</button>
+          <span id="cqImportMsg" style="font-size:12px; color:var(--ink-soft); font-weight:600;"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
             <h3>📋 문제은행 목록</h3>
             <div class="sub" id="conceptItemCountSub">등록된 문제 0개</div>
           </div>
@@ -4008,10 +4027,85 @@ function renderConceptItemList(){
         <span class="date" style="font-family:'Noto Sans KR',sans-serif;">🏷️ ${escapeHtml(item.className)}${item.unit ? ` · ${escapeHtml(item.unit)}` : ''}${item.autoDate ? ` · 🤖 AI 자동출제 ${escapeHtml(item.autoDate.slice(5).replace('-', '/'))}` : ''}</span>
         <strong style="font-size:13px;">${escapeHtml(item.question)}</strong>
         <span style="font-size:12px; color:var(--ink-soft);">보기: ${item.choices.map((c,i) => i === item.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)}✓</strong>` : escapeHtml(c)).join(' / ')}</span>
+        ${item.example ? `<span style="font-size:12px; color:var(--ink-soft); margin-top:3px;">✏️ 유제: ${escapeHtml(item.example.question)} — ${item.example.choices.map((c,i) => i === item.example.correctIndex ? `<strong style="color:var(--brand-dark);">${escapeHtml(c)}✓</strong>` : escapeHtml(c)).join(' / ')}</span>` : '<span style="font-size:11.5px; color:#B4472B;">✏️ 유제 없음</span>'}
       </div>
       <button class="btn small danger-text" onclick="deleteConceptItem(${item.id})">삭제</button>
     </li>
   `).join('');
+}
+
+/** 묶음 넣기: 반 선택칸 채우기 */
+function refreshConceptImportClasses_(){
+  const sel = document.getElementById('cqImportClass');
+  if(!sel) return;
+  const prev = Array.from(sel.selectedOptions || []).map(o => o.value);
+  const names = [...new Set(students.map(s => s.className).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
+  sel.innerHTML = names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  Array.from(sel.options).forEach(o => { o.selected = prev.indexOf(o.value) >= 0; });
+}
+
+/** 개념빈칸 + 유제 묶음을 JSON으로 받아 문제은행에 넣어요 */
+function importConceptBundle(){
+  const msg = document.getElementById('cqImportMsg');
+  const say = (t, bad) => { if(msg){ msg.textContent = t; msg.style.color = bad ? '#B4472B' : 'var(--brand-dark)'; } };
+  const sel = document.getElementById('cqImportClass');
+  const classes = Array.from(sel.selectedOptions || []).map(o => o.value);
+  if(!classes.length){ say('넣을 반을 하나 이상 골라주세요.', true); return; }
+
+  let rows;
+  try { rows = JSON.parse(document.getElementById('cqImportJson').value); }
+  catch(err){ say('JSON을 읽지 못했어요: ' + err.message, true); return; }
+  if(!Array.isArray(rows) || !rows.length){ say('문제 목록(배열)이 비어 있어요.', true); return; }
+
+  // 먼저 전부 검사해요. 하나라도 어긋나면 아무것도 넣지 않아요.
+  const checkChoices = (c, i, what) => {
+    if(!Array.isArray(c) || c.length < 2) throw new Error((i+1) + '번 ' + what + ': 보기가 2개 이상이어야 해요.');
+    if(c.some(x => typeof x !== 'string' || !x.trim())) throw new Error((i+1) + '번 ' + what + ': 빈 보기가 있어요.');
+  };
+  try {
+    rows.forEach((r, i) => {
+      if(!r || typeof r.question !== 'string' || !r.question.trim()) throw new Error((i+1) + '번: question 이 없어요.');
+      checkChoices(r.choices, i, '개념');
+      if(!Number.isInteger(r.correctIndex) || r.correctIndex < 0 || r.correctIndex >= r.choices.length) throw new Error((i+1) + '번: correctIndex 가 보기 범위를 벗어났어요.');
+      if(r.example){
+        if(typeof r.example.question !== 'string' || !r.example.question.trim()) throw new Error((i+1) + '번 유제: question 이 없어요.');
+        checkChoices(r.example.choices, i, '유제');
+        if(!Number.isInteger(r.example.correctIndex) || r.example.correctIndex < 0 || r.example.correctIndex >= r.example.choices.length) throw new Error((i+1) + '번 유제: correctIndex 가 보기 범위를 벗어났어요.');
+      }
+    });
+  } catch(err){ say(err.message, true); return; }
+
+  let added = 0, skipped = 0;
+  classes.forEach(cls => {
+    const have = new Set(conceptBankItems.filter(i => i.className === cls).map(i => i.question.trim()));
+    rows.forEach(r => {
+      if(have.has(r.question.trim())){ skipped++; return; }
+      const item = {
+        id: newId_(),
+        className: cls,
+        unit: r.unit || '',
+        question: r.question.trim(),
+        choices: r.choices.map(c => c.trim()),
+        correctIndex: r.correctIndex
+      };
+      if(r.example){
+        item.example = {
+          question: r.example.question.trim(),
+          choices: r.example.choices.map(c => c.trim()),
+          correctIndex: r.example.correctIndex
+        };
+      }
+      conceptBankItems.push(item);
+      have.add(item.question);
+      added++;
+    });
+  });
+
+  renderConceptItemList();
+  allowBulkDelete_ = true;
+  scheduleSync();
+  say(`✅ ${added}개 넣었어요${skipped ? ` (이미 있던 ${skipped}개는 건너뜀)` : ''} — ${classes.join(', ')}`);
+  showToast(`📦 문제 ${added}개를 문제은행에 넣었어요.`, 'ok');
 }
 
 /* =========================================================
@@ -7503,6 +7597,7 @@ function renderAll_(){
   refreshProgressStudentSelects();
   refreshUnitProgressClasses_();
   refreshWeeklyReportSelect_();
+  refreshConceptImportClasses_();
   renderProgressList();
   refreshAttendanceStudentSelect();
   renderAttendanceRoster();

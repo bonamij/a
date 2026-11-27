@@ -1,0 +1,222 @@
+[
+  {
+    "unit": "3-1 닮음의 뜻과 성질",
+    "question": "닮은 두 평면도형에서 대응하는 변의 길이의 ___는 일정하고, 대응하는 각의 크기는 각각 같다.",
+    "choices": ["합", "비", "차"],
+    "correctIndex": 1,
+    "example": {
+      "question": "△ABC∽△DEF이고 닮음비가 2:5예요. AB=6cm일 때 DE의 길이는?",
+      "choices": ["15cm", "12cm", "10cm"],
+      "correctIndex": 0
+    }
+  },
+  {
+    "unit": "3-2 삼각형의 닮음조건",
+    "question": "두 삼각형에서 두 쌍의 대응각의 크기가 각각 같으면 ___ 닮음이다.",
+    "choices": ["SSS", "SAS", "AA"],
+    "correctIndex": 2,
+    "example": {
+      "question": "△ABC와 △DEF에서 ∠A=∠D=40°, ∠B=∠E=70°예요. 두 삼각형의 관계는?",
+      "choices": ["알 수 없다", "닮음이다", "합동이다"],
+      "correctIndex": 1
+    }
+  },
+  {
+    "unit": "3-2-2 직각삼각형의 닮음",
+    "question": "∠A=90°인 직각삼각형 ABC에서 A에서 빗변 BC에 내린 수선의 발을 H라 하면 AH² = BH × ___ 이다.",
+    "choices": ["CH", "BC", "AC"],
+    "correctIndex": 0,
+    "example": {
+      "question": "위 그림에서 BH=4cm, CH=9cm일 때 AH의 길이는?",
+      "choices": ["13cm", "36cm", "6cm"],
+      "correctIndex": 2
+    }
+  },
+  {
+    "unit": "4-1 삼각형과 평행선",
+    "question": "△ABC에서 BC∥DE이면 AD : DB = AE : ___ 이다.",
+    "choices": ["AC", "EC", "DE"],
+    "correctIndex": 1,
+    "example": {
+      "question": "BC∥DE이고 AD=3cm, DB=6cm, AE=4cm일 때 EC의 길이는?",
+      "choices": ["2cm", "12cm", "8cm"],
+      "correctIndex": 2
+    }
+  },
+  {
+    "unit": "4-1-2 삼각형의 각의 이등분선",
+    "question": "△ABC에서 ∠A의 이등분선이 BC와 만나는 점을 D라 하면 AB : AC = BD : ___ 이다.",
+    "choices": ["CD", "BC", "AD"],
+    "correctIndex": 0,
+    "example": {
+      "question": "∠A의 이등분선이 BC와 만나는 점이 D이고 AB=6cm, AC=4cm, BD=3cm일 때 CD의 길이는?",
+      "choices": ["4.5cm", "2cm", "5cm"],
+      "correctIndex": 1
+    }
+  },
+  {
+    "unit": "4-2 중점연결정리",
+    "question": "△ABC에서 두 변 AB, AC의 중점을 각각 M, N이라 하면 MN∥BC이고, MN의 길이는 BC의 ___ 이다.",
+    "choices": ["2배", "1/2", "1/3"],
+    "correctIndex": 1,
+    "example": {
+      "question": "M, N이 각각 AB, AC의 중점이고 BC=14cm일 때 MN의 길이는?",
+      "choices": ["28cm", "14cm", "7cm"],
+      "correctIndex": 2
+    }
+  },
+  {
+    "unit": "4-2-2 사각형의 중점을 연결한 선분",
+    "question": "사각형 ABCD의 네 변의 중점을 이어 만든 사각형 EFGH의 둘레의 길이는 두 대각선 AC와 BD의 길이의 ___과 같다.",
+    "choices": ["합", "차", "곱"],
+    "correctIndex": 0,
+    "example": {
+      "question": "AC=10cm, BD=8cm일 때 네 변의 중점을 이어 만든 사각형의 둘레의 길이는?",
+      "choices": ["9cm", "18cm", "36cm"],
+      "correctIndex": 1
+    }
+  },
+  {
+    "unit": "4-3 평행선 사이의 선분의 길이의 비",
+    "question": "세 직선 l, m, n이 서로 평행할 때 이들에 의해 잘린 두 직선의 선분의 길이의 비는 서로 ___.",
+    "choices": ["다르다", "2배이다", "같다"],
+    "correctIndex": 2,
+    "example": {
+      "question": "l∥m∥n이고 한 직선이 3cm, 6cm로 잘릴 때, 다른 직선이 4cm와 □cm로 잘려요. □는?",
+      "choices": ["8", "2", "12"],
+      "correctIndex": 0
+    }
+  },
+  {
+    "unit": "4-3-2 평행선과 선분의 길이의 비의 응용",
+    "question": "AB∥EF∥DC이고 AB=a, DC=b일 때 EF의 길이는 ___ 이다.",
+    "choices": ["(a+b)/2", "ab/(a+b)", "a+b"],
+    "correctIndex": 1,
+    "example": {
+      "question": "AB∥EF∥DC이고 AB=6cm, DC=3cm일 때 EF의 길이는?",
+      "choices": ["4.5cm", "9cm", "2cm"],
+      "correctIndex": 2
+    }
+  },
+  {
+    "unit": "4-4 삼각형의 무게중심",
+    "question": "삼각형의 세 중선의 교점을 ___이라 하고, 이 점은 각 중선을 꼭짓점으로부터 2:1로 나눈다.",
+    "choices": ["외심", "내심", "무게중심"],
+    "correctIndex": 2,
+    "example": {
+      "question": "중선 AD의 길이가 12cm이고 무게중심을 G라 할 때 AG의 길이는?",
+      "choices": ["8cm", "4cm", "6cm"],
+      "correctIndex": 0
+    }
+  },
+  {
+    "unit": "4-4-2 삼각형의 중선과 무게중심",
+    "question": "삼각형의 한 꼭짓점과 그 대변의 ___을 이은 선분을 중선이라 하고, 중선은 삼각형의 넓이를 이등분한다.",
+    "choices": ["수선의 발", "중점", "삼등분점"],
+    "correctIndex": 1,
+    "example": {
+      "question": "△ABC의 넓이가 30cm²이고 AD가 중선일 때 △ABD의 넓이는?",
+      "choices": ["10cm²", "20cm²", "15cm²"],
+      "correctIndex": 2
+    }
+  },
+  {
+    "unit": "4-4-3 삼각형의 무게중심과 넓이",
+    "question": "삼각형의 세 중선으로 나누어진 6개의 삼각형의 넓이는 각각 전체 넓이의 ___ 이다.",
+    "choices": ["1/6", "1/3", "1/2"],
+    "correctIndex": 0,
+    "example": {
+      "question": "△ABC의 넓이가 36cm²이고 G가 무게중심일 때 △GAB의 넓이는?",
+      "choices": ["6cm²", "12cm²", "18cm²"],
+      "correctIndex": 1
+    }
+  },
+  {
+    "unit": "4-9 닮은 도형의 넓이와 부피의 비",
+    "question": "닮음비가 m:n인 두 입체도형에서 겉넓이의 비는 m²:n²이고, 부피의 비는 ___ 이다.",
+    "choices": ["m:n", "m²:n²", "m³:n³"],
+    "correctIndex": 2,
+    "example": {
+      "question": "닮음비가 1:3인 두 원기둥의 부피의 비는?",
+      "choices": ["1:27", "1:9", "1:3"],
+      "correctIndex": 0
+    }
+  },
+  {
+    "unit": "5-1 피타고라스 정리",
+    "question": "직각삼각형에서 직각을 낀 두 변의 길이가 a, b이고 빗변의 길이가 c일 때 a² + b² = ___ 이다.",
+    "choices": ["2c", "c²", "c"],
+    "correctIndex": 1,
+    "example": {
+      "question": "직각을 낀 두 변의 길이가 6cm, 8cm인 직각삼각형의 빗변의 길이는?",
+      "choices": ["14cm", "12cm", "10cm"],
+      "correctIndex": 2
+    }
+  },
+  {
+    "unit": "5-2 피타고라스 정리의 활용",
+    "question": "세 변의 길이가 a, b, c(c가 가장 긴 변)인 삼각형에서 a² + b² < c²이면 ___삼각형이다.",
+    "choices": ["둔각", "예각", "직각"],
+    "correctIndex": 0,
+    "example": {
+      "question": "세 변의 길이가 4cm, 5cm, 7cm인 삼각형은 어떤 삼각형일까요?",
+      "choices": ["예각삼각형", "둔각삼각형", "직각삼각형"],
+      "correctIndex": 1
+    }
+  },
+  {
+    "unit": "5-2-2 피타고라스 정리의 활용(사각형·내부의 점)",
+    "question": "직사각형 ABCD의 내부의 한 점 P에 대하여 AP² + CP² = BP² + ___ 이다.",
+    "choices": ["AD²", "BD²", "DP²"],
+    "correctIndex": 2,
+    "example": {
+      "question": "직사각형 내부의 점 P에 대해 AP=3, CP=4, BP=2일 때 DP²의 값은?",
+      "choices": ["21", "11", "29"],
+      "correctIndex": 0
+    }
+  },
+  {
+    "unit": "6-1 경우의 수",
+    "question": "두 사건 A, B가 동시에 일어나지 않을 때, A 또는 B가 일어나는 경우의 수는 각각의 경우의 수를 ___.",
+    "choices": ["곱한다", "더한다", "뺀다"],
+    "correctIndex": 1,
+    "example": {
+      "question": "주사위 한 개를 던질 때 2의 배수 또는 5의 눈이 나오는 경우의 수는?",
+      "choices": ["3", "9", "4"],
+      "correctIndex": 2
+    }
+  },
+  {
+    "unit": "6-2 여러 가지 경우의 수",
+    "question": "서로 다른 n개를 한 줄로 세우는 경우의 수는 n × (n-1) × (n-2) × … × ___ 이다.",
+    "choices": ["1", "2", "n"],
+    "correctIndex": 0,
+    "example": {
+      "question": "4명을 한 줄로 세우는 경우의 수는?",
+      "choices": ["12", "24", "16"],
+      "correctIndex": 1
+    }
+  },
+  {
+    "unit": "7-1 확률의 뜻과 성질",
+    "question": "어떤 사건이 일어날 확률이 p일 때, 그 사건이 일어나지 않을 확률은 ___ 이다.",
+    "choices": ["p", "1+p", "1-p"],
+    "correctIndex": 2,
+    "example": {
+      "question": "내일 비가 올 확률이 0.3일 때, 비가 오지 않을 확률은?",
+      "choices": ["0.7", "0.3", "1.3"],
+      "correctIndex": 0
+    }
+  },
+  {
+    "unit": "7-2 확률의 계산",
+    "question": "두 사건 A, B가 서로 영향을 주지 않을 때, A와 B가 동시에 일어날 확률은 각각의 확률을 ___.",
+    "choices": ["더한다", "곱한다", "뺀다"],
+    "correctIndex": 1,
+    "example": {
+      "question": "동전 한 개와 주사위 한 개를 동시에 던질 때, 동전은 앞면이고 주사위는 3의 눈이 나올 확률은?",
+      "choices": ["1/8", "2/3", "1/12"],
+      "correctIndex": 2
+    }
+  }
+]

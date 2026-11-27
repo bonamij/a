@@ -1097,6 +1097,7 @@ function renderConceptQuizDashboard(student, data){
   return `
     ${weekBlock}
     ${reviewCount > 0 ? `<div class="cq-status pending">🔁 지난번에 틀렸던 ${reviewCount}개 문제가 오늘 다시 나와요.</div>` : ''}
+    ${items.some(i => i.example) ? '<div class="cq-status">✏️ 개념을 푼 뒤 유제까지 풀면 끝나요. 틀린 건 그 자리에서 한 번 더 나와요.</div>' : ''}
     <button type="button" class="btn" onclick="startConceptQuiz(${student.id})">오늘의 문제 ${items.length}개 풀기</button>
   `;
 }
@@ -1107,19 +1108,80 @@ function startConceptQuiz(studentId){
   if(!isConceptActiveToday(student.className, currentData)) return;
   const questions = buildStudentConceptQuiz(student, currentData);
   if(questions.length === 0) return;
-  conceptQuizSession = { student, questions, idx:0, results:{} };
+  conceptQuizSession = {
+    student, questions, idx:0, results:{},
+    phase:'main',
+    retry:[], rIdx:0, rResults:{},
+    ex:[], eIdx:0, eResults:{}
+  };
   renderConceptQuizQuestion();
+}
+
+/* ===== 3단계(개념 → 틀린 것 다시 → 유제) 도우미 ===== */
+
+const CQ_PHASES = {
+  main:  { label:'개념',            tag:'' },
+  retry: { label:'틀린 것 다시',    tag:'🔁 다시 풀기' },
+  ex:    { label:'유제',            tag:'✏️ 유제' }
+};
+
+function cqList_(s){ return s.phase === 'main' ? s.questions : s.phase === 'retry' ? s.retry : s.ex; }
+function cqResults_(s){ return s.phase === 'main' ? s.results : s.phase === 'retry' ? s.rResults : s.eResults; }
+function cqIdx_(s){ return s.phase === 'main' ? s.idx : s.phase === 'retry' ? s.rIdx : s.eIdx; }
+function cqSetIdx_(s, v){
+  if(s.phase === 'main') s.idx = v;
+  else if(s.phase === 'retry') s.rIdx = v;
+  else s.eIdx = v;
+}
+
+/** 선택지를 섞어서 "정답 위치"를 외운 걸로는 못 맞히게 */
+function cqShuffleChoices_(q){
+  const order = q.choices.map((c, i) => i);
+  for(let i = order.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = order[i]; order[i] = order[j]; order[j] = t;
+  }
+  return Object.assign({}, q, {
+    choices: order.map(i => q.choices[i]),
+    correctIndex: order.indexOf(q.correctIndex)
+  });
+}
+
+/** 1차에서 틀린 문제들 (선택지 섞어서) */
+function cqBuildRetry_(s){
+  return s.questions
+    .filter(q => { const r = s.results[q.id]; return !r || !r.correct; })
+    .map(q => cqShuffleChoices_(q));
+}
+
+/** 오늘 나온 개념 중 유제가 붙어 있는 것 */
+function cqBuildExamples_(s){
+  return s.questions
+    .filter(q => q.example && Array.isArray(q.example.choices) && q.example.choices.length >= 2)
+    .map(q => ({
+      id: q.id,
+      unit: q.unit,
+      question: q.example.question,
+      choices: q.example.choices,
+      correctIndex: q.example.correctIndex,
+      isExample: true
+    }));
 }
 
 function renderConceptQuizQuestion(){
   const area = document.getElementById('conceptQuizArea');
   if(!area || !conceptQuizSession) return;
   const s = conceptQuizSession;
-  const q = s.questions[s.idx];
-  const result = s.results[q.id];
+  const list = cqList_(s);
+  const results = cqResults_(s);
+  const i0 = cqIdx_(s);
+  const q = list[i0];
+  if(!q) return;
+  const result = results[q.id];
   const answered = !!result;
-  const marks = ['①','②','③'];
-  const pct = Math.round((s.idx / s.questions.length) * 100);
+  const marks = ['①','②','③','④','⑤'];
+  const pct = Math.round((i0 / list.length) * 100);
+  const phase = CQ_PHASES[s.phase];
 
   const optionsHtml = q.choices.map((opt, i) => {
     let cls = 'cq-option';
@@ -1143,21 +1205,27 @@ function renderConceptQuizQuestion(){
       : `<div class="cq-feedback no">❌ 내가 고른 답 <span class="cq-student-answer">${escapeHtml(q.choices[result.selectedIndex])}</span> → 정답은 <span class="cq-correct-answer">${escapeHtml(q.choices[q.correctIndex])}</span></div>`;
   }
 
-  const correctSoFar = Object.values(s.results).filter(r => r.correct).length;
-  const answeredSoFar = Object.keys(s.results).length;
+  const correctSoFar = Object.values(results).filter(r => r.correct).length;
+  const answeredSoFar = Object.keys(results).length;
+  const last = (i0 === list.length - 1);
+  const nextLabel = !last ? '다음 문제'
+    : s.phase === 'main' ? '다음 단계'
+    : s.phase === 'retry' ? (cqBuildExamples_(s).length ? '유제 풀기' : '결과 확인')
+    : '결과 확인';
 
   area.innerHTML = `
     <div class="cq-progress-row">
       <div class="cq-progress-bar"><i style="width:${pct}%"></i></div>
-      <div class="cq-progress-num">${s.idx+1}/${s.questions.length} · 정답 ${correctSoFar}/${answeredSoFar}</div>
+      <div class="cq-progress-num">${phase.label} ${i0+1}/${list.length} · 정답 ${correctSoFar}/${answeredSoFar}</div>
     </div>
+    ${phase.tag ? `<span class="cq-tag review">${phase.tag}</span>` : ''}
     ${q.unit ? `<span class="cq-tag">${escapeHtml(q.unit)}</span>` : ''}
-    ${q.isReview ? `<span class="cq-tag review">🔁 복습</span>` : ''}
+    ${(s.phase === 'main' && q.isReview) ? `<span class="cq-tag review">🔁 복습</span>` : ''}
     <div class="cq-question">${escapeHtml(q.question).replace('___', '<span class="cq-blank">&nbsp;&nbsp;&nbsp;&nbsp;</span>')}</div>
     <div class="cq-options">${optionsHtml}</div>
     ${feedbackHtml}
     <div class="cq-nav">
-      <button type="button" class="btn" ${answered ? '' : 'disabled'} onclick="goConceptNext()">${s.idx === s.questions.length-1 ? '결과 확인' : '다음 문제'}</button>
+      <button type="button" class="btn" ${answered ? '' : 'disabled'} onclick="goConceptNext()">${nextLabel}</button>
     </div>
   `;
 }
@@ -1165,21 +1233,33 @@ function renderConceptQuizQuestion(){
 function selectConceptOption(index){
   const s = conceptQuizSession;
   if(!s) return;
-  const q = s.questions[s.idx];
-  if(s.results[q.id]) return; // 이미 채점된 문항
-  s.results[q.id] = { selectedIndex: index, correct: index === q.correctIndex };
+  const q = cqList_(s)[cqIdx_(s)];
+  const results = cqResults_(s);
+  if(!q || results[q.id]) return; // 이미 채점된 문항
+  results[q.id] = { selectedIndex: index, correct: index === q.correctIndex };
   renderConceptQuizQuestion();
 }
 
 function goConceptNext(){
   const s = conceptQuizSession;
   if(!s) return;
-  if(s.idx < s.questions.length - 1){
-    s.idx += 1;
+  const list = cqList_(s);
+  const i0 = cqIdx_(s);
+  if(i0 < list.length - 1){
+    cqSetIdx_(s, i0 + 1);
     renderConceptQuizQuestion();
-  } else {
-    finishConceptQuiz();
+    return;
   }
+  // 이 단계 끝 → 다음 단계로
+  if(s.phase === 'main'){
+    s.retry = cqBuildRetry_(s);
+    if(s.retry.length){ s.phase = 'retry'; s.rIdx = 0; renderConceptQuizQuestion(); return; }
+  }
+  if(s.phase === 'main' || s.phase === 'retry'){
+    s.ex = cqBuildExamples_(s);
+    if(s.ex.length){ s.phase = 'ex'; s.eIdx = 0; renderConceptQuizQuestion(); return; }
+  }
+  finishConceptQuiz();
 }
 
 async function finishConceptQuiz(){
@@ -1187,23 +1267,47 @@ async function finishConceptQuiz(){
   if(!s) return;
   const area = document.getElementById('conceptQuizArea');
 
+  // 졸업 규칙: 개념을 맞히고, 유제가 붙어 있으면 유제까지 맞혀야 그 문제는 끝나요.
+  // 하나라도 틀리면 다음 번에 🔁 복습으로 다시 나와요.
   let correctCount = 0;
-  const wrongItemIds = [];
+  const wrongSet = new Set();
   const correctItemIds = [];
   const summaryRows = [];
 
   s.questions.forEach(q => {
     const r = s.results[q.id] || { selectedIndex:-1, correct:false };
-    if(r.correct){ correctCount++; correctItemIds.push(q.id); }
-    else { wrongItemIds.push(q.id); }
+    const rr = s.rResults[q.id];                       // 틀린 것 다시 풀기 결과
+    if(r.correct) correctCount++; else wrongSet.add(q.id);
+    const again = r.correct ? '' : (rr
+      ? (rr.correct ? ' <span class="cq-correct-answer">· 다시 풀어서 맞혔어요</span>' : ' <span class="cq-student-answer">· 다시 풀어도 틀렸어요</span>')
+      : '');
     summaryRows.push(`
       <div class="cq-summary-item ${r.correct ? 'correct' : 'wrong'}">
         ${escapeHtml(q.question).replace('___', '____')}<br>
         ${r.correct
           ? `<span class="cq-correct-answer">${escapeHtml(q.choices[q.correctIndex])}</span>`
+          : `<span class="cq-student-answer">${escapeHtml(q.choices[r.selectedIndex] ?? '(선택 안 함)')}</span> → <span class="cq-correct-answer">${escapeHtml(q.choices[q.correctIndex])}</span>`}${again}
+      </div>`);
+  });
+
+  const exList = s.ex || [];
+  let exCorrectCount = 0;
+  exList.forEach(q => {
+    const r = s.eResults[q.id] || { selectedIndex:-1, correct:false };
+    if(r.correct) exCorrectCount++; else wrongSet.add(q.id);
+    summaryRows.push(`
+      <div class="cq-summary-item ${r.correct ? 'correct' : 'wrong'}">
+        <span class="cq-tag review">✏️ 유제</span> ${escapeHtml(q.question)}<br>
+        ${r.correct
+          ? `<span class="cq-correct-answer">${escapeHtml(q.choices[q.correctIndex])}</span>`
           : `<span class="cq-student-answer">${escapeHtml(q.choices[r.selectedIndex] ?? '(선택 안 함)')}</span> → <span class="cq-correct-answer">${escapeHtml(q.choices[q.correctIndex])}</span>`}
       </div>`);
   });
+
+  s.questions.forEach(q => { if(!wrongSet.has(q.id)) correctItemIds.push(q.id); });
+  const wrongItemIds = Array.from(wrongSet);
+  const totalCount = s.questions.length + exList.length;
+  const scoreCount = correctCount + exCorrectCount;
 
   if(area){
     area.innerHTML = `<div class="cq-empty">저장 중이에요...</div>`;
@@ -1211,7 +1315,7 @@ async function finishConceptQuiz(){
 
   let saveFailed = false;
   try {
-    await portalApi_('parentSubmitQuiz', { token: parentToken, studentId: s.student.id, correct: correctCount, total: s.questions.length, wrongItemIds, correctItemIds });
+    await portalApi_('parentSubmitQuiz', { token: parentToken, studentId: s.student.id, correct: scoreCount, total: totalCount, wrongItemIds, correctItemIds });
     delete studentDataCache[s.student.id]; // 리포트로 돌아가면 새 기록이 반영돼요
   } catch(err){
     saveFailed = true;
@@ -1223,8 +1327,9 @@ async function finishConceptQuiz(){
   if(area){
     area.innerHTML = `
       <div class="cq-week-row">
-        <div class="cq-week-count">${correctCount}<span> / ${s.questions.length} 정답</span></div>
+        <div class="cq-week-count">${scoreCount}<span> / ${totalCount} 정답</span></div>
       </div>
+      <div class="cq-status">개념 ${correctCount}/${s.questions.length}${exList.length ? ` · 유제 ${exCorrectCount}/${exList.length}` : ''}${wrongItemIds.length ? ` · 틀린 ${wrongItemIds.length}개는 다음에 🔁 다시 나와요` : ' · 전부 맞혔어요!'}</div>
       ${saveFailed ? '<div class="cq-status pending">⚠️ 결과를 저장하지 못했어요. 인터넷 연결을 확인하고 다시 풀어주세요.</div>' : ''}
       ${summaryRows.join('')}
       <button type="button" class="btn ghost" onclick="showStudentReport(${studentIdForClose}).catch(err => alert(err.message))">확인했어요 · 리포트로 돌아가기</button>
