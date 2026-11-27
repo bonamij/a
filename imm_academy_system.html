@@ -3911,6 +3911,20 @@ function renderConceptUnitPicker(classNames){
           ${isAll ? '' : `<button type="button" class="btn small" style="padding:2px 7px; font-size:10.5px; margin-left:6px; background:var(--cream-alt); color:var(--ink-soft); border-color:var(--line);"
             onclick="setConceptUnitScope('${safeC}', 'all', -1)">전체 범위로</button>`}
         </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:8px 10px; margin-bottom:10px; background:var(--cream-alt); border-radius:8px;">
+          <span style="font-size:11px; font-weight:700; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif;">학년 통째로</span>
+          ${conceptGradeGroups_().map(g => {
+            const on = g.units.filter(u => isAll || selected.includes(u)).length;
+            const btn = (mode, label) => `<button type="button" class="btn small"
+              style="padding:2px 7px; font-size:10.5px; background:var(--card); color:var(--ink-soft); border-color:var(--line);"
+              onclick="setConceptGradeScope('${safeC}', '${mode}', '${g.label.replace(/'/g,"\\'")}')">${label}</button>`;
+            return `<span style="display:inline-flex; gap:4px; align-items:center;">
+              <strong style="font-size:11.5px; font-family:'Noto Sans KR',sans-serif; color:${on ? 'var(--brand-dark)' : 'var(--ink-soft)'};">${g.label}</strong>
+              <span style="font-size:10.5px; color:var(--ink-soft);">${on}/${g.units.length}</span>
+              ${btn('only', '이 학년만')}${btn('add', '＋')}${btn('remove', '－')}
+            </span>`;
+          }).join('')}
+        </div>
         ${chaptersHtml}
       </div>`;
   }).join('');
@@ -3931,19 +3945,32 @@ function applyConceptUnitToggle_(data, className, unitName){
   data.conceptEnabledUnits[className] = (current.length === allUnits.length) ? [] : current;
 }
 
-/** 대단원 단위로 한 번에 켜고/끄기. mode: only | add | remove | all */
-async function setConceptUnitScope(className, mode, chapterIdx){
+/** 대단원 이름 앞의 [중1] 같은 표시로 학년 묶음을 만들어요. 표시가 없으면 중2-2예요. */
+function conceptGradeGroups_(){
+  const groups = [];
+  CONCEPT_CURRICULUM.forEach(ch => {
+    const m = /^\[([^\]]+)\]/.exec(ch.chapter);
+    const label = m ? m[1] : '중2-2';
+    let g = groups.find(x => x.label === label);
+    if(!g){ g = { label: label, units: [] }; groups.push(g); }
+    g.units = g.units.concat(ch.units);
+  });
+  return groups;
+}
+
+/** 켜진 소단원 목록을 실제로 바꾸고 저장해요. mode: only | add | remove | all */
+function applyConceptScope_(className, mode, scopeUnits){
   const allUnits = CONCEPT_CURRICULUM.flatMap(ch => ch.units);
-  const chUnits = (CONCEPT_CURRICULUM[chapterIdx] || {}).units || [];
+  const target = scopeUnits || [];
   const current = (conceptEnabledUnits[className] && conceptEnabledUnits[className].length > 0)
     ? conceptEnabledUnits[className].slice()
     : allUnits.slice();
 
   let next;
   if(mode === 'all') next = [];
-  else if(mode === 'only') next = chUnits.slice();
-  else if(mode === 'add') next = allUnits.filter(u => current.indexOf(u) >= 0 || chUnits.indexOf(u) >= 0);
-  else if(mode === 'remove') next = current.filter(u => chUnits.indexOf(u) < 0);
+  else if(mode === 'only') next = target.slice();
+  else if(mode === 'add') next = allUnits.filter(u => current.indexOf(u) >= 0 || target.indexOf(u) >= 0);
+  else if(mode === 'remove') next = current.filter(u => target.indexOf(u) < 0);
   else return;
 
   if(mode !== 'all' && next.length === 0){
@@ -3954,6 +3981,17 @@ async function setConceptUnitScope(className, mode, chapterIdx){
   const classNames = Array.from(new Set(students.map(s => s.className).filter(Boolean))).sort();
   renderConceptUnitPicker(classNames);
   scheduleSync();
+}
+
+/** 대단원 단위로 한 번에 켜고/끄기 */
+async function setConceptUnitScope(className, mode, chapterIdx){
+  applyConceptScope_(className, mode, (CONCEPT_CURRICULUM[chapterIdx] || {}).units || []);
+}
+
+/** 학년 묶음(중2-2 / 중1 / 중2-1) 단위로 한 번에 켜고/끄기 */
+async function setConceptGradeScope(className, mode, gradeLabel){
+  const g = conceptGradeGroups_().find(x => x.label === gradeLabel);
+  applyConceptScope_(className, mode, g ? g.units : []);
 }
 
 async function toggleConceptUnit(className, unitName){
