@@ -448,6 +448,24 @@ function installTriggers() {
     ScriptApp.newTrigger('sendConceptTestReminders').timeBased().everyDays(1).atHour(hour).inTimezone(BACKUP_CONFIG.TIMEZONE).create();
   });
   Logger.log('✅ 개념빈칸 리마인더: 오후 4시, 저녁 8시 (기존 리마인더 ' + removed + '개 교체)');
+
+  // 개념문제 자동 출제: 매일 아침 7시 (반마다 새 문제를 만들어 문제은행에 쌓아요)
+  let removedGen = 0;
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'generateDailyConceptQuestions') { ScriptApp.deleteTrigger(t); removedGen++; }
+  });
+  ScriptApp.newTrigger('generateDailyConceptQuestions').timeBased().everyDays(1).atHour(7).inTimezone(BACKUP_CONFIG.TIMEZONE).create();
+  Logger.log('✅ 개념문제 자동 출제: 매일 아침 7시 (기존 ' + removedGen + '개 교체)');
+
+  // 원장님 출석체크 알림: 오후 4시부터 8시까지 한 시간마다
+  let removedAtt = 0;
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'sendAttendanceReminders') { ScriptApp.deleteTrigger(t); removedAtt++; }
+  });
+  [16, 17, 18, 19, 20].forEach(function (hour) {
+    ScriptApp.newTrigger('sendAttendanceReminders').timeBased().everyDays(1).atHour(hour).inTimezone(BACKUP_CONFIG.TIMEZONE).create();
+  });
+  Logger.log('✅ 원장님 출석체크 알림: 오후 4·5·6·7·8시 (기존 ' + removedAtt + '개 교체)');
 }
 
 /** 새로 필요한 권한을 한 번 승인받기 위한 함수 (배포 전에 편집기에서 실행) */

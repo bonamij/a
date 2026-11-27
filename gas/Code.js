@@ -459,3 +459,77 @@ function handleGenerateLearningReport(body) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
+
+/* =========================================================
+   ⏰ 선생님 폰으로 "출석 체크하셨어요?" 알림
+   오후 4시 ~ 8시 사이 한 시간마다 (installTriggers 가 만들어요)
+   - 오늘 수업이 있는 날에만 보내요 (반 이름의 요일로 판단)
+   - 다 찍었으면 더 안 보내요
+========================================================= */
+
+const DOW_CHARS_ = ['일', '월', '화', '수', '목', '금', '토'];
+
+/** "화금중2" 같은 반 이름에서 요일을 읽어요. 요일 글자가 없으면 빈 배열이에요. */
+function classDaysOf_(className) {
+  const name = String(className || '');
+  const days = [];
+  DOW_CHARS_.forEach(function (ch, i) { if (name.indexOf(ch) >= 0) days.push(i); });
+  return days;
+}
+
+function sendAttendanceReminders() {
+  const snap = snapshot_();
+  const tokens = (snap.sets.adminPushTokens || []).slice();
+  if (!tokens.length) {
+    Logger.log('[출석알림] 원장님 알림 토큰이 없어요. 관리자 앱에서 "알림 받기"를 먼저 눌러주세요.');
+    return;
+  }
+
+  const kstNow = new Date(Date.now() + 9 * 3600 * 1000);
+  const todayKst = kstNow.toISOString().slice(0, 10);
+  const dow = kstNow.getUTCDay();
+
+  const students = (snap.arrays.students || []).filter(function (s) { return !s.withdrawDate; });
+
+  // 오늘 수업이 있는 반이 하나라도 있어야 보내요 (수요일·일요일엔 안 울려요)
+  const classMeetsToday = students.some(function (s) {
+    const days = classDaysOf_(s.className);
+    return days.length > 0 && days.indexOf(dow) >= 0;
+  });
+  if (!classMeetsToday) {
+    Logger.log('[출석알림] 오늘(' + DOW_CHARS_[dow] + '요일)은 수업이 있는 반이 없어요. 안 보냈어요.');
+    return;
+  }
+
+  // 오늘 올 학생 = 요일이 맞는 반 + 반 이름이 없는 학생(초등부 등)
+  const comingToday = students.filter(function (s) {
+    const days = classDaysOf_(s.className);
+    return days.length === 0 || days.indexOf(dow) >= 0;
+  });
+
+  const recorded = {};
+  (snap.arrays.attendanceRecords || []).forEach(function (r) {
+    if (r.date === todayKst) recorded[String(r.studentId)] = true;
+  });
+  const missing = comingToday.filter(function (s) { return !recorded[String(s.id)]; });
+
+  if (!missing.length) {
+    Logger.log('[출석알림] 오늘 ' + comingToday.length + '명 다 찍으셨어요. 안 보냈어요.');
+    return;
+  }
+
+  const names = missing.map(function (s) { return s.name; });
+  const shown = names.slice(0, 4).join(', ') + (names.length > 4 ? ' 외 ' + (names.length - 4) + '명' : '');
+  sendPushToTokens(
+    tokens,
+    '✅ 출석 체크하셨어요?',
+    names.length + '명 아직 안 찍었어요 — ' + shown + ' (앱에서 "모두 출석" 한 번이면 끝나요)',
+    './imm_academy_system.html'
+  );
+  Logger.log('[출석알림] ' + names.length + '명 안 찍음 → 알림 보냄: ' + names.join(', '));
+}
+
+/** 편집기에서 바로 눌러 확인하는 용도 (지금 시각 기준으로 한 번 보내요) */
+function testAttendanceReminder() {
+  sendAttendanceReminders();
+}
